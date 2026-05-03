@@ -39,7 +39,7 @@ const Header = () => {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-card shadow-sm">
-      <div className="container mx-auto px-4 py-2 md:py-4 flex items-center justify-between">
+      <div className="w-full px-0 py-2 md:py-4 flex items-center justify-between">
         <div className="flex items-center gap-2 md:gap-6">
           <MobileMenu />
           <Link to="/" className="flex items-center">
@@ -73,17 +73,16 @@ const Header = () => {
               <Map className="h-4 w-4" />
               {t("navMap")}
             </Link>
-            <Link 
-              to="/about" 
-              className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
-            >
-              <Info className="h-4 w-4" />
-              {t("navAboutUs")}
-            </Link>
           </nav>
         </div>
         
         <div className="flex items-center gap-1 md:gap-3">
+          <Link to={user ? "/become-host" : "/auth?redirect=%2Fbecome-host"} className="hidden md:block">
+            <Button variant="ghost" size="sm" className="rounded-full font-semibold hover:bg-accent">
+              <Home className="h-4 w-4 mr-1.5" />
+              List your property
+            </Button>
+          </Link>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="rounded-full">

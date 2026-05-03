@@ -23,6 +23,7 @@ import SearchResults from "./pages/SearchResults";
 import BookingConfirmation from "./pages/BookingConfirmation";
 import Messages from "./pages/Messages";
 import AddListing from "./pages/AddListing";
+import BecomeHost from "./pages/BecomeHost";
 import EditListing from "./pages/EditListing";
 import HostProfile from "./pages/HostProfile";
 import Payment from "./pages/Payment";
@@ -75,6 +76,7 @@ const AnimatedRoutes = () => {
         {/* Host Routes */}
         <Route path="/host" element={<PageTransition><HostDashboard /></PageTransition>} />
         <Route path="/host/add-listing" element={<PageTransition><AddListing /></PageTransition>} />
+        <Route path="/become-host" element={<PageTransition><BecomeHost /></PageTransition>} />
         <Route path="/host/edit-listing/:id" element={<PageTransition><EditListing /></PageTransition>} />
         <Route path="/host/verification" element={<PageTransition><HostVerification /></PageTransition>} />
         <Route path="/host/bookings" element={<PageTransition><HostBookings /></PageTransition>} />
