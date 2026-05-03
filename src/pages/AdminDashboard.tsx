@@ -397,7 +397,7 @@ const AdminDashboard = () => {
         </div>
 
         <Tabs defaultValue="users" className="space-y-6">
-          <TabsList className="flex-wrap">
+          <TabsList className="flex flex-wrap h-auto w-full justify-start gap-1 p-1">
             <TabsTrigger value="users">
               <Users className="h-4 w-4 mr-2" />
               Users
@@ -429,6 +429,10 @@ const AdminDashboard = () => {
             <TabsTrigger value="about">
               <FileText className="h-4 w-4 mr-2" />
               About Us
+            </TabsTrigger>
+            <TabsTrigger value="contact">
+              <FileText className="h-4 w-4 mr-2" />
+              Contact Us
             </TabsTrigger>
             <TabsTrigger value="content">
               <FileText className="h-4 w-4 mr-2" />
@@ -1460,6 +1464,102 @@ const AdminDashboard = () => {
                     disabled={Object.keys(editingSettings).length === 0 || updateSiteSetting.isPending}
                   >
                     {updateSiteSetting.isPending ? "Saving..." : "Save About Us Content"}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Contact Us Tab */}
+          <TabsContent value="contact">
+            <Card>
+              <CardHeader>
+                <CardTitle>Contact Us Page Content</CardTitle>
+                <CardDescription>Edit everything shown on the Contact Us page</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <Label htmlFor="contactTitle">Page Title</Label>
+                    <Input
+                      id="contactTitle"
+                      value={getSetting("contact_title", "Contact Us")}
+                      onChange={(e) => setEditingSettings(prev => ({ ...prev, contact_title: e.target.value }))}
+                      className="mt-2"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="contactDesc">Page Description</Label>
+                    <Input
+                      id="contactDesc"
+                      value={getSetting("contact_description", "We'd love to hear from you. Get in touch with our team.")}
+                      onChange={(e) => setEditingSettings(prev => ({ ...prev, contact_description: e.target.value }))}
+                      className="mt-2"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="contactEmail">Email</Label>
+                    <Input
+                      id="contactEmail"
+                      value={getSetting("contact_email", "support@meewano.com")}
+                      onChange={(e) => setEditingSettings(prev => ({ ...prev, contact_email: e.target.value }))}
+                      className="mt-2"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="contactPhone">Phone</Label>
+                    <Input
+                      id="contactPhone"
+                      value={getSetting("contact_phone", "+964 750 123 4567")}
+                      onChange={(e) => setEditingSettings(prev => ({ ...prev, contact_phone: e.target.value }))}
+                      className="mt-2"
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <Label htmlFor="contactAddress">Office Address</Label>
+                    <Textarea
+                      id="contactAddress"
+                      value={getSetting("contact_address", "Erbil, Kurdistan Region\nIraq")}
+                      onChange={(e) => setEditingSettings(prev => ({ ...prev, contact_address: e.target.value }))}
+                      className="mt-2"
+                      rows={2}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="contactHoursWeek">Mon - Fri Hours</Label>
+                    <Input
+                      id="contactHoursWeek"
+                      value={getSetting("contact_hours_weekdays", "9:00 AM - 6:00 PM")}
+                      onChange={(e) => setEditingSettings(prev => ({ ...prev, contact_hours_weekdays: e.target.value }))}
+                      className="mt-2"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="contactHoursSat">Saturday Hours</Label>
+                    <Input
+                      id="contactHoursSat"
+                      value={getSetting("contact_hours_saturday", "10:00 AM - 4:00 PM")}
+                      onChange={(e) => setEditingSettings(prev => ({ ...prev, contact_hours_saturday: e.target.value }))}
+                      className="mt-2"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="contactHoursSun">Sunday Hours</Label>
+                    <Input
+                      id="contactHoursSun"
+                      value={getSetting("contact_hours_sunday", "Closed")}
+                      onChange={(e) => setEditingSettings(prev => ({ ...prev, contact_hours_sunday: e.target.value }))}
+                      className="mt-2"
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t">
+                  <Button
+                    onClick={handleSaveSettings}
+                    disabled={Object.keys(editingSettings).length === 0 || updateSiteSetting.isPending}
+                  >
+                    {updateSiteSetting.isPending ? "Saving..." : "Save Contact Us Content"}
                   </Button>
                 </div>
               </CardContent>

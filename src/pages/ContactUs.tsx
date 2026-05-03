@@ -8,10 +8,17 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useSiteSettings } from "@/hooks/useSiteSettings";
 
 const ContactUs = () => {
   const [loading, setLoading] = useState(false);
   const { t } = useTranslation();
+  const { data: siteSettings } = useSiteSettings();
+
+  const getSetting = (key: string, defaultValue: string) => {
+    const v = siteSettings?.[key];
+    return (typeof v === "string" ? v : defaultValue) || defaultValue;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,8 +33,12 @@ const ContactUs = () => {
     <AppLayout>
       <main className="flex-1 container mx-auto px-4 py-8">
         <div className="max-w-5xl mx-auto">
-          <h1 className="text-3xl font-bold text-foreground mb-2">{t("contactUsTitle")}</h1>
-          <p className="text-muted-foreground mb-8">{t("contactUsDesc")}</p>
+          <h1 className="text-3xl font-bold text-foreground mb-2">
+            {getSetting("contact_title", t("contactUsTitle"))}
+          </h1>
+          <p className="text-muted-foreground mb-8">
+            {getSetting("contact_description", t("contactUsDesc"))}
+          </p>
 
           <div className="grid md:grid-cols-2 gap-8">
             <Card>
@@ -70,22 +81,26 @@ const ContactUs = () => {
                     <Mail className="h-5 w-5 text-primary mt-1" />
                     <div>
                       <p className="font-medium">{t("email")}</p>
-                      <p className="text-sm text-muted-foreground">support@meewano.com</p>
+                      <p className="text-sm text-muted-foreground">
+                        {getSetting("contact_email", "support@meewano.com")}
+                      </p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
                     <Phone className="h-5 w-5 text-primary mt-1" />
                     <div>
                       <p className="font-medium">{t("phone")}</p>
-                      <p className="text-sm text-muted-foreground">+964 750 123 4567</p>
+                      <p className="text-sm text-muted-foreground">
+                        {getSetting("contact_phone", "+964 750 123 4567")}
+                      </p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
                     <MapPin className="h-5 w-5 text-primary mt-1" />
                     <div>
                       <p className="font-medium">{t("office")}</p>
-                      <p className="text-sm text-muted-foreground">
-                        Erbil, Kurdistan Region<br />Iraq
+                      <p className="text-sm text-muted-foreground whitespace-pre-line">
+                        {getSetting("contact_address", "Erbil, Kurdistan Region\nIraq")}
                       </p>
                     </div>
                   </div>
@@ -100,15 +115,21 @@ const ContactUs = () => {
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">{t("mondayFriday")}</span>
-                      <span className="font-medium">9:00 AM - 6:00 PM</span>
+                      <span className="font-medium">
+                        {getSetting("contact_hours_weekdays", "9:00 AM - 6:00 PM")}
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">{t("saturday")}</span>
-                      <span className="font-medium">10:00 AM - 4:00 PM</span>
+                      <span className="font-medium">
+                        {getSetting("contact_hours_saturday", "10:00 AM - 4:00 PM")}
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">{t("sunday")}</span>
-                      <span className="font-medium">{t("closed")}</span>
+                      <span className="font-medium">
+                        {getSetting("contact_hours_sunday", t("closed"))}
+                      </span>
                     </div>
                   </div>
                 </CardContent>
