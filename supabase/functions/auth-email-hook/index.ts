@@ -205,10 +205,14 @@ async function handleWebhook(req: Request): Promise<Response> {
     )
   }
 
-  // The email action type is in payload.data.action_type (e.g., "signup", "recovery")
-  // payload.type is the hook event type ("auth")
   const emailType = payload.data.action_type
-  console.log('Received auth event', { emailType, email: payload.data.email, run_id })
+  const d: any = payload.data
+  console.log('Received auth event', {
+    emailType, email: d.email, run_id,
+    dataKeys: Object.keys(d),
+    tokenLen: typeof d.token === 'string' ? d.token.length : null,
+    tokenHashLen: typeof d.token_hash === 'string' ? d.token_hash.length : null,
+  })
 
   const EmailTemplate = EMAIL_TEMPLATES[emailType]
   if (!EmailTemplate) {
@@ -219,16 +223,28 @@ async function handleWebhook(req: Request): Promise<Response> {
     )
   }
 
-  // Build template props from payload.data (HookData structure)
+  // Supabase sends both `token` (6-digit OTP) and `token_hash` (long URL-safe hash).
+  // Some payloads may mis-map them, so explicitly find the 6-digit numeric string.
+  const findOtp = (): string => {
+    const candidates = [d.token, d.otp, d.token_new]
+    for (const c of candidates) {
+      if (typeof c === 'string' && /^\d{6}$/.test(c)) return c
+    }
+    for (const v of Object.values(d)) {
+      if (typeof v === 'string' && /^\d{6}$/.test(v)) return v
+    }
+    return typeof d.token === 'string' ? d.token : ''
+  }
+
   const templateProps = {
     siteName: SITE_NAME,
     siteUrl: `https://${ROOT_DOMAIN}`,
-    recipient: payload.data.email,
-    confirmationUrl: payload.data.url,
-    token: payload.data.token,
-    email: payload.data.email,
-    oldEmail: payload.data.old_email,
-    newEmail: payload.data.new_email,
+    recipient: d.email,
+    confirmationUrl: d.url,
+    token: findOtp(),
+    email: d.email,
+    oldEmail: d.old_email,
+    newEmail: d.new_email,
   }
 
   // Render React Email to HTML and plain text
