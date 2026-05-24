@@ -30,6 +30,7 @@ import Payment from "./pages/Payment";
 import NotFound from "./pages/NotFound";
 import AccountSettings from "./pages/AccountSettings";
 import HostVerification from "./pages/HostVerification";
+import HostWelcome from "./pages/HostWelcome";
 import GuestBookings from "./pages/GuestBookings";
 import HostBookings from "./pages/HostBookings";
 import PaymentSuccess from "./pages/PaymentSuccess";
@@ -79,6 +80,7 @@ const AnimatedRoutes = () => {
         <Route path="/become-host" element={<PageTransition><BecomeHost /></PageTransition>} />
         <Route path="/host/edit-listing/:id" element={<PageTransition><EditListing /></PageTransition>} />
         <Route path="/host/verification" element={<PageTransition><HostVerification /></PageTransition>} />
+        <Route path="/host/welcome" element={<PageTransition><HostWelcome /></PageTransition>} />
         <Route path="/host/bookings" element={<PageTransition><HostBookings /></PageTransition>} />
         <Route path="/host/analytics" element={<PageTransition><HostAnalytics /></PageTransition>} />
         <Route path="/host/pricing" element={<PageTransition><PricingTools /></PageTransition>} />

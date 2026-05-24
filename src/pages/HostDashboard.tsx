@@ -1,14 +1,17 @@
 import { useState, useEffect } from "react";
-import { BarChart3, Home, Calendar, DollarSign, Plus, TrendingUp, Loader2, Eye, Edit, Trash2 } from "lucide-react";
+import { BarChart3, Home, Calendar, DollarSign, Plus, TrendingUp, Loader2, Eye, Edit, Trash2, ShieldCheck, Clock, XCircle, RefreshCw, CheckCircle2 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { createNotification } from "@/hooks/useNotifications";
+import { useMyHostVerification } from "@/hooks/useHostVerification";
 
 interface Property {
   id: string;
@@ -17,6 +20,9 @@ interface Property {
   price_per_night: number;
   is_active: boolean;
   images: string[];
+  approval_status?: string;
+  rejection_reason?: string | null;
+  pending_changes?: any;
 }
 
 interface Booking {
@@ -36,10 +42,13 @@ const HostDashboard = () => {
   const { formatPrice } = useCurrency();
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  
+  const { data: verification, isLoading: vLoading } = useMyHostVerification();
+
   const [properties, setProperties] = useState<Property[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const isVerified = verification?.status === "approved";
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -156,6 +165,28 @@ const HostDashboard = () => {
     <AppLayout>
       
       <main className="container mx-auto px-4 py-8">
+        {/* Verification banner */}
+        {!vLoading && !isVerified && (
+          <Alert className={`mb-6 ${verification?.status === "rejected" ? "border-destructive/40 bg-destructive/5" : "border-yellow-500/40 bg-yellow-500/5"}`}>
+            {verification?.status === "rejected" ? <XCircle className="h-4 w-4 text-destructive" /> : <ShieldCheck className="h-4 w-4 text-yellow-600" />}
+            <AlertTitle>
+              {verification?.status === "rejected" ? "Verification rejected" :
+               verification?.status === "pending" && verification?.submitted_at ? "Verification pending review" :
+               "Verify your account to start hosting"}
+            </AlertTitle>
+            <AlertDescription className="flex items-center justify-between gap-4 flex-wrap">
+              <span>
+                {verification?.status === "rejected" ? (verification.rejection_reason || "Please resubmit your documents.") :
+                 verification?.status === "pending" && verification?.submitted_at ? "We'll notify you once approved (usually within 24 hours)." :
+                 "Upload your ID, selfie, and ownership documents to start listing properties."}
+              </span>
+              <Button size="sm" onClick={() => navigate("/host/verification")}>
+                {verification?.submitted_at ? "View status" : "Verify now"}
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
           <div>
@@ -163,26 +194,28 @@ const HostDashboard = () => {
             <p className="text-muted-foreground">Manage your properties and bookings</p>
           </div>
           <div className="flex gap-3">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => navigate("/host/analytics")}
             >
               <BarChart3 className="mr-2 h-4 w-4" />
               Analytics
             </Button>
-            <Button 
+            <Button
               variant="outline"
               onClick={() => navigate("/host/pricing")}
             >
               <TrendingUp className="mr-2 h-4 w-4" />
               Pricing Tools
             </Button>
-            <Link to="/host/add-listing">
-              <Button className="bg-primary hover:bg-primary/90 text-primary-foreground h-12 px-6">
-                <Plus className="h-5 w-5 mr-2" />
-                Add Property
-              </Button>
-            </Link>
+            <Button
+              className="bg-primary hover:bg-primary/90 text-primary-foreground h-12 px-6"
+              disabled={!isVerified}
+              onClick={() => isVerified ? navigate("/host/add-listing") : toast.error("Complete verification first")}
+            >
+              <Plus className="h-5 w-5 mr-2" />
+              Add Property
+            </Button>
           </div>
         </div>
 
@@ -265,36 +298,55 @@ const HostDashboard = () => {
               {properties.length === 0 ? (
                 <p className="text-center text-muted-foreground py-4">No properties yet</p>
               ) : (
-                properties.slice(0, 5).map((property) => (
-                  <div 
-                    key={property.id}
-                    className="flex items-center justify-between p-3 rounded-lg border border-border"
-                  >
-                    <div>
-                      <p className="font-medium text-sm">{property.title}</p>
-                      <p className="text-xs text-muted-foreground">{property.location}</p>
-                      <p className="text-xs text-primary font-semibold">{formatPrice(property.price_per_night)}/night</p>
+                properties.slice(0, 5).map((property) => {
+                  const s = property.approval_status;
+                  const badge = s === "approved" ? { label: "Live", icon: CheckCircle2, cls: "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/30" }
+                    : s === "rejected" ? { label: "Rejected", icon: XCircle, cls: "bg-destructive/10 text-destructive border-destructive/30" }
+                    : s === "changes_pending" ? { label: "Edits pending", icon: RefreshCw, cls: "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/30" }
+                    : { label: "Pending review", icon: Clock, cls: "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/30" };
+                  const Icon = badge.icon;
+                  return (
+                    <div
+                      key={property.id}
+                      className="flex items-center justify-between p-3 rounded-lg border border-border"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="font-medium text-sm truncate">{property.title}</p>
+                          <Badge variant="outline" className={`text-[10px] ${badge.cls}`}>
+                            <Icon className="h-3 w-3 mr-1" />{badge.label}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground">{property.location}</p>
+                        <p className="text-xs text-primary font-semibold">{formatPrice(property.price_per_night)}/night</p>
+                        {s === "rejected" && property.rejection_reason && (
+                          <p className="text-[11px] text-destructive mt-1">Reason: {property.rejection_reason}</p>
+                        )}
+                      </div>
+                      <div className="flex gap-1">
+                        <Button size="icon" variant="ghost" onClick={() => navigate(`/property/${property.id}`)}>
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button size="icon" variant="ghost" onClick={() => navigate(`/host/edit-listing/${property.id}`)}>
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button size="icon" variant="ghost" onClick={() => handleDeleteProperty(property.id)}>
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
                     </div>
-                    <div className="flex gap-1">
-                      <Button size="icon" variant="ghost" onClick={() => navigate(`/property/${property.id}`)}>
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button size="icon" variant="ghost" onClick={() => navigate(`/host/edit-listing/${property.id}`)}>
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button size="icon" variant="ghost" onClick={() => handleDeleteProperty(property.id)}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </div>
-                  </div>
-                ))
+                  );
+                })
               )}
-              <Link to="/host/add-listing">
-                <Button variant="outline" className="w-full justify-start h-12 mt-4">
-                  <Plus className="h-5 w-5 mr-3" />
-                  Add New Property
-                </Button>
-              </Link>
+              <Button
+                variant="outline"
+                className="w-full justify-start h-12 mt-4"
+                disabled={!isVerified}
+                onClick={() => isVerified ? navigate("/host/add-listing") : toast.error("Complete verification first")}
+              >
+                <Plus className="h-5 w-5 mr-3" />
+                Add New Property
+              </Button>
             </CardContent>
           </Card>
         </div>

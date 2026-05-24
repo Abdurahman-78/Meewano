@@ -155,18 +155,21 @@ export const useRemoveRole = () => {
   });
 };
 
-// Delete user profile (cascade will handle auth.users via trigger)
+// Fully delete a user (auth + all related data) via admin edge function
 export const useDeleteUser = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (userId: string) => {
-      // Note: This deletes the profile; you may need an edge function to delete auth user
-      const { error } = await supabase.from("profiles").delete().eq("id", userId);
+      const { data, error } = await supabase.functions.invoke("admin-delete-user", {
+        body: { userId },
+      });
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["all-users"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-stats"] });
     },
   });
 };

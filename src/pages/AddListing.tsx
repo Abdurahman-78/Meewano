@@ -145,7 +145,7 @@ const AddListing = () => {
       });
 
       if (error) throw error;
-      toast.success(isDraft ? "Property saved as draft" : "Property published successfully");
+      toast.success(isDraft ? "Property saved as draft" : "Submitted for admin review");
       navigate("/host");
     } catch (error: any) {
       console.error("Error adding property:", error);
@@ -354,7 +354,7 @@ const AddListing = () => {
                   disabled={loading}
                 >
                   {(loading || uploading) ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                  {uploading ? "Uploading images..." : "Publish Listing"}
+                  {uploading ? "Uploading images..." : "Submit for Review"}
                 </Button>
               </div>
             </CardContent>

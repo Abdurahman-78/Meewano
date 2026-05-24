@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { Upload, Loader2, X } from "lucide-react";
+import { Upload, Loader2, X, RefreshCw, Clock, XCircle } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useNavigate, useParams } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
@@ -26,6 +27,8 @@ const EditListing = () => {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [blockedDates, setBlockedDates] = useState<Date[]>([]);
+  const [approvalStatus, setApprovalStatus] = useState<string>("approved");
+  const [rejectionReason, setRejectionReason] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { data: siteSettings } = useSiteSettings();
   
@@ -86,6 +89,8 @@ const EditListing = () => {
         amenities: data.amenities || [], is_active: data.is_active ?? true,
       });
       setExistingImages(data.images || []);
+      setApprovalStatus((data as any).approval_status || "approved");
+      setRejectionReason((data as any).rejection_reason || null);
       if (data.latitude != null && data.longitude != null) {
         setCoords({ lat: Number(data.latitude), lng: Number(data.longitude) });
       }
@@ -170,7 +175,7 @@ const EditListing = () => {
       }).eq("id", id).eq("host_id", user.id);
 
       if (error) throw error;
-      toast.success("Property updated successfully");
+      toast.success(approvalStatus === "approved" ? "Changes saved — pending admin review" : "Property updated");
       navigate("/host");
     } catch (error: any) {
       console.error("Error updating property:", error);
@@ -200,6 +205,28 @@ const EditListing = () => {
             <h1 className="text-4xl font-bold mb-2">Edit Listing</h1>
             <p className="text-muted-foreground">Update your property details</p>
           </div>
+
+          {approvalStatus === "changes_pending" && (
+            <Alert className="mb-6 border-blue-500/40 bg-blue-500/5">
+              <RefreshCw className="h-4 w-4 text-blue-600" />
+              <AlertTitle>Changes pending admin review</AlertTitle>
+              <AlertDescription>Your live listing keeps showing the previously approved version until your edits are reviewed.</AlertDescription>
+            </Alert>
+          )}
+          {approvalStatus === "pending" && (
+            <Alert className="mb-6 border-yellow-500/40 bg-yellow-500/5">
+              <Clock className="h-4 w-4 text-yellow-600" />
+              <AlertTitle>Awaiting initial review</AlertTitle>
+              <AlertDescription>This property is not visible to guests yet — admin will review and approve.</AlertDescription>
+            </Alert>
+          )}
+          {approvalStatus === "rejected" && (
+            <Alert className="mb-6 border-destructive/40 bg-destructive/5">
+              <XCircle className="h-4 w-4 text-destructive" />
+              <AlertTitle>Property rejected</AlertTitle>
+              <AlertDescription>{rejectionReason || "Please update and re-submit."}</AlertDescription>
+            </Alert>
+          )}
 
           <div className="space-y-6">
             <Card>

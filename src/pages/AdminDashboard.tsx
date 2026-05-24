@@ -73,6 +73,8 @@ import LocationPicker from "@/components/LocationPicker";
 import { supabase } from "@/integrations/supabase/client";
 import AdminBlogManager from "@/components/AdminBlogManager";
 import AdminInsights from "@/components/AdminInsights";
+import AdminHostVerifications from "@/components/AdminHostVerifications";
+import AdminPropertyApprovals from "@/components/AdminPropertyApprovals";
 
 const AdminDashboard = () => {
   const { formatPrice } = useCurrency();
@@ -402,6 +404,14 @@ const AdminDashboard = () => {
               <Users className="h-4 w-4 mr-2" />
               Users
             </TabsTrigger>
+            <TabsTrigger value="host-verifications">
+              <Shield className="h-4 w-4 mr-2" />
+              Host Verifications
+            </TabsTrigger>
+            <TabsTrigger value="property-approvals">
+              <Check className="h-4 w-4 mr-2" />
+              Property Approvals
+            </TabsTrigger>
             <TabsTrigger value="properties">
               <Building className="h-4 w-4 mr-2" />
               Properties
@@ -458,6 +468,14 @@ const AdminDashboard = () => {
 
           <TabsContent value="insights">
             <AdminInsights />
+          </TabsContent>
+
+          <TabsContent value="host-verifications">
+            <AdminHostVerifications />
+          </TabsContent>
+
+          <TabsContent value="property-approvals">
+            <AdminPropertyApprovals />
           </TabsContent>
 
           {/* Users Tab */}

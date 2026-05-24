@@ -77,7 +77,7 @@ const Header = () => {
         </div>
         
         <div className="flex items-center gap-1 md:gap-3">
-          <Link to={user ? "/become-host" : "/auth?redirect=%2Fbecome-host"} className="hidden md:block">
+          <Link to="/become-host" className="hidden md:block">
             <Button variant="ghost" size="sm" className="rounded-full font-semibold hover:bg-accent">
               <Home className="h-4 w-4 mr-1.5" />
               List your property

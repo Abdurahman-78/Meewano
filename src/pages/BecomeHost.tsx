@@ -1,183 +1,264 @@
-import { useState, useRef, useEffect } from "react";
-import { Upload, Loader2, X, ArrowRight, ArrowLeft, Home, MapPin, Sparkles, Image as ImageIcon, CheckCircle2 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import {
+  ArrowLeft, ArrowRight, BedDouble, Bath, MapPin, User as UserIcon, Mail,
+  Loader2, CheckCircle2, Eye, EyeOff, MailCheck, Plus, Minus, Phone,
+} from "lucide-react";
 import AppLayout from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
-import { useAuth } from "@/contexts/AuthContext";
+import { Card, CardContent } from "@/components/ui/card";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { useSiteSettings } from "@/hooks/useAdminData";
-import LocationPicker from "@/components/LocationPicker";
-import { optimizeImage } from "@/lib/imageOptimizer";
-import { normalizeAmenities, DEFAULT_AMENITIES } from "@/lib/amenities";
+import PasswordStrengthMeter, { evaluatePassword } from "@/components/PasswordStrengthMeter";
 
-const STEPS = [
-  { id: 1, title: "Tell us about your place", subtitle: "Start with the basics", icon: Home },
-  { id: 2, title: "Where is it located?", subtitle: "Help guests find you", icon: MapPin },
-  { id: 3, title: "What does it offer?", subtitle: "Highlight your amenities", icon: Sparkles },
-  { id: 4, title: "Add some photos", subtitle: "Show off your space", icon: ImageIcon },
-  { id: 5, title: "Set your price & publish", subtitle: "Last step!", icon: CheckCircle2 },
+const TOTAL_STEPS = 6;
+
+const IRAQ_CITIES = [
+  "Baghdad", "Basra", "Mosul", "Erbil", "Sulaymaniyah", "Duhok", "Halabja",
+  "Kirkuk", "Najaf", "Karbala", "Hillah", "Nasiriyah", "Amarah", "Diwaniyah",
+  "Kut", "Ramadi", "Fallujah", "Samarra", "Tikrit", "Baquba", "Zakho",
+  "Soran", "Koya", "Ranya", "Chamchamal", "Kifri", "Khanaqin", "Tuz Khurmatu",
+  "Sinjar", "Tal Afar", "Bayji", "Haditha", "Hit", "Rutba", "Anah",
+  "Al Qa'im", "Balad", "Dujail", "Mahmudiyah", "Yusufiyah", "Iskandariyah",
+  "Musayyib", "Mahawil", "Shomali", "Hashimiyah", "Abu Ghraib", "Madain",
+  "Mahmur", "Shaqlawa", "Akre", "Bardarash", "Dibis", "Hawija", "Daquq",
+  "Ankawa", "Pirmam", "Choman", "Penjwen", "Said Sadiq", "Dukan", "Qaladze",
+  "Rawanduz", "Galala", "Mergasur", "Amedi",
 ];
 
+
+const STEPS = [
+  { id: 1, title: "How many rooms?", subtitle: "Bedrooms in your property", icon: BedDouble },
+  { id: 2, title: "How many bathrooms?", subtitle: "Including half-baths", icon: Bath },
+  { id: 3, title: "Where's your property?", subtitle: "City and neighborhood", icon: MapPin },
+  { id: 4, title: "What's your name?", subtitle: "Guests will see this", icon: UserIcon },
+  { id: 5, title: "Create your account", subtitle: "Email, mobile and a strong password", icon: Mail },
+  { id: 6, title: "Review & submit", subtitle: "Double-check before we create your account", icon: CheckCircle2 },
+];
+
+const Counter = ({ value, onChange, min = 1, max = 20 }: { value: number; onChange: (v: number) => void; min?: number; max?: number }) => (
+  <div className="flex items-center justify-center gap-6">
+    <Button type="button" variant="outline" size="icon" className="h-14 w-14 rounded-full"
+      disabled={value <= min} onClick={() => onChange(Math.max(min, value - 1))}>
+      <Minus className="h-5 w-5" />
+    </Button>
+    <div className="text-6xl font-bold tabular-nums w-24 text-center">{value}</div>
+    <Button type="button" variant="outline" size="icon" className="h-14 w-14 rounded-full"
+      disabled={value >= max} onClick={() => onChange(Math.min(max, value + 1))}>
+      <Plus className="h-5 w-5" />
+    </Button>
+  </div>
+);
+
 const BecomeHost = () => {
-  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
   const [step, setStep] = useState(1);
-  const [loading, setLoading] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const { data: siteSettings } = useSiteSettings();
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [otp, setOtp] = useState("");
+  const [verifying, setVerifying] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
 
-  const [formData, setFormData] = useState({
-    title: "",
-    location: "",
-    city: "",
-    price_per_night: "",
-    bedrooms: "",
-    bathrooms: "",
-    max_guests: "",
-    description: "",
-    amenities: [] as string[],
-  });
-  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
-  const [imageFiles, setImageFiles] = useState<File[]>([]);
-  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
-
-  // Require login
   useEffect(() => {
-    if (!authLoading && !user) {
-      navigate(`/auth?redirect=${encodeURIComponent("/become-host")}`);
+    if (resendCooldown <= 0) return;
+    const t = setTimeout(() => setResendCooldown((s) => s - 1), 1000);
+    return () => clearTimeout(t);
+  }, [resendCooldown]);
+
+  const [form, setForm] = useState({
+    bedrooms: 2,
+    bathrooms: 1,
+    city: "",
+    area: "",
+    first_name: "",
+    last_name: "",
+    email: "",
+    phone: "+964 ",
+    password: "",
+  });
+
+  // If already logged in, skip wizard — they already have an account
+  useEffect(() => {
+    if (!authLoading && user) {
+      navigate("/host/verification");
     }
   }, [user, authLoading, navigate]);
 
-  const settingsMap: Record<string, any> = Array.isArray(siteSettings)
-    ? siteSettings.reduce((acc: Record<string, any>, s: any) => { acc[s.key] = s.value; return acc; }, {})
-    : siteSettings && typeof siteSettings === "object" ? (siteSettings as Record<string, any>) : {};
-  const getSetting = (k: string, d: any) => settingsMap[k] ?? d;
+  const update = (patch: Partial<typeof form>) => setForm((f) => ({ ...f, ...patch }));
 
-  const amenitiesList = normalizeAmenities(getSetting("amenities_list", DEFAULT_AMENITIES));
-  const locationsList = getSetting("locations_list", [
-    { name: "Erbil", region: "Kurdistan" },
-    { name: "Sulaymaniyah", region: "Kurdistan" },
-    { name: "Duhok", region: "Kurdistan" },
-    { name: "Zakho", region: "Kurdistan" },
-    { name: "Ranya", region: "Kurdistan" },
-    { name: "Haji Omran", region: "Kurdistan" },
-    { name: "Shaqlawa", region: "Kurdistan" },
-    { name: "Soran", region: "Kurdistan" },
-    { name: "Halabja", region: "Kurdistan" },
-    { name: "Koya", region: "Kurdistan" },
-  ]) as { name: string; region: string }[];
-
-  const handleAmenityChange = (a: string, c: boolean) =>
-    setFormData(p => ({ ...p, amenities: c ? [...p.amenities, a] : p.amenities.filter(x => x !== a) }));
-
-  const handleFilesSelected = (files: FileList | null) => {
-    if (!files) return;
-    const newFiles = Array.from(files).filter(f => f.type.startsWith("image/"));
-    if (!newFiles.length) { toast.error("Please select image files"); return; }
-    setImageFiles(p => [...p, ...newFiles]);
-    newFiles.forEach(f => {
-      const r = new FileReader();
-      r.onloadend = () => setImagePreviews(p => [...p, r.result as string]);
-      r.readAsDataURL(f);
-    });
-  };
-  const removeImage = (i: number) => {
-    setImageFiles(p => p.filter((_, idx) => idx !== i));
-    setImagePreviews(p => p.filter((_, idx) => idx !== i));
-  };
-
-  const uploadImages = async (): Promise<string[]> => {
-    if (!user || !imageFiles.length) return [];
-    const urls: string[] = [];
-    for (const original of imageFiles) {
-      const file = await optimizeImage(original);
-      const ext = (file.name.split(".").pop() || "webp").toLowerCase();
-      const path = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-      const { error } = await supabase.storage.from("property-images").upload(path, file, { contentType: file.type });
-      if (error) throw error;
-      const { data } = supabase.storage.from("property-images").getPublicUrl(path);
-      urls.push(data.publicUrl);
-    }
-    return urls;
-  };
+  const phoneOk = (p: string) => /^[+\d][\d\s\-()]{6,}$/.test(p.trim());
 
   const canAdvance = () => {
-    if (step === 1) return formData.title.trim().length > 2 && formData.description.trim().length > 0;
-    if (step === 2) return !!formData.city && formData.location.trim().length > 0;
-    if (step === 3) return true;
-    if (step === 4) return imageFiles.length > 0;
-    if (step === 5) return !!formData.price_per_night;
+    if (step === 1) return form.bedrooms >= 1;
+    if (step === 2) return form.bathrooms >= 1;
+    if (step === 3) return form.city.trim().length >= 2;
+    if (step === 4) return form.first_name.trim().length >= 2 && form.last_name.trim().length >= 2;
+    if (step === 5) {
+      const { isStrong } = evaluatePassword(form.password);
+      return /\S+@\S+\.\S+/.test(form.email) && isStrong && phoneOk(form.phone);
+    }
     return true;
   };
 
-  const missingMessage = () => {
-    if (step === 1) {
-      if (formData.title.trim().length <= 2) return "Property name must be at least 3 characters";
-      if (!formData.description.trim()) return "Please add a description";
-    }
-    if (step === 2) {
-      if (!formData.city) return "Please select a city";
-      if (!formData.location.trim()) return "Please enter an address";
-    }
-    if (step === 4 && imageFiles.length === 0) return "Please add at least one photo";
-    if (step === 5 && !formData.price_per_night) return "Please set a price per night";
-    return "Please complete all required fields";
-  };
-
   const next = () => {
-    if (!canAdvance()) { toast.error(missingMessage()); return; }
-    setStep(s => Math.min(STEPS.length, s + 1));
+    if (!canAdvance()) {
+      if (step === 3) toast.error("Please enter the city your property is in");
+      else if (step === 4) toast.error("Please enter your first and last name");
+      else if (step === 5) toast.error("Enter a valid email, mobile number and a stronger password");
+      return;
+    }
+    setStep((s) => Math.min(TOTAL_STEPS, s + 1));
   };
-  const back = () => setStep(s => Math.max(1, s - 1));
+  const back = () => setStep((s) => Math.max(1, s - 1));
 
-  const handleSubmit = async (isDraft = false) => {
-    if (!user) { navigate("/auth"); return; }
-    if (!canAdvance()) { toast.error("Please complete all required fields"); return; }
-    setLoading(true);
+  const handleSubmit = async () => {
+    if (!canAdvance()) return;
+    setSubmitting(true);
     try {
-      setUploading(true);
-      const imageUrls = await uploadImages();
-      setUploading(false);
-      const { error } = await supabase.from("properties").insert({
-        host_id: user.id,
-        title: formData.title,
-        location: formData.location,
-        city: formData.city,
-        price_per_night: parseFloat(formData.price_per_night),
-        bedrooms: parseInt(formData.bedrooms) || 1,
-        bathrooms: parseInt(formData.bathrooms) || 1,
-        max_guests: parseInt(formData.max_guests) || 2,
-        description: formData.description,
-        amenities: formData.amenities,
-        is_active: !isDraft,
-        images: imageUrls,
-        latitude: coords?.lat ?? null,
-        longitude: coords?.lng ?? null,
+      const { error } = await supabase.auth.signUp({
+        email: form.email.trim(),
+        password: form.password,
+        options: {
+          // No emailRedirectTo → Supabase sends a 6-digit OTP instead of magic link
+          data: {
+            first_name: form.first_name.trim(),
+            last_name: form.last_name.trim(),
+            full_name: `${form.first_name.trim()} ${form.last_name.trim()}`,
+            phone: form.phone.trim(),
+            intended_bedrooms: form.bedrooms,
+            intended_bathrooms: form.bathrooms,
+            intended_city: form.city.trim(),
+            intended_area: form.area.trim(),
+            signup_intent: "host",
+          },
+        },
       });
       if (error) throw error;
-      toast.success(isDraft ? "Saved as draft" : "Property published! 🎉");
-      navigate("/host");
+      toast.success("We've sent a 6-digit code to your email");
+      setSubmitted(true);
     } catch (e: any) {
-      console.error(e);
-      toast.error(e.message || "Failed to publish");
+      toast.error(e.message || "Failed to create account");
     } finally {
-      setLoading(false);
-      setUploading(false);
+      setSubmitting(false);
     }
   };
 
-  const progress = (step / STEPS.length) * 100;
+  const handleVerifyOtp = async () => {
+    if (otp.length !== 6) return;
+    setVerifying(true);
+    try {
+      const { error } = await supabase.auth.verifyOtp({
+        email: form.email.trim(),
+        token: otp,
+        type: "signup",
+      });
+      if (error) throw error;
+      toast.success("Email verified!");
+      navigate("/host/welcome");
+    } catch (e: any) {
+      toast.error(e.message || "Invalid or expired code");
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    setResending(true);
+    try {
+      const { error } = await supabase.auth.resend({
+        type: "signup",
+        email: form.email.trim(),
+      });
+      if (error) throw error;
+      toast.success("New code sent");
+      setResendCooldown(45);
+    } catch (e: any) {
+      toast.error(e.message || "Failed to resend code");
+    } finally {
+      setResending(false);
+    }
+  };
+
+  if (authLoading) {
+    return (
+      <AppLayout>
+        <main className="container mx-auto px-4 py-16 flex justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </main>
+      </AppLayout>
+    );
+  }
+
+  if (submitted) {
+    return (
+      <AppLayout>
+        <main className="container mx-auto px-4 py-12 max-w-xl">
+          <Card>
+            <CardContent className="pt-10 pb-8 text-center">
+              <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-primary/10 text-primary mb-5">
+                <MailCheck className="h-10 w-10" />
+              </div>
+              <h1 className="text-3xl font-bold mb-2">Enter your code</h1>
+              <p className="text-muted-foreground mb-1">We sent a 6-digit code to</p>
+              <p className="font-semibold mb-6 break-all">{form.email}</p>
+
+              <div className="flex justify-center mb-6">
+                <InputOTP maxLength={6} value={otp} onChange={setOtp} autoFocus>
+                  <InputOTPGroup>
+                    <InputOTPSlot index={0} />
+                    <InputOTPSlot index={1} />
+                    <InputOTPSlot index={2} />
+                    <InputOTPSlot index={3} />
+                    <InputOTPSlot index={4} />
+                    <InputOTPSlot index={5} />
+                  </InputOTPGroup>
+                </InputOTP>
+              </div>
+
+              <Button
+                size="lg"
+                className="w-full h-12 mb-3"
+                onClick={handleVerifyOtp}
+                disabled={otp.length !== 6 || verifying}
+              >
+                {verifying && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                Verify & continue
+              </Button>
+
+              <button
+                onClick={handleResendOtp}
+                disabled={resending || resendCooldown > 0}
+                className="text-sm text-primary hover:underline disabled:text-muted-foreground disabled:no-underline"
+              >
+                {resendCooldown > 0
+                  ? `Resend code in ${resendCooldown}s`
+                  : resending
+                    ? "Sending..."
+                    : "Didn't get it? Resend code"}
+              </button>
+
+              <p className="text-xs text-muted-foreground mt-6">
+                Check your spam folder if you don't see the email within a minute.
+              </p>
+            </CardContent>
+          </Card>
+        </main>
+      </AppLayout>
+    );
+  }
+
   const current = STEPS[step - 1];
   const Icon = current.icon;
+  const progress = (step / TOTAL_STEPS) * 100;
 
   return (
     <AppLayout>
@@ -186,7 +267,7 @@ const BecomeHost = () => {
         <div className="sticky top-14 md:top-20 z-30 bg-background/80 backdrop-blur border-b border-border">
           <div className="container mx-auto px-4 py-3">
             <div className="flex items-center justify-between mb-2 text-xs text-muted-foreground">
-              <span>Step {step} of {STEPS.length}</span>
+              <span>Step {step} of {TOTAL_STEPS}</span>
               <span>{Math.round(progress)}% complete</span>
             </div>
             <Progress value={progress} className="h-1.5" />
@@ -194,16 +275,15 @@ const BecomeHost = () => {
         </div>
 
         <div className="container mx-auto px-4 py-6 md:py-12">
-          <div className="max-w-2xl mx-auto">
+          <div className="max-w-xl mx-auto">
             <AnimatePresence mode="wait">
               <motion.div
                 key={step}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.3 }}
+                transition={{ duration: 0.25 }}
               >
-                {/* Step header */}
                 <div className="mb-8 text-center">
                   <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 text-primary mb-4">
                     <Icon className="h-8 w-8" />
@@ -212,154 +292,143 @@ const BecomeHost = () => {
                   <p className="text-muted-foreground">{current.subtitle}</p>
                 </div>
 
-                {/* Step content */}
                 <div className="bg-card rounded-2xl border border-border shadow-sm p-6 md:p-8 space-y-6">
                   {step === 1 && (
-                    <>
-                      <div>
-                        <Label htmlFor="title">Property name *</Label>
-                        <Input id="title" placeholder="e.g., Cozy Mountain Retreat" className="mt-2 h-12"
-                          value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} />
-                      </div>
-                      <div>
-                        <Label htmlFor="desc">Description *</Label>
-                        <Textarea id="desc" placeholder="Tell guests what makes your place special..."
-                          className="mt-2 min-h-[140px]" value={formData.description}
-                          onChange={e => setFormData({ ...formData, description: e.target.value })} />
-                      </div>
-                      <div className="grid grid-cols-3 gap-3">
-                        <div>
-                          <Label>Bedrooms</Label>
-                          <Input type="number" placeholder="2" className="mt-2 h-12" value={formData.bedrooms}
-                            onChange={e => setFormData({ ...formData, bedrooms: e.target.value })} />
-                        </div>
-                        <div>
-                          <Label>Bathrooms</Label>
-                          <Input type="number" placeholder="1" className="mt-2 h-12" value={formData.bathrooms}
-                            onChange={e => setFormData({ ...formData, bathrooms: e.target.value })} />
-                        </div>
-                        <div>
-                          <Label>Guests</Label>
-                          <Input type="number" placeholder="4" className="mt-2 h-12" value={formData.max_guests}
-                            onChange={e => setFormData({ ...formData, max_guests: e.target.value })} />
-                        </div>
-                      </div>
-                    </>
+                    <Counter value={form.bedrooms} onChange={(v) => update({ bedrooms: v })} min={1} max={20} />
                   )}
 
                   {step === 2 && (
-                    <>
-                      <div>
-                        <Label>City *</Label>
-                        <Select value={formData.city} onValueChange={v => setFormData({ ...formData, city: v })}>
-                          <SelectTrigger className="mt-2 h-12"><SelectValue placeholder="Select a city" /></SelectTrigger>
-                          <SelectContent className="bg-popover border z-50">
-                            {locationsList.map(loc => (
-                              <SelectItem key={loc.name} value={loc.name}>{loc.name} ({loc.region})</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label>Address *</Label>
-                        <Input placeholder="Street, neighborhood..." className="mt-2 h-12"
-                          value={formData.location} onChange={e => setFormData({ ...formData, location: e.target.value })} />
-                      </div>
-                      <div>
-                        <Label className="mb-2 block">Pin exact location on map</Label>
-                        <LocationPicker value={coords} onChange={setCoords} height="360px" />
-                      </div>
-                    </>
+                    <Counter value={form.bathrooms} onChange={(v) => update({ bathrooms: v })} min={1} max={10} />
                   )}
 
                   {step === 3 && (
-                    <div>
-                      <p className="text-sm text-muted-foreground mb-4">Pick everything your place offers — guests filter by these.</p>
-                      <div className="grid grid-cols-2 gap-3">
-                        {amenitiesList.map(a => {
-                          const checked = formData.amenities.includes(a.name);
-                          return (
-                            <button key={a.name} type="button"
-                              onClick={() => handleAmenityChange(a.name, !checked)}
-                              className={`flex items-center gap-3 p-4 border-2 rounded-xl transition-all text-left ${
-                                checked ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"
-                              }`}>
-                              <Checkbox checked={checked} className="pointer-events-none" />
-                              {a.icon && <img src={a.icon} alt="" className="h-5 w-5 object-contain" />}
-                              <span className="text-sm font-medium flex-1">{a.name}</span>
-                            </button>
-                          );
-                        })}
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="city">City</Label>
+                        <Input
+                          id="city"
+                          autoFocus
+                          className="mt-2 h-12"
+                          placeholder="Start typing a city in Iraq..."
+                          list="iraq-cities"
+                          autoComplete="off"
+                          value={form.city}
+                          onChange={(e) => update({ city: e.target.value })}
+                        />
+                        <datalist id="iraq-cities">
+                          {IRAQ_CITIES.map((c) => (
+                            <option key={c} value={c} />
+                          ))}
+                        </datalist>
+                      </div>
+                      <div>
+                        <Label htmlFor="area">Neighborhood / area <span className="text-muted-foreground text-xs">(optional)</span></Label>
+                        <Input id="area" className="mt-2 h-12" placeholder="e.g. Ankawa"
+                          value={form.area} onChange={(e) => update({ area: e.target.value })} />
                       </div>
                     </div>
                   )}
 
                   {step === 4 && (
-                    <div>
-                      <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden"
-                        onChange={e => handleFilesSelected(e.target.files)} />
-                      <div onClick={() => fileInputRef.current?.click()}
-                        onDragOver={e => e.preventDefault()}
-                        onDrop={e => { e.preventDefault(); handleFilesSelected(e.dataTransfer.files); }}
-                        className="border-2 border-dashed border-border rounded-2xl p-10 text-center hover:border-primary hover:bg-accent/30 transition-all cursor-pointer">
-                        <Upload className="h-12 w-12 mx-auto mb-3 text-primary" />
-                        <p className="font-semibold mb-1">Drag photos here</p>
-                        <p className="text-sm text-muted-foreground">or click to browse · at least 1 photo required</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="first_name">First name</Label>
+                        <Input id="first_name" autoFocus className="mt-2 h-12" value={form.first_name}
+                          onChange={(e) => update({ first_name: e.target.value })} />
                       </div>
-                      {imagePreviews.length > 0 && (
-                        <div className="grid grid-cols-3 gap-3 mt-4">
-                          {imagePreviews.map((p, i) => (
-                            <div key={i} className="relative group rounded-lg overflow-hidden aspect-video">
-                              <img src={p} alt="" className="w-full h-full object-cover" />
-                              <button type="button" onClick={() => removeImage(i)}
-                                className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition">
-                                <X className="h-3 w-3" />
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      )}
+                      <div>
+                        <Label htmlFor="last_name">Surname</Label>
+                        <Input id="last_name" className="mt-2 h-12" value={form.last_name}
+                          onChange={(e) => update({ last_name: e.target.value })} />
+                      </div>
                     </div>
                   )}
 
                   {step === 5 && (
-                    <>
+                    <div className="space-y-4">
                       <div>
-                        <Label>Price per night (IQD) *</Label>
-                        <Input type="number" placeholder="150000" className="mt-2 h-14 text-2xl font-bold"
-                          value={formData.price_per_night}
-                          onChange={e => setFormData({ ...formData, price_per_night: e.target.value })} />
-                        <p className="text-xs text-muted-foreground mt-2">You can change this anytime from your dashboard.</p>
+                        <Label htmlFor="email">Email</Label>
+                        <Input id="email" type="email" autoComplete="email" className="mt-2 h-12"
+                          placeholder="you@example.com"
+                          value={form.email} onChange={(e) => update({ email: e.target.value })} />
                       </div>
-                      <div className="bg-accent/40 rounded-xl p-4 space-y-2 text-sm">
-                        <div className="flex justify-between"><span className="text-muted-foreground">Property</span><span className="font-medium">{formData.title || "—"}</span></div>
-                        <div className="flex justify-between"><span className="text-muted-foreground">Location</span><span className="font-medium">{formData.city || "—"}</span></div>
-                        <div className="flex justify-between"><span className="text-muted-foreground">Photos</span><span className="font-medium">{imageFiles.length}</span></div>
-                        <div className="flex justify-between"><span className="text-muted-foreground">Amenities</span><span className="font-medium">{formData.amenities.length}</span></div>
+                      <div>
+                        <Label htmlFor="phone">Mobile number</Label>
+                        <div className="relative mt-2">
+                          <Phone className="h-4 w-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
+                          <Input id="phone" type="tel" autoComplete="tel" inputMode="tel"
+                            className="h-12 pl-10"
+                            placeholder="+964 7XX XXX XXXX"
+                            value={form.phone} onChange={(e) => update({ phone: e.target.value })} />
+                        </div>
                       </div>
-                    </>
+                      <div>
+                        <Label htmlFor="password">Password</Label>
+                        <div className="relative mt-2">
+                          <Input id="password" type={showPassword ? "text" : "password"} autoComplete="new-password"
+                            className="h-12 pr-11"
+                            placeholder="Create a strong password"
+                            value={form.password} onChange={(e) => update({ password: e.target.value })} />
+                          <button type="button" onClick={() => setShowPassword((s) => !s)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          </button>
+                        </div>
+                        <PasswordStrengthMeter password={form.password} />
+                      </div>
+                    </div>
+                  )}
+
+                  {step === 6 && (
+                    <div className="space-y-4">
+                      <p className="text-sm text-muted-foreground">Here's what we'll set up for you:</p>
+                      <div className="bg-accent/40 rounded-xl p-5 space-y-3 text-sm">
+                        <div className="flex justify-between gap-4">
+                          <span className="text-muted-foreground">Rooms</span>
+                          <span className="font-semibold">{form.bedrooms}</span>
+                        </div>
+                        <div className="flex justify-between gap-4">
+                          <span className="text-muted-foreground">Bathrooms</span>
+                          <span className="font-semibold">{form.bathrooms}</span>
+                        </div>
+                        <div className="flex justify-between gap-4">
+                          <span className="text-muted-foreground">Location</span>
+                          <span className="font-semibold text-right">{form.city}{form.area ? `, ${form.area}` : ""}</span>
+                        </div>
+                        <div className="flex justify-between gap-4">
+                          <span className="text-muted-foreground">Name</span>
+                          <span className="font-semibold">{form.first_name} {form.last_name}</span>
+                        </div>
+                        <div className="flex justify-between gap-4">
+                          <span className="text-muted-foreground">Email</span>
+                          <span className="font-semibold break-all text-right">{form.email}</span>
+                        </div>
+                        <div className="flex justify-between gap-4">
+                          <span className="text-muted-foreground">Mobile</span>
+                          <span className="font-semibold text-right">{form.phone}</span>
+                        </div>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        After submitting, we'll email you a verification link. Once verified, you'll upload your ID and ownership documents.
+                      </p>
+                    </div>
                   )}
                 </div>
 
-                {/* Navigation */}
+                {/* Nav buttons */}
                 <div className="flex items-center justify-between mt-6 gap-3">
-                  <Button variant="outline" onClick={back} disabled={step === 1} className="h-12">
+                  <Button variant="ghost" onClick={back} disabled={step === 1}>
                     <ArrowLeft className="h-4 w-4 mr-2" /> Back
                   </Button>
-                  {step < STEPS.length ? (
-                    <Button onClick={next} disabled={!canAdvance()} className="h-12 px-8">
-                      Next <ArrowRight className="h-4 w-4 ml-2" />
+                  {step < TOTAL_STEPS ? (
+                    <Button size="lg" className="h-12 px-6" onClick={next} disabled={!canAdvance()}>
+                      Continue <ArrowRight className="h-4 w-4 ml-2" />
                     </Button>
                   ) : (
-                    <div className="flex gap-2">
-                      <Button variant="outline" onClick={() => handleSubmit(true)} disabled={loading} className="h-12">
-                        {loading && <Loader2 className="h-4 w-4 animate-spin mr-2" />} Save draft
-                      </Button>
-                      <Button onClick={() => handleSubmit(false)} disabled={loading} className="h-12 px-8">
-                        {(loading || uploading) && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-                        {uploading ? "Uploading..." : "Publish 🎉"}
-                      </Button>
-                    </div>
+                    <Button size="lg" className="h-12 px-6" onClick={handleSubmit} disabled={submitting}>
+                      {submitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                      Create my host account
+                    </Button>
                   )}
                 </div>
               </motion.div>
