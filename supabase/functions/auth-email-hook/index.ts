@@ -36,7 +36,7 @@ const EMAIL_TEMPLATES: Record<string, React.ComponentType<any>> = {
 }
 
 // Configuration
-const SITE_NAME = "kurdistan-home-vibes"
+const SITE_NAME = "Meewano"
 const SENDER_DOMAIN = "notify.meewano.com"
 const ROOT_DOMAIN = "meewano.com"
 const FROM_DOMAIN = "meewano.com" // Domain shown in From address (may be root or sender subdomain)
@@ -46,7 +46,7 @@ const FROM_DOMAIN = "meewano.com" // Domain shown in From address (may be root o
 // The sample email uses a fixed placeholder (RFC 6761 .test TLD) so the Go backend
 // can always find-and-replace it with the actual recipient when sending test emails,
 // even if the project's domain has changed since the template was scaffolded.
-const SAMPLE_PROJECT_URL = "https://kurdistan-home-vibes.lovable.app"
+const SAMPLE_PROJECT_URL = "https://meewano.com"
 const SAMPLE_EMAIL = "user@example.test"
 const SAMPLE_DATA: Record<string, object> = {
   signup: {
@@ -223,15 +223,14 @@ async function handleWebhook(req: Request): Promise<Response> {
     )
   }
 
-  // Supabase sends both `token` (6-digit OTP) and `token_hash` (long URL-safe hash).
-  // Some payloads may mis-map them, so explicitly find the 6-digit numeric string.
+  // Prefer the plain email OTP over any hash/link fields so the app can verify the same code.
   const findOtp = (): string => {
     const candidates = [d.token, d.otp, d.token_new]
     for (const c of candidates) {
-      if (typeof c === 'string' && /^\d{6}$/.test(c)) return c
+      if (typeof c === 'string' && /^\d{6,8}$/.test(c)) return c
     }
     for (const v of Object.values(d)) {
-      if (typeof v === 'string' && /^\d{6}$/.test(v)) return v
+      if (typeof v === 'string' && /^\d{6,8}$/.test(v)) return v
     }
     return typeof d.token === 'string' ? d.token : ''
   }

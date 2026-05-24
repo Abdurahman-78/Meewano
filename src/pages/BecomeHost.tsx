@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import PasswordStrengthMeter, { evaluatePassword } from "@/components/PasswordStrengthMeter";
 
 const TOTAL_STEPS = 6;
+const EMAIL_OTP_LENGTH = 8;
 
 const IRAQ_CITIES = [
   "Baghdad", "Basra", "Mosul", "Erbil", "Sulaymaniyah", "Duhok", "Halabja",
@@ -128,7 +129,7 @@ const BecomeHost = () => {
         email: form.email.trim(),
         password: form.password,
         options: {
-          // No emailRedirectTo → Supabase sends a 6-digit OTP instead of magic link
+          // No emailRedirectTo → sends an email OTP instead of a magic link
           data: {
             first_name: form.first_name.trim(),
             last_name: form.last_name.trim(),
@@ -143,7 +144,7 @@ const BecomeHost = () => {
         },
       });
       if (error) throw error;
-      toast.success("We've sent a 6-digit code to your email");
+      toast.success("We've sent a verification code to your email");
       setSubmitted(true);
     } catch (e: any) {
       toast.error(e.message || "Failed to create account");
@@ -153,7 +154,7 @@ const BecomeHost = () => {
   };
 
   const handleVerifyOtp = async () => {
-    if (otp.length !== 6) return;
+    if (otp.length !== EMAIL_OTP_LENGTH) return;
     setVerifying(true);
     try {
       const { error } = await supabase.auth.verifyOtp({
@@ -208,11 +209,11 @@ const BecomeHost = () => {
                 <MailCheck className="h-10 w-10" />
               </div>
               <h1 className="text-3xl font-bold mb-2">Enter your code</h1>
-              <p className="text-muted-foreground mb-1">We sent a 6-digit code to</p>
+              <p className="text-muted-foreground mb-1">We sent a verification code to</p>
               <p className="font-semibold mb-6 break-all">{form.email}</p>
 
               <div className="flex justify-center mb-6">
-                <InputOTP maxLength={6} value={otp} onChange={setOtp} autoFocus>
+                <InputOTP maxLength={EMAIL_OTP_LENGTH} value={otp} onChange={setOtp} autoFocus>
                   <InputOTPGroup>
                     <InputOTPSlot index={0} />
                     <InputOTPSlot index={1} />
@@ -220,6 +221,8 @@ const BecomeHost = () => {
                     <InputOTPSlot index={3} />
                     <InputOTPSlot index={4} />
                     <InputOTPSlot index={5} />
+                    <InputOTPSlot index={6} />
+                    <InputOTPSlot index={7} />
                   </InputOTPGroup>
                 </InputOTP>
               </div>
@@ -228,7 +231,7 @@ const BecomeHost = () => {
                 size="lg"
                 className="w-full h-12 mb-3"
                 onClick={handleVerifyOtp}
-                disabled={otp.length !== 6 || verifying}
+                disabled={otp.length !== EMAIL_OTP_LENGTH || verifying}
               >
                 {verifying && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                 Verify & continue
@@ -409,7 +412,7 @@ const BecomeHost = () => {
                         </div>
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        After submitting, we'll email you a verification link. Once verified, you'll upload your ID and ownership documents.
+                        After submitting, we'll email you a verification code. Once verified, you'll upload your ID and ownership documents.
                       </p>
                     </div>
                   )}

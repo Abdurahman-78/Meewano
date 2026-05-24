@@ -127,9 +127,9 @@ const codeLabel = {
   margin: '0 0 10px',
 }
 const codeText = {
-  fontSize: '38px',
+  fontSize: '34px',
   fontWeight: 700 as const,
-  letterSpacing: '12px',
+  letterSpacing: '6px',
   color: BRAND,
   margin: '0 0 8px',
   fontFamily: '"SF Mono", Menlo, Consolas, monospace',
