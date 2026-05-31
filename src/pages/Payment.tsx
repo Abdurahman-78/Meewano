@@ -145,6 +145,43 @@ const Payment = () => {
         }
       } catch (waErr) { console.warn("WhatsApp send failed (non-fatal):", waErr); }
 
+      // Send booking confirmation + invoice email to guest (best-effort)
+      try {
+        const { data: guestProf } = await supabase
+          .from("profiles")
+          .select("email, full_name")
+          .eq("id", user.id)
+          .maybeSingle();
+        const recipientEmail = guestProf?.email || user.email;
+        const firstName = (guestProf?.full_name || "").split(" ")[0] || "";
+        if (recipientEmail) {
+          supabase.functions.invoke("send-booking-confirmation", {
+            body: {
+              email: recipientEmail,
+              firstName,
+              booking: {
+                confirmationNumber: `MW-${newBooking.id.slice(0, 8).toUpperCase()}`,
+                propertyName: booking.property_name,
+                propertyLocation: booking.property_location,
+                checkIn: booking.check_in,
+                checkOut: booking.check_out,
+                guests: booking.guests,
+                nights: booking.nights,
+                pricePerNight: booking.price_per_night,
+                subtotal: booking.total_price,
+                cleaningFee,
+                tax,
+                total,
+                currency: "USD",
+                paymentMethod: "Credit/Debit Card",
+              },
+            },
+          }).catch((e) => console.warn("booking email failed", e));
+        }
+      } catch (e) { console.warn("guest profile lookup failed (non-fatal):", e); }
+
+
+
       // Store confirmation data for the next page
       sessionStorage.setItem("confirmedBooking", JSON.stringify({
         bookingId: newBooking.id,

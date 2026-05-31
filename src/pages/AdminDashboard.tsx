@@ -3,7 +3,7 @@ import {
   Users, Home, DollarSign, TrendingUp, Search, MoreVertical, Shield, 
   FileText, Settings, Download, Edit, Trash2, Eye, Check, X, 
   UserPlus, Building, Calendar, AlertTriangle, RefreshCw, Ban, Banknote, Plus,
-  Compass, MapPin, Pencil, Upload, Image
+  Compass, MapPin, Pencil, Upload, Image, Mail
 } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -75,6 +75,7 @@ import AdminBlogManager from "@/components/AdminBlogManager";
 import AdminInsights from "@/components/AdminInsights";
 import AdminHostVerifications from "@/components/AdminHostVerifications";
 import AdminPropertyApprovals from "@/components/AdminPropertyApprovals";
+import AdminNewsletters from "@/components/AdminNewsletters";
 
 const AdminDashboard = () => {
   const { formatPrice } = useCurrency();
@@ -452,6 +453,10 @@ const AdminDashboard = () => {
               <FileText className="h-4 w-4 mr-2" />
               Blog
             </TabsTrigger>
+            <TabsTrigger value="newsletters">
+              <Mail className="h-4 w-4 mr-2" />
+              Newsletters
+            </TabsTrigger>
             <TabsTrigger value="insights">
               <TrendingUp className="h-4 w-4 mr-2" />
               Insights
@@ -464,6 +469,10 @@ const AdminDashboard = () => {
 
           <TabsContent value="blog">
             <AdminBlogManager />
+          </TabsContent>
+
+          <TabsContent value="newsletters">
+            <AdminNewsletters />
           </TabsContent>
 
           <TabsContent value="insights">

@@ -164,6 +164,10 @@ const BecomeHost = () => {
       });
       if (error) throw error;
       toast.success("Email verified!");
+      // Fire welcome email + next-steps (non-blocking)
+      supabase.functions.invoke("send-host-welcome", {
+        body: { email: form.email.trim(), firstName: form.first_name.trim() },
+      }).catch((e) => console.warn("welcome email failed", e));
       navigate("/host/welcome");
     } catch (e: any) {
       toast.error(e.message || "Invalid or expired code");

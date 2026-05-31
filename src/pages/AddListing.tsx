@@ -1,6 +1,8 @@
 import { useState, useRef } from "react";
-import { Upload, Loader2, X } from "lucide-react";
+import { format } from "date-fns";
+import { Calendar as CalendarIcon, Upload, Loader2, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import type { DateRange } from "react-day-picker";
 import AppLayout from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +10,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,6 +20,24 @@ import { useSiteSettings } from "@/hooks/useAdminData";
 import LocationPicker from "@/components/LocationPicker";
 import { optimizeImage } from "@/lib/imageOptimizer";
 import { normalizeAmenities, DEFAULT_AMENITIES } from "@/lib/amenities";
+
+const formatDateRange = (range?: DateRange) => {
+  if (!range?.from) return "Select date range";
+  if (!range.to) return format(range.from, "MMM dd, yyyy");
+  return `${format(range.from, "MMM dd, yyyy")} - ${format(range.to, "MMM dd, yyyy")}`;
+};
+
+const toDateString = (date: Date) => format(date, "yyyy-MM-dd");
+
+const getDatesInRange = (range?: DateRange) => {
+  if (!range?.from) return [];
+  const end = range.to ?? range.from;
+  const dates: string[] = [];
+  for (const date = new Date(range.from); date <= end; date.setDate(date.getDate() + 1)) {
+    dates.push(toDateString(date));
+  }
+  return dates;
+};
 
 const AddListing = () => {
   const { user } = useAuth();
@@ -35,9 +57,16 @@ const AddListing = () => {
     max_guests: "",
     description: "",
     amenities: [] as string[],
+    cleaning_policy: "",
+    welcome_message: "",
+    minimum_nights: "1",
+    check_in_time: "15:00",
+    check_out_time: "11:00",
   });
 
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [availableRange, setAvailableRange] = useState<DateRange | undefined>();
+  const [unavailableRange, setUnavailableRange] = useState<DateRange | undefined>();
 
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
@@ -142,6 +171,14 @@ const AddListing = () => {
         images: imageUrls,
         latitude: coords?.lat ?? null,
         longitude: coords?.lng ?? null,
+        available_from: availableRange?.from ? toDateString(availableRange.from) : null,
+        available_to: availableRange?.to ? toDateString(availableRange.to) : null,
+        blocked_dates: getDatesInRange(unavailableRange),
+        cleaning_policy: formData.cleaning_policy || null,
+        welcome_message: formData.welcome_message || null,
+        minimum_nights: parseInt(formData.minimum_nights) || 1,
+        check_in_time: formData.check_in_time,
+        check_out_time: formData.check_out_time,
       });
 
       if (error) throw error;
@@ -254,6 +291,95 @@ const AddListing = () => {
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <Label htmlFor="min-nights">Minimum nights</Label>
+                    <Input id="min-nights" type="number" min="1" className="mt-2"
+                      value={formData.minimum_nights}
+                      onChange={(e) => setFormData({ ...formData, minimum_nights: e.target.value })} />
+                  </div>
+                  <div>
+                    <Label htmlFor="checkin">Check-in time</Label>
+                    <Input id="checkin" type="time" className="mt-2"
+                      value={formData.check_in_time}
+                      onChange={(e) => setFormData({ ...formData, check_in_time: e.target.value })} />
+                  </div>
+                  <div>
+                    <Label htmlFor="checkout">Check-out time</Label>
+                    <Input id="checkout" type="time" className="mt-2"
+                      value={formData.check_out_time}
+                      onChange={(e) => setFormData({ ...formData, check_out_time: e.target.value })} />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Available date range</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" className="w-full justify-start text-left font-normal">
+                          <CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
+                          <span className={!availableRange?.from ? "text-muted-foreground" : ""}>
+                            {formatDateRange(availableRange)}
+                          </span>
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="range"
+                          selected={availableRange}
+                          onSelect={setAvailableRange}
+                          numberOfMonths={2}
+                          className="p-3 pointer-events-auto"
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <p className="text-xs text-muted-foreground">Optional bookable season for this listing.</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Not available date range</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" className="w-full justify-start text-left font-normal">
+                          <CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
+                          <span className={!unavailableRange?.from ? "text-muted-foreground" : ""}>
+                            {formatDateRange(unavailableRange)}
+                          </span>
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="range"
+                          selected={unavailableRange}
+                          onSelect={setUnavailableRange}
+                          numberOfMonths={2}
+                          className="p-3 pointer-events-auto"
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <p className="text-xs text-muted-foreground">Optional dates guests cannot book.</p>
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="cleaning">Cleaning policy</Label>
+                  <Textarea id="cleaning"
+                    placeholder="e.g. Professional cleaning between every stay. Guests are asked to leave dishes in the sink and bag any trash."
+                    className="mt-2 min-h-[90px]"
+                    value={formData.cleaning_policy}
+                    onChange={(e) => setFormData({ ...formData, cleaning_policy: e.target.value })} />
+                </div>
+
+                <div>
+                  <Label htmlFor="welcome">Welcome message to guests</Label>
+                  <Textarea id="welcome"
+                    placeholder="Sent automatically when a booking is confirmed. Include WiFi tips, check-in instructions, local recommendations…"
+                    className="mt-2 min-h-[90px]"
+                    value={formData.welcome_message}
+                    onChange={(e) => setFormData({ ...formData, welcome_message: e.target.value })} />
                 </div>
               </div>
 

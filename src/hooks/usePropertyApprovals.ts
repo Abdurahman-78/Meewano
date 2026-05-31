@@ -76,7 +76,7 @@ export const useReviewProperty = () => {
         reason: reason || null,
       });
 
-      // Notify the host
+      // Notify the host (in-app)
       await supabase.from("notifications").insert({
         user_id: row.host_id,
         title: action === "approve"
@@ -88,6 +88,18 @@ export const useReviewProperty = () => {
         type: action === "approve" ? "success" : "warning",
         link: `/host/edit-listing/${id}`,
       });
+
+      // Send email to host
+      try {
+        const variant = action === "approve"
+          ? (isEdits ? "changes_approved" : "approved")
+          : (isEdits ? "changes_rejected" : "rejected");
+        await supabase.functions.invoke("send-property-review", {
+          body: { propertyId: id, variant, reason: reason || "" },
+        });
+      } catch (e) {
+        console.error("send-property-review failed", e);
+      }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["pending-properties"] });

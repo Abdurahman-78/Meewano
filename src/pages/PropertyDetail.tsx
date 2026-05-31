@@ -213,6 +213,22 @@ const PropertyDetail = () => {
     return bookedDates.some((d) => new Date(d).setHours(0, 0, 0, 0) === t);
   };
 
+  const isDateOutsideAvailability = (date: Date) => {
+    const availableFrom = (property as any)?.available_from ? new Date((property as any).available_from) : null;
+    const availableTo = (property as any)?.available_to ? new Date((property as any).available_to) : null;
+    const day = new Date(date).setHours(0, 0, 0, 0);
+    return !!(
+      (availableFrom && day < availableFrom.setHours(0, 0, 0, 0)) ||
+      (availableTo && day > availableTo.setHours(0, 0, 0, 0))
+    );
+  };
+
+  const isDateBlocked = (date: Date) => {
+    const blocked = (property as any)?.blocked_dates as string[] | undefined;
+    const day = new Date(date).setHours(0, 0, 0, 0);
+    return !!blocked?.some((d) => new Date(d).setHours(0, 0, 0, 0) === day);
+  };
+
   const calculateTotal = () => {
     if (!checkIn || !checkOut || !property) return 0;
     const start = new Date(checkIn);
@@ -293,6 +309,11 @@ const PropertyDetail = () => {
 
     if (nights <= 0) {
       toast.error(t("checkOutAfterCheckIn"));
+      return;
+    }
+
+    if (isDateOutsideAvailability(start) || isDateOutsideAvailability(end)) {
+      toast.error("Selected dates are outside this property's available range");
       return;
     }
 
@@ -805,7 +826,12 @@ const PropertyDetail = () => {
                             if (range?.to) setCheckOut(format(range.to, "yyyy-MM-dd"));
                             else setCheckOut("");
                           }}
-                          disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0)) || isDateBooked(date)}
+                          disabled={(date) =>
+                            date < new Date(new Date().setHours(0, 0, 0, 0)) ||
+                            isDateBooked(date) ||
+                            isDateBlocked(date) ||
+                            isDateOutsideAvailability(date)
+                          }
                           modifiers={{ booked: bookedDates }}
                           modifiersClassNames={{
                             booked: "line-through text-destructive bg-destructive/10 rounded-md",

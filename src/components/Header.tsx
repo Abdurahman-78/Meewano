@@ -14,6 +14,7 @@ import { useCurrency } from "@/contexts/CurrencyContext";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useMyHostVerification } from "@/hooks/useHostVerification";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import NotificationBell from "@/components/NotificationBell";
 import MobileMenu from "@/components/MobileMenu";
@@ -24,6 +25,9 @@ const Header = () => {
   const { t } = useTranslation();
   const { user, signOut } = useAuth();
   const { isAdmin } = useUserRole();
+  const { data: hostVerification } = useMyHostVerification();
+  const isVerifiedHost = hostVerification?.status === "approved";
+  const hostCtaTo = isVerifiedHost ? "/host/add-listing" : "/become-host";
   const navigate = useNavigate();
 
   const handleSignOut = async () => {
@@ -77,10 +81,10 @@ const Header = () => {
         </div>
         
         <div className="flex items-center gap-1 md:gap-3">
-          <Link to="/become-host" className="hidden md:block">
+          <Link to={hostCtaTo} className="hidden md:block">
             <Button variant="ghost" size="sm" className="rounded-full font-semibold hover:bg-accent">
               <Home className="h-4 w-4 mr-1.5" />
-              List your property
+              {isVerifiedHost ? "List your property" : "List your property"}
             </Button>
           </Link>
           <DropdownMenu>
@@ -116,7 +120,7 @@ const Header = () => {
 
           {user && <NotificationBell />}
           {user ? (
-            <Link to="/auth" className="hidden md:block">
+            <Link to="/guest" className="hidden md:block">
               <Button variant="ghost" size="sm" className="rounded-full">
                 {user.email}
               </Button>

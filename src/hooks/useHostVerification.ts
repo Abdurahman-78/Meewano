@@ -84,10 +84,11 @@ export const useReviewHostVerification = () => {
     mutationFn: async ({ id, status, reason }: { id: string; status: "approved" | "rejected"; reason?: string }) => {
       const { data: row, error: fetchErr } = await supabase
         .from("host_verifications")
-        .select("user_id")
+        .select("user_id, status")
         .eq("id", id)
         .single();
       if (fetchErr) throw fetchErr;
+      const wasApproved = row.status === "approved";
 
       const { error } = await supabase
         .from("host_verifications")
@@ -99,6 +100,28 @@ export const useReviewHostVerification = () => {
         })
         .eq("id", id);
       if (error) throw error;
+
+      // Send approval email (only on transition to approved)
+      if (status === "approved" && !wasApproved) {
+        try {
+          await supabase.functions.invoke("send-host-approved", {
+            body: { userId: row.user_id },
+          });
+        } catch (e) {
+          console.error("send-host-approved failed", e);
+        }
+      }
+
+      // Send rejection email (only on transition to rejected)
+      if (status === "rejected" && row.status !== "rejected") {
+        try {
+          await supabase.functions.invoke("send-host-rejected", {
+            body: { userId: row.user_id, reason: reason || "" },
+          });
+        } catch (e) {
+          console.error("send-host-rejected failed", e);
+        }
+      }
 
       // Notify the host
       await supabase.from("notifications").insert({

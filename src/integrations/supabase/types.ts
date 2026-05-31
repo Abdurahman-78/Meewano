@@ -535,6 +535,45 @@ export type Database = {
           },
         ]
       }
+      newsletters: {
+        Row: {
+          content: string
+          created_at: string
+          created_by: string | null
+          id: string
+          preview_text: string | null
+          sent_at: string | null
+          sent_count: number
+          status: string
+          subject: string
+          updated_at: string
+        }
+        Insert: {
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          preview_text?: string | null
+          sent_at?: string | null
+          sent_count?: number
+          status?: string
+          subject: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          preview_text?: string | null
+          sent_at?: string | null
+          sent_count?: number
+          status?: string
+          subject?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string | null
@@ -612,12 +651,17 @@ export type Database = {
           is_blocked: boolean | null
           is_host: boolean | null
           is_verified: boolean | null
+          newsletter_opt_in: boolean
+          payout_details: Json | null
+          payout_method: string | null
           phone: string | null
           phone_verified: boolean
           preferred_currency: string | null
           preferred_language: string | null
+          terms_accepted_at: string | null
           updated_at: string
           username: string | null
+          welcome_email_sent_at: string | null
         }
         Insert: {
           avatar_url?: string | null
@@ -629,12 +673,17 @@ export type Database = {
           is_blocked?: boolean | null
           is_host?: boolean | null
           is_verified?: boolean | null
+          newsletter_opt_in?: boolean
+          payout_details?: Json | null
+          payout_method?: string | null
           phone?: string | null
           phone_verified?: boolean
           preferred_currency?: string | null
           preferred_language?: string | null
+          terms_accepted_at?: string | null
           updated_at?: string
           username?: string | null
+          welcome_email_sent_at?: string | null
         }
         Update: {
           avatar_url?: string | null
@@ -646,12 +695,17 @@ export type Database = {
           is_blocked?: boolean | null
           is_host?: boolean | null
           is_verified?: boolean | null
+          newsletter_opt_in?: boolean
+          payout_details?: Json | null
+          payout_method?: string | null
           phone?: string | null
           phone_verified?: boolean
           preferred_currency?: string | null
           preferred_language?: string | null
+          terms_accepted_at?: string | null
           updated_at?: string
           username?: string | null
+          welcome_email_sent_at?: string | null
         }
         Relationships: []
       }
@@ -659,10 +713,15 @@ export type Database = {
         Row: {
           amenities: string[] | null
           approval_status: string
+          available_from: string | null
+          available_to: string | null
           bathrooms: number | null
           bedrooms: number | null
           blocked_dates: string[] | null
+          check_in_time: string | null
+          check_out_time: string | null
           city: string
+          cleaning_policy: string | null
           created_at: string
           currency: string | null
           description: string | null
@@ -679,6 +738,7 @@ export type Database = {
           location_ku: string | null
           longitude: number | null
           max_guests: number | null
+          minimum_nights: number | null
           pending_changes: Json | null
           price_per_night: number
           rating: number | null
@@ -690,14 +750,20 @@ export type Database = {
           title_ar: string | null
           title_ku: string | null
           updated_at: string
+          welcome_message: string | null
         }
         Insert: {
           amenities?: string[] | null
           approval_status?: string
+          available_from?: string | null
+          available_to?: string | null
           bathrooms?: number | null
           bedrooms?: number | null
           blocked_dates?: string[] | null
+          check_in_time?: string | null
+          check_out_time?: string | null
           city: string
+          cleaning_policy?: string | null
           created_at?: string
           currency?: string | null
           description?: string | null
@@ -714,6 +780,7 @@ export type Database = {
           location_ku?: string | null
           longitude?: number | null
           max_guests?: number | null
+          minimum_nights?: number | null
           pending_changes?: Json | null
           price_per_night: number
           rating?: number | null
@@ -725,14 +792,20 @@ export type Database = {
           title_ar?: string | null
           title_ku?: string | null
           updated_at?: string
+          welcome_message?: string | null
         }
         Update: {
           amenities?: string[] | null
           approval_status?: string
+          available_from?: string | null
+          available_to?: string | null
           bathrooms?: number | null
           bedrooms?: number | null
           blocked_dates?: string[] | null
+          check_in_time?: string | null
+          check_out_time?: string | null
           city?: string
+          cleaning_policy?: string | null
           created_at?: string
           currency?: string | null
           description?: string | null
@@ -749,6 +822,7 @@ export type Database = {
           location_ku?: string | null
           longitude?: number | null
           max_guests?: number | null
+          minimum_nights?: number | null
           pending_changes?: Json | null
           price_per_night?: number
           rating?: number | null
@@ -760,6 +834,7 @@ export type Database = {
           title_ar?: string | null
           title_ku?: string | null
           updated_at?: string
+          welcome_message?: string | null
         }
         Relationships: []
       }

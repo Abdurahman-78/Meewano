@@ -10,6 +10,8 @@ import AppLayout from "@/components/AppLayout";
 import { useTranslation } from "@/hooks/useTranslation";
 import { ArrowLeft } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Link } from "react-router-dom";
 
 type AuthMode = "login" | "signup" | "forgot";
 
@@ -21,6 +23,8 @@ const Auth = () => {
   const [username, setUsername] = useState("");
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [agreeTerms, setAgreeTerms] = useState(false);
+  const [agreeNewsletter, setAgreeNewsletter] = useState(false);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const redirectTo = searchParams.get("redirect") || "/";
@@ -67,6 +71,9 @@ const Auth = () => {
         if (!username.trim() || !fullName.trim()) {
           throw new Error("Please fill in all fields");
         }
+        if (!agreeTerms) {
+          throw new Error("Please agree to the Terms & Privacy Policy");
+        }
 
         const { data: existing } = await supabase
           .from("profiles")
@@ -98,6 +105,8 @@ const Auth = () => {
             .update({
               full_name: fullName.trim(),
               username: username.trim().toLowerCase(),
+              newsletter_opt_in: agreeNewsletter,
+              terms_accepted_at: new Date().toISOString(),
             })
             .eq("id", signUpData.user.id);
         }
@@ -273,6 +282,33 @@ const Auth = () => {
                   >
                     Forgot password?
                   </button>
+                </div>
+              )}
+              {mode === "signup" && (
+                <div className="space-y-3 pt-1">
+                  <label className="flex items-start gap-2 cursor-pointer">
+                    <Checkbox
+                      checked={agreeTerms}
+                      onCheckedChange={(c) => setAgreeTerms(c === true)}
+                      className="mt-0.5"
+                    />
+                    <span className="text-xs text-muted-foreground leading-snug">
+                      I agree to the{" "}
+                      <Link to="/terms" target="_blank" className="text-primary hover:underline">Terms of Service</Link>
+                      {" "}and{" "}
+                      <Link to="/privacy" target="_blank" className="text-primary hover:underline">Privacy Policy</Link>.
+                    </span>
+                  </label>
+                  <label className="flex items-start gap-2 cursor-pointer">
+                    <Checkbox
+                      checked={agreeNewsletter}
+                      onCheckedChange={(c) => setAgreeNewsletter(c === true)}
+                      className="mt-0.5"
+                    />
+                    <span className="text-xs text-muted-foreground leading-snug">
+                      Send me occasional updates, travel tips and special offers (you can unsubscribe anytime).
+                    </span>
+                  </label>
                 </div>
               )}
               <Button type="submit" className="w-full" disabled={loading}>

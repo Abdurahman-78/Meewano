@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { createNotification } from "@/hooks/useNotifications";
 import { useMyHostVerification } from "@/hooks/useHostVerification";
+import HostPayoutCard from "@/components/HostPayoutCard";
 
 interface Property {
   id: string;
@@ -349,6 +350,10 @@ const HostDashboard = () => {
               </Button>
             </CardContent>
           </Card>
+        </div>
+
+        <div className="mt-6">
+          <HostPayoutCard />
         </div>
       </main>
     </AppLayout>
