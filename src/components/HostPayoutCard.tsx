@@ -9,7 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-type PayoutMethod = "" | "bank_transfer" | "fastpay" | "zaincash" | "qi_card" | "cash";
+type PayoutMethod = "" | "fastpay" | "zaincash" | "qi_card" | "fib";
 
 const HostPayoutCard = () => {
   const { user } = useAuth();
@@ -62,8 +62,7 @@ const HostPayoutCard = () => {
     }
   };
 
-  const needsBank = method === "bank_transfer";
-  const needsPhone = method === "fastpay" || method === "zaincash";
+  const needsPhone = method === "fastpay" || method === "zaincash" || method === "fib";
   const configured = !!method;
 
   return (
@@ -88,36 +87,21 @@ const HostPayoutCard = () => {
                   <SelectValue placeholder="Select a method" />
                 </SelectTrigger>
                 <SelectContent className="bg-popover border border-border z-50">
-                  <SelectItem value="bank_transfer">Bank transfer</SelectItem>
                   <SelectItem value="fastpay">FastPay</SelectItem>
                   <SelectItem value="zaincash">ZainCash</SelectItem>
                   <SelectItem value="qi_card">Qi Card</SelectItem>
-                  <SelectItem value="cash">Cash at check-in</SelectItem>
+                  <SelectItem value="fib">FIB</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
-            {method && method !== "cash" && (
+            {method && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
                   <Label htmlFor="account-name">Account holder name</Label>
                   <Input id="account-name" className="mt-2" value={accountName}
                     onChange={(e) => setAccountName(e.target.value)} />
                 </div>
-                {needsBank && (
-                  <>
-                    <div>
-                      <Label htmlFor="bank-name">Bank name</Label>
-                      <Input id="bank-name" className="mt-2" value={bankName}
-                        onChange={(e) => setBankName(e.target.value)} />
-                    </div>
-                    <div className="md:col-span-2">
-                      <Label htmlFor="account-number">IBAN / Account number</Label>
-                      <Input id="account-number" className="mt-2" value={accountNumber}
-                        onChange={(e) => setAccountNumber(e.target.value)} />
-                    </div>
-                  </>
-                )}
                 {needsPhone && (
                   <div className="md:col-span-2">
                     <Label htmlFor="payout-phone">Wallet phone number</Label>

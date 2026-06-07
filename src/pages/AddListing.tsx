@@ -1,6 +1,7 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { format } from "date-fns";
-import { Calendar as CalendarIcon, Upload, Loader2, X } from "lucide-react";
+import { Calendar as CalendarIcon, Upload, Loader2, X, FileCheck2, CheckCircle2 } from "lucide-react";
+import ListingStepIndicator from "@/components/ListingStepIndicator";
 import { useNavigate } from "react-router-dom";
 import type { DateRange } from "react-day-picker";
 import AppLayout from "@/components/AppLayout";
@@ -39,21 +40,32 @@ const getDatesInRange = (range?: DateRange) => {
   return dates;
 };
 
+const draftKey = (uid?: string) => `meewano:add-listing-draft:${uid ?? "anon"}:v1`;
+
 const AddListing = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [showErrors, setShowErrors] = useState(false);
   const { data: siteSettings } = useSiteSettings();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
-  const [formData, setFormData] = useState({
+
+  const meta = (user?.user_metadata ?? {}) as Record<string, any>;
+  const intendedLat = typeof meta.intended_latitude === "number" ? meta.intended_latitude : null;
+  const intendedLng = typeof meta.intended_longitude === "number" ? meta.intended_longitude : null;
+  const intendedArea = typeof meta.intended_area === "string" ? meta.intended_area : "";
+  const intendedCity = typeof meta.intended_city === "string" ? meta.intended_city : "";
+  const intendedBedrooms = meta.intended_bedrooms != null ? String(meta.intended_bedrooms) : "";
+  const intendedBathrooms = meta.intended_bathrooms != null ? String(meta.intended_bathrooms) : "";
+
+  const defaultForm = {
     title: "",
-    location: "",
-    city: "",
+    location: intendedArea,
+    city: intendedCity,
     price_per_night: "",
-    bedrooms: "",
-    bathrooms: "",
+    bedrooms: intendedBedrooms,
+    bathrooms: intendedBathrooms,
     max_guests: "",
     description: "",
     amenities: [] as string[],
@@ -62,14 +74,70 @@ const AddListing = () => {
     minimum_nights: "1",
     check_in_time: "15:00",
     check_out_time: "11:00",
-  });
+  };
 
-  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
-  const [availableRange, setAvailableRange] = useState<DateRange | undefined>();
-  const [unavailableRange, setUnavailableRange] = useState<DateRange | undefined>();
+  const defaultCoords = intendedLat != null && intendedLng != null
+    ? { lat: intendedLat, lng: intendedLng }
+    : null;
+
+  const reviveRange = (r?: { from?: string; to?: string }): DateRange | undefined =>
+    r?.from ? { from: new Date(r.from), to: r.to ? new Date(r.to) : undefined } : undefined;
+
+  const [formData, setFormData] = useState({ ...defaultForm });
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(defaultCoords);
+  const [availableRange, setAvailableRange] = useState<DateRange | undefined>(undefined);
+  const [unavailableRange, setUnavailableRange] = useState<DateRange | undefined>(undefined);
+  const [draftLoaded, setDraftLoaded] = useState(false);
+
+  // Restore saved draft once we know the user id (avoids reading 'anon' key on first render)
+  useEffect(() => {
+    if (draftLoaded) return;
+    if (!user?.id) return;
+    try {
+      const raw = localStorage.getItem(draftKey(user.id));
+      if (raw) {
+        const restored = JSON.parse(raw) as {
+          formData?: typeof defaultForm;
+          coords?: { lat: number; lng: number } | null;
+          availableRange?: { from?: string; to?: string };
+          unavailableRange?: { from?: string; to?: string };
+        };
+        if (restored.formData) setFormData((f) => ({ ...f, ...restored.formData }));
+        if (restored.coords) setCoords(restored.coords);
+        if (restored.availableRange) setAvailableRange(reviveRange(restored.availableRange));
+        if (restored.unavailableRange) setUnavailableRange(reviveRange(restored.unavailableRange));
+      }
+    } catch { /* ignore */ }
+    setDraftLoaded(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
+
+  // Persist draft on every change (only after initial restore attempt to avoid wiping it)
+  useEffect(() => {
+    if (!draftLoaded || !user?.id) return;
+    try {
+      const serializeRange = (r?: DateRange) =>
+        r?.from ? { from: r.from.toISOString(), to: r.to?.toISOString() } : undefined;
+      localStorage.setItem(
+        draftKey(user.id),
+        JSON.stringify({
+          formData,
+          coords,
+          availableRange: serializeRange(availableRange),
+          unavailableRange: serializeRange(unavailableRange),
+        })
+      );
+    } catch { /* ignore quota errors */ }
+  }, [draftLoaded, user?.id, formData, coords, availableRange, unavailableRange]);
+
+
 
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [ownershipFile, setOwnershipFile] = useState<File | null>(null);
+  const ownershipInputRef = useRef<HTMLInputElement>(null);
+  const [floorPlanFile, setFloorPlanFile] = useState<File | null>(null);
+  const floorPlanInputRef = useRef<HTMLInputElement>(null);
 
   // Normalize siteSettings to a key-value map safely
   const settingsMap: Record<string, any> = Array.isArray(siteSettings)
@@ -144,16 +212,45 @@ const AddListing = () => {
     return urls;
   };
 
+  const uploadOwnershipDoc = async (): Promise<string | null> => {
+    if (!user || !ownershipFile) return null;
+    const ext = (ownershipFile.name.split(".").pop() || "bin").toLowerCase();
+    const path = `${user.id}/ownership-${Date.now()}.${ext}`;
+    const { error } = await supabase.storage
+      .from("host-documents")
+      .upload(path, ownershipFile, { contentType: ownershipFile.type, upsert: true });
+    if (error) throw error;
+    return path;
+  };
+
+  const uploadFloorPlan = async (): Promise<string | null> => {
+    if (!user || !floorPlanFile) return null;
+    const file = floorPlanFile.type.startsWith("image/") ? await optimizeImage(floorPlanFile) : floorPlanFile;
+    const ext = (file.name.split(".").pop() || "webp").toLowerCase();
+    const path = `${user.id}/floorplan-${Date.now()}.${ext}`;
+    const { error } = await supabase.storage
+      .from("property-images")
+      .upload(path, file, { contentType: file.type, upsert: true });
+    if (error) throw error;
+    const { data: urlData } = supabase.storage.from("property-images").getPublicUrl(path);
+    return urlData.publicUrl;
+  };
+
   const handleSubmit = async (isDraft: boolean = false) => {
     if (!user) { toast.error("Please log in to add a listing"); navigate("/auth"); return; }
-    if (!formData.title || !formData.location || !formData.city || !formData.price_per_night) {
-      toast.error("Please fill in all required fields"); return;
+    if (!formData.title || !formData.location || !formData.city || !formData.price_per_night || (!isDraft && !ownershipFile)) {
+      setShowErrors(true);
+      toast.error("Please fill in all required fields and upload proof of ownership");
+      return;
     }
+    setShowErrors(false);
 
     setLoading(true);
     try {
       setUploading(true);
       const imageUrls = await uploadImages();
+      const ownershipPath = await uploadOwnershipDoc();
+      const floorPlanUrl = await uploadFloorPlan();
       setUploading(false);
 
       const { error } = await supabase.from("properties").insert({
@@ -179,9 +276,12 @@ const AddListing = () => {
         minimum_nights: parseInt(formData.minimum_nights) || 1,
         check_in_time: formData.check_in_time,
         check_out_time: formData.check_out_time,
+        ownership_document_url: ownershipPath,
+        floor_plan_url: floorPlanUrl,
       });
 
       if (error) throw error;
+      try { localStorage.removeItem(draftKey(user?.id)); } catch { /* ignore */ }
       toast.success(isDraft ? "Property saved as draft" : "Submitted for admin review");
       navigate("/host");
     } catch (error: any) {
@@ -203,6 +303,8 @@ const AddListing = () => {
             <p className="text-muted-foreground">Create a new property listing for guests to book</p>
           </div>
 
+          <ListingStepIndicator />
+
           <Card>
             <CardHeader>
               <CardTitle>Property Details</CardTitle>
@@ -211,11 +313,11 @@ const AddListing = () => {
               {/* Basic Info */}
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="property-name">Property Name *</Label>
+                  <Label htmlFor="property-name" className={showErrors && !formData.title ? "text-destructive" : ""}>Property Name *</Label>
                   <Input 
                     id="property-name" 
                     placeholder="e.g., Modern Mountain Villa" 
-                    className="mt-2"
+                    className={`mt-2 ${showErrors && !formData.title ? "border-destructive ring-1 ring-destructive" : ""}`}
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                   />
@@ -223,12 +325,12 @@ const AddListing = () => {
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="city">City *</Label>
+                    <Label htmlFor="city" className={showErrors && !formData.city ? "text-destructive" : ""}>City *</Label>
                     <Select 
                       value={formData.city} 
                       onValueChange={(value) => setFormData({ ...formData, city: value })}
                     >
-                      <SelectTrigger className="mt-2">
+                      <SelectTrigger className={`mt-2 ${showErrors && !formData.city ? "border-destructive ring-1 ring-destructive" : ""}`}>
                         <SelectValue placeholder="Select a city" />
                       </SelectTrigger>
                       <SelectContent className="bg-popover border border-border z-50">
@@ -241,11 +343,11 @@ const AddListing = () => {
                     </Select>
                   </div>
                   <div>
-                    <Label htmlFor="location">Address/Location *</Label>
+                    <Label htmlFor="location" className={showErrors && !formData.location ? "text-destructive" : ""}>Address/Location *</Label>
                     <Input 
                       id="location" 
                       placeholder="e.g., Dream City, Street 10" 
-                      className="mt-2"
+                      className={`mt-2 ${showErrors && !formData.location ? "border-destructive ring-1 ring-destructive" : ""}`}
                       value={formData.location}
                       onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                     />
@@ -253,12 +355,12 @@ const AddListing = () => {
                 </div>
 
                 <div>
-                  <Label htmlFor="price">Price per Night (IQD) *</Label>
+                  <Label htmlFor="price" className={showErrors && !formData.price_per_night ? "text-destructive" : ""}>Price per Night (IQD) *</Label>
                   <Input 
                     id="price" 
                     type="number" 
                     placeholder="150" 
-                    className="mt-2"
+                    className={`mt-2 ${showErrors && !formData.price_per_night ? "border-destructive ring-1 ring-destructive" : ""}`}
                     value={formData.price_per_night}
                     onChange={(e) => setFormData({ ...formData, price_per_night: e.target.value })}
                   />
@@ -441,7 +543,10 @@ const AddListing = () => {
                     Drag and drop images here, or click to browse
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Recommended: High-quality images (min 1200x800px)
+                    Required: minimum 1200 x 800 px · JPG or PNG · max 10 MB each
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Images are resized up to 1920 px wide for fast loading
                   </p>
                 </div>
 
@@ -462,6 +567,92 @@ const AddListing = () => {
                   </div>
                 )}
               </div>
+
+              {/* Ownership document */}
+              <div>
+                <Label className={`mb-1 block ${showErrors && !ownershipFile ? "text-destructive" : ""}`}>Proof of property ownership *</Label>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Title deed, rental agreement, or utility bill in your name. Required for admin approval.
+                </p>
+                <input
+                  ref={ownershipInputRef}
+                  type="file"
+                  accept="image/*,.pdf"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) setOwnershipFile(f);
+                  }}
+                />
+                <div
+                  onClick={() => ownershipInputRef.current?.click()}
+                  className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-colors ${
+                    ownershipFile ? "border-green-500/40 bg-green-500/5" : showErrors ? "border-destructive bg-destructive/5" : "border-border hover:border-primary"
+                  }`}
+                >
+                  {ownershipFile ? (
+                    <>
+                      <CheckCircle2 className="h-8 w-8 mx-auto mb-2 text-green-600" />
+                      <p className="text-sm font-medium">{ownershipFile.name}</p>
+                      <p className="text-xs text-muted-foreground mt-1">Click to replace</p>
+                    </>
+                  ) : (
+                    <>
+                      <FileCheck2 className={`h-8 w-8 mx-auto mb-2 ${showErrors ? "text-destructive" : "text-muted-foreground"}`} />
+                      <p className={`text-sm ${showErrors ? "text-destructive" : "text-muted-foreground"}`}>Click to upload ownership document</p>
+                      <p className="text-xs text-muted-foreground mt-1">JPG, PNG or PDF · max 10MB</p>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Floor plan (optional) */}
+              <div>
+                <Label className="mb-1 block">Floor plan <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Upload a floor plan image so guests can preview the layout. Recommended 1200×900px, JPG or PNG, max 5MB.
+                </p>
+                <input
+                  ref={floorPlanInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (!f) return;
+                    if (f.size > 5 * 1024 * 1024) { toast.error("Floor plan must be under 5MB"); return; }
+                    setFloorPlanFile(f);
+                  }}
+                />
+                <div
+                  onClick={() => floorPlanInputRef.current?.click()}
+                  className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-colors ${
+                    floorPlanFile ? "border-green-500/40 bg-green-500/5" : "border-border hover:border-primary"
+                  }`}
+                >
+                  {floorPlanFile ? (
+                    <>
+                      <CheckCircle2 className="h-8 w-8 mx-auto mb-2 text-green-600" />
+                      <p className="text-sm font-medium">{floorPlanFile.name}</p>
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); setFloorPlanFile(null); }}
+                        className="text-xs text-destructive mt-1 underline"
+                      >
+                        Remove
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                      <p className="text-sm text-muted-foreground">Click to upload floor plan</p>
+                      <p className="text-xs text-muted-foreground mt-1">Optional · JPG or PNG · max 5MB</p>
+                    </>
+                  )}
+                </div>
+              </div>
+
+
 
               {/* Submit */}
               <div className="flex gap-3 pt-4">

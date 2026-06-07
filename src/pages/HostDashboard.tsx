@@ -188,6 +188,22 @@ const HostDashboard = () => {
           </Alert>
         )}
 
+        {/* Continue your listing prompt — shown after verification when no property yet */}
+        {!vLoading && isVerified && properties.length === 0 && (
+          <Alert className="mb-6 border-primary/40 bg-primary/5">
+            <CheckCircle2 className="h-4 w-4 text-primary" />
+            <AlertTitle>You're verified — let's finish your first listing</AlertTitle>
+            <AlertDescription className="flex items-center justify-between gap-4 flex-wrap">
+              <span>
+                We've pre-filled the details you shared when you signed up. Just add photos, a title, and a price to go live.
+              </span>
+              <Button size="sm" onClick={() => navigate("/host/add-listing")}>
+                Continue your listing
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
           <div>
@@ -309,7 +325,8 @@ const HostDashboard = () => {
                   return (
                     <div
                       key={property.id}
-                      className="flex items-center justify-between p-3 rounded-lg border border-border"
+                      className="flex items-center justify-between p-3 rounded-lg border border-border cursor-pointer hover:bg-accent transition-colors"
+                      onClick={() => navigate(`/property/${property.id}`)}
                     >
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
@@ -324,10 +341,7 @@ const HostDashboard = () => {
                           <p className="text-[11px] text-destructive mt-1">Reason: {property.rejection_reason}</p>
                         )}
                       </div>
-                      <div className="flex gap-1">
-                        <Button size="icon" variant="ghost" onClick={() => navigate(`/property/${property.id}`)}>
-                          <Eye className="h-4 w-4" />
-                        </Button>
+                      <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
                         <Button size="icon" variant="ghost" onClick={() => navigate(`/host/edit-listing/${property.id}`)}>
                           <Edit className="h-4 w-4" />
                         </Button>
@@ -355,6 +369,24 @@ const HostDashboard = () => {
         <div className="mt-6">
           <HostPayoutCard />
         </div>
+
+        <Card className="mt-6 border-destructive/40">
+          <CardHeader>
+            <CardTitle className="text-base text-destructive">Danger zone</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground mb-3">
+              Permanently delete your host account and all properties, bookings and messages tied to it.
+            </p>
+            <Button
+              variant="destructive"
+              className="h-11"
+              onClick={() => navigate("/account-settings")}
+            >
+              Delete account
+            </Button>
+          </CardContent>
+        </Card>
       </main>
     </AppLayout>
   );

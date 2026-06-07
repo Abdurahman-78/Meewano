@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
+import BookingStepIndicator from "@/components/BookingStepIndicator";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -152,6 +153,11 @@ const Payment = () => {
           .select("email, full_name")
           .eq("id", user.id)
           .maybeSingle();
+        const { data: propExtra } = await supabase
+          .from("properties")
+          .select("welcome_message, cleaning_policy")
+          .eq("id", booking.property_id)
+          .maybeSingle();
         const recipientEmail = guestProf?.email || user.email;
         const firstName = (guestProf?.full_name || "").split(" ")[0] || "";
         if (recipientEmail) {
@@ -172,13 +178,44 @@ const Payment = () => {
                 cleaningFee,
                 tax,
                 total,
-                currency: "USD",
+                currency: "IQD",
                 paymentMethod: "Credit/Debit Card",
+                welcomeMessage: propExtra?.welcome_message || "",
+                cleaningPolicy: propExtra?.cleaning_policy || "",
               },
             },
           }).catch((e) => console.warn("booking email failed", e));
         }
-      } catch (e) { console.warn("guest profile lookup failed (non-fatal):", e); }
+
+        // Send email notification to the HOST about the new booking request
+        const { data: hostProf } = await supabase
+          .from("profiles")
+          .select("email, full_name")
+          .eq("id", booking.host_id)
+          .maybeSingle();
+        const hostEmail = hostProf?.email;
+        if (hostEmail) {
+          supabase.functions.invoke("send-host-booking-notification", {
+            body: {
+              email: hostEmail,
+              booking: {
+                hostName: hostProf?.full_name || "Host",
+                guestName: guestProf?.full_name || "A guest",
+                propertyName: booking.property_name,
+                propertyLocation: booking.property_location,
+                checkIn: booking.check_in,
+                checkOut: booking.check_out,
+                guests: booking.guests,
+                nights: booking.nights,
+                totalPrice: total,
+                currency: "IQD",
+                guestMessage: guestMessage || "",
+                confirmationNumber: `MW-${newBooking.id.slice(0, 8).toUpperCase()}`,
+              },
+            },
+          }).catch((e) => console.warn("host booking notification email failed", e));
+        }
+      } catch (e) { console.warn("email lookup failed (non-fatal):", e); }
 
 
 
@@ -188,6 +225,8 @@ const Payment = () => {
         propertyName: booking.property_name,
         propertyImage: booking.property_image,
         propertyLocation: booking.property_location,
+        propertyId: booking.property_id,
+        hostId: booking.host_id,
         checkIn: booking.check_in,
         checkOut: booking.check_out,
         guests: booking.guests,
@@ -223,6 +262,7 @@ const Payment = () => {
   return (
     <AppLayout>
       <main className="flex-1 container mx-auto px-4 py-8">
+        <BookingStepIndicator currentStep={2} />
         <h1 className="text-3xl font-bold mb-8">{t("paymentTitle")}</h1>
         
         <div className="grid lg:grid-cols-3 gap-8">

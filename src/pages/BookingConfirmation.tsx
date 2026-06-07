@@ -1,17 +1,22 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { CheckCircle, Home, Calendar, MapPin, User, CreditCard, Banknote, Smartphone, Loader2 } from "lucide-react";
+import { CheckCircle, Home, Calendar, MapPin, User, CreditCard, Banknote, Smartphone, Loader2, MessageSquare } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
+import BookingStepIndicator from "@/components/BookingStepIndicator";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ConfirmedBooking {
   bookingId: string;
   propertyName: string;
   propertyImage: string;
   propertyLocation: string;
+  propertyId: string;
+  hostId: string;
   checkIn: string;
   checkOut: string;
   guests: number;
@@ -34,8 +39,10 @@ const paymentMethodLabels: Record<string, string> = {
 const BookingConfirmation = () => {
   const { t } = useTranslation();
   const { formatPrice } = useCurrency();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [booking, setBooking] = useState<ConfirmedBooking | null>(null);
+  const autoMessageSent = useRef(false);
 
   useEffect(() => {
     const stored = sessionStorage.getItem("confirmedBooking");
@@ -43,6 +50,31 @@ const BookingConfirmation = () => {
       setBooking(JSON.parse(stored));
     }
   }, []);
+
+  // Auto-send a message to the host in the messenger when booking is confirmed
+  useEffect(() => {
+    if (!booking || !user || autoMessageSent.current) return;
+    if (!booking.hostId || user.id === booking.hostId) return;
+
+    autoMessageSent.current = true;
+
+    const sendAutoMessage = async () => {
+      try {
+        const confirmationNumber = `MW-${booking.bookingId.slice(0, 8).toUpperCase()}`;
+        const messageContent = `📋 New Booking Confirmation\n\n🏠 Property: ${booking.propertyName}\n📍 Location: ${booking.propertyLocation}\n📅 Check-in: ${booking.checkIn}\n📅 Check-out: ${booking.checkOut}\n👥 Guests: ${booking.guests}\n🔖 Confirmation: ${confirmationNumber}\n\nHi! I just booked your property. Looking forward to my stay!`;
+
+        await supabase.from("messages").insert({
+          sender_id: user.id,
+          receiver_id: booking.hostId,
+          content: messageContent,
+        });
+      } catch (err) {
+        console.warn("Auto-message to host failed (non-fatal):", err);
+      }
+    };
+
+    sendAutoMessage();
+  }, [booking, user]);
 
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString("en-US", {
@@ -69,6 +101,9 @@ const BookingConfirmation = () => {
   return (
     <AppLayout>
       <main className="container mx-auto px-4 py-8 md:py-16">
+        <div className="max-w-3xl mx-auto mb-6 md:mb-8">
+          <BookingStepIndicator currentStep={3} />
+        </div>
         <div className="max-w-2xl mx-auto text-center mb-6 md:mb-8">
           <div className="flex justify-center mb-4 md:mb-6">
             <div className="bg-accent rounded-full p-4">
@@ -162,6 +197,28 @@ const BookingConfirmation = () => {
                   </div>
                 </div>
               </div>
+
+              {/* Auto-message info */}
+              {booking.hostId && (
+                <div className="rounded-xl bg-accent/50 border border-border p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <MessageSquare className="h-4 w-4 text-primary" />
+                    <p className="text-sm font-semibold">Message sent to host</p>
+                  </div>
+                  <p className="text-xs text-muted-foreground mb-3">
+                    We automatically sent your booking details to the host. You can continue the conversation in Messages.
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2"
+                    onClick={() => navigate(`/messages?to=${booking.hostId}`)}
+                  >
+                    <MessageSquare className="h-4 w-4" />
+                    Message the Host
+                  </Button>
+                </div>
+              )}
 
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row gap-3 pt-2 md:pt-4">

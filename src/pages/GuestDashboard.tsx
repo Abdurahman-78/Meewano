@@ -402,6 +402,20 @@ const GuestDashboard = () => {
                     {saving ? "Saving..." : "Update Profile"}
                   </Button>
                 </form>
+                <div className="mt-6 pt-6 border-t">
+                  <h3 className="text-sm font-semibold text-destructive mb-1">Danger zone</h3>
+                  <p className="text-xs text-muted-foreground mb-3">
+                    Permanently delete your account and all associated data.
+                  </p>
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    className="w-full h-11"
+                    onClick={() => navigate("/account-settings")}
+                  >
+                    Delete account
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>

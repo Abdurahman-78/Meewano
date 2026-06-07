@@ -104,22 +104,53 @@ export const useReviewHostVerification = () => {
       // Send approval email (only on transition to approved)
       if (status === "approved" && !wasApproved) {
         try {
-          await supabase.functions.invoke("send-host-approved", {
-            body: { userId: row.user_id },
-          });
+          const { data: prof } = await supabase
+            .from("profiles")
+            .select("email, full_name")
+            .eq("id", row.user_id)
+            .maybeSingle();
+          if (prof?.email) {
+            await supabase.functions.invoke("send-transactional-email", {
+              body: {
+                templateName: "host-approved",
+                recipientEmail: prof.email,
+                idempotencyKey: `host-approved-${id}`,
+                templateData: {
+                  firstName: (prof.full_name || "").split(" ")[0] || "",
+                  siteUrl: window.location.origin,
+                },
+              },
+            });
+          }
         } catch (e) {
-          console.error("send-host-approved failed", e);
+          console.error("send host-approved email failed", e);
         }
       }
 
       // Send rejection email (only on transition to rejected)
       if (status === "rejected" && row.status !== "rejected") {
         try {
-          await supabase.functions.invoke("send-host-rejected", {
-            body: { userId: row.user_id, reason: reason || "" },
-          });
+          const { data: prof } = await supabase
+            .from("profiles")
+            .select("email, full_name")
+            .eq("id", row.user_id)
+            .maybeSingle();
+          if (prof?.email) {
+            await supabase.functions.invoke("send-transactional-email", {
+              body: {
+                templateName: "host-rejected",
+                recipientEmail: prof.email,
+                idempotencyKey: `host-rejected-${id}-${Date.now()}`,
+                templateData: {
+                  firstName: (prof.full_name || "").split(" ")[0] || "",
+                  reason: reason || "",
+                  siteUrl: window.location.origin,
+                },
+              },
+            });
+          }
         } catch (e) {
-          console.error("send-host-rejected failed", e);
+          console.error("send host-rejected email failed", e);
         }
       }
 

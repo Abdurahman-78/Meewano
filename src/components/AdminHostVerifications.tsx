@@ -4,6 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
@@ -13,7 +15,17 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useAllHostVerifications, useReviewHostVerification, useDeleteHostVerification, getHostDocSignedUrl } from "@/hooks/useHostVerification";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+
+const REJECT_CATEGORIES = [
+  { id: "id_document", label: "ID document", hint: "Unclear, expired, or missing ID upload" },
+  { id: "selfie", label: "Selfie", hint: "Blurry, doesn't match ID, or missing" },
+  { id: "payment_details", label: "Payment details", hint: "Missing or incorrect payout info" },
+] as const;
+
+type RejectCategoryId = typeof REJECT_CATEGORIES[number]["id"];
 
 const StatusBadge = ({ status }: { status: string }) => {
   const map: Record<string, { label: string; className: string }> = {
@@ -48,9 +60,30 @@ const AdminHostVerifications = () => {
   const { data: rows, isLoading } = useAllHostVerifications();
   const review = useReviewHostVerification();
   const del = useDeleteHostVerification();
-  const [rejectFor, setRejectFor] = useState<{ id: string; name: string } | null>(null);
+  const queryClient = useQueryClient();
+  const [rejectFor, setRejectFor] = useState<{ id: string; name: string; user_id: string } | null>(null);
+  const [rejectCats, setRejectCats] = useState<Record<RejectCategoryId, boolean>>({
+    id_document: false, selfie: false, payment_details: false,
+  });
   const [reason, setReason] = useState("");
   const [deleteFor, setDeleteFor] = useState<{ id: string; name: string } | null>(null);
+
+  const resetRejectDialog = () => {
+    setRejectFor(null);
+    setReason("");
+    setRejectCats({ id_document: false, selfie: false, payment_details: false });
+  };
+
+  const selectedCats = REJECT_CATEGORIES.filter((c) => rejectCats[c.id]);
+  const canSubmitReject = selectedCats.length > 0 || reason.trim().length > 0;
+  const composedReason = (() => {
+    const parts: string[] = [];
+    if (selectedCats.length) {
+      parts.push(`Issue${selectedCats.length > 1 ? "s" : ""} with: ${selectedCats.map((c) => c.label).join(", ")}.`);
+    }
+    if (reason.trim()) parts.push(reason.trim());
+    return parts.join(" ");
+  })();
 
   if (isLoading) return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
 
@@ -66,11 +99,29 @@ const AdminHostVerifications = () => {
   const handleReject = async () => {
     if (!rejectFor) return;
     try {
-      await review.mutateAsync({ id: rejectFor.id, status: "rejected", reason });
-      toast.success("Host rejected");
-      setRejectFor(null); setReason("");
+      await review.mutateAsync({ id: rejectFor.id, status: "rejected", reason: composedReason });
+      toast.success("Host rejected — email sent");
+      resetRejectDialog();
     } catch (e: any) { toast.error(e.message); }
   };
+
+  const handleRejectAndBan = async () => {
+    if (!rejectFor) return;
+    if (!confirm(`Permanently ban ${rejectFor.name}? Their email and phone will be blocked from creating a new account.`)) return;
+    try {
+      await review.mutateAsync({ id: rejectFor.id, status: "rejected", reason: composedReason });
+      const { error } = await supabase.rpc("admin_ban_user", {
+        _user_id: rejectFor.user_id,
+        _reason: composedReason || "Banned by admin",
+      });
+      if (error) throw error;
+      toast.success("Host rejected and banned — account removed");
+      queryClient.invalidateQueries({ queryKey: ["all-host-verifications"] });
+      queryClient.invalidateQueries({ queryKey: ["pending-host-verifications"] });
+      resetRejectDialog();
+    } catch (e: any) { toast.error(e.message || "Failed to ban"); }
+  };
+
 
   const renderRow = (r: any) => (
     <Card key={r.id}>
@@ -101,7 +152,7 @@ const AdminHostVerifications = () => {
           </div>
           {r.status === "pending" ? (
             <div className="flex gap-2">
-              <Button size="sm" variant="outline" onClick={() => setRejectFor({ id: r.id, name: r.profiles?.full_name || r.profiles?.email })}>
+              <Button size="sm" variant="outline" onClick={() => setRejectFor({ id: r.id, user_id: r.user_id, name: r.profiles?.full_name || r.profiles?.email })}>
                 <XCircle className="h-4 w-4 mr-1" /> Reject
               </Button>
               <Button size="sm" onClick={() => handleApprove(r.id)} disabled={review.isPending}>
@@ -115,7 +166,7 @@ const AdminHostVerifications = () => {
                   <CheckCircle2 className="h-4 w-4 mr-1" /> Approve
                 </Button>
               ) : (
-                <Button size="sm" variant="outline" onClick={() => setRejectFor({ id: r.id, name: r.profiles?.full_name || r.profiles?.email })}>
+                <Button size="sm" variant="outline" onClick={() => setRejectFor({ id: r.id, user_id: r.user_id, name: r.profiles?.full_name || r.profiles?.email })}>
                   <Pencil className="h-4 w-4 mr-1" /> Change to Reject
                 </Button>
               )}
@@ -152,21 +203,74 @@ const AdminHostVerifications = () => {
         </Card>
       )}
 
-      <Dialog open={!!rejectFor} onOpenChange={(o) => { if (!o) { setRejectFor(null); setReason(""); } }}>
+      <Dialog open={!!rejectFor} onOpenChange={(o) => { if (!o) resetRejectDialog(); }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Reject {rejectFor?.name}</DialogTitle>
-            <DialogDescription>Tell the host what to fix. They'll see this and can resubmit.</DialogDescription>
+            <DialogDescription>
+              Pick what's wrong — the host will get an email with these details and can resubmit.
+            </DialogDescription>
           </DialogHeader>
-          <Textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. ID photo is blurry, please upload a clearer image." rows={4} />
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setRejectFor(null)}>Cancel</Button>
-            <Button variant="destructive" onClick={handleReject} disabled={review.isPending || !reason.trim()}>
-              Reject
+
+          <div className="space-y-3">
+            <Label className="text-sm font-medium">What's the problem?</Label>
+            <div className="space-y-2">
+              {REJECT_CATEGORIES.map((cat) => (
+                <label
+                  key={cat.id}
+                  className="flex items-start gap-3 rounded-md border p-3 cursor-pointer hover:bg-muted/50"
+                >
+                  <Checkbox
+                    checked={rejectCats[cat.id]}
+                    onCheckedChange={(c) =>
+                      setRejectCats((prev) => ({ ...prev, [cat.id]: c === true }))
+                    }
+                    className="mt-0.5"
+                  />
+                  <div className="flex-1">
+                    <div className="text-sm font-medium">{cat.label}</div>
+                    <div className="text-xs text-muted-foreground">{cat.hint}</div>
+                  </div>
+                </label>
+              ))}
+            </div>
+
+            <div className="space-y-1.5 pt-1">
+              <Label htmlFor="reject-notes" className="text-sm font-medium">
+                Additional notes <span className="text-muted-foreground font-normal">(optional)</span>
+              </Label>
+              <Textarea
+                id="reject-notes"
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                placeholder="e.g. ID photo is blurry, please upload a clearer image."
+                rows={3}
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-2 flex-col sm:flex-row">
+            <Button variant="outline" onClick={resetRejectDialog}>Cancel</Button>
+            <Button
+              variant="destructive"
+              onClick={handleRejectAndBan}
+              disabled={review.isPending || !canSubmitReject}
+              title="Rejects, removes the account, and blocks the email & phone from signing up again"
+            >
+              Reject & permanently ban
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleReject}
+              disabled={review.isPending || !canSubmitReject}
+            >
+              Reject & notify host
             </Button>
           </DialogFooter>
+
         </DialogContent>
       </Dialog>
+
 
       <AlertDialog open={!!deleteFor} onOpenChange={(o) => { if (!o) setDeleteFor(null); }}>
         <AlertDialogContent>

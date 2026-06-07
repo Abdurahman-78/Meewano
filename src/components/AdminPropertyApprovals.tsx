@@ -1,9 +1,12 @@
 import { useState } from "react";
-import { Loader2, CheckCircle2, XCircle, ExternalLink, Clock, RefreshCw } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle, ExternalLink, Clock, RefreshCw, FileCheck2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
@@ -11,12 +14,27 @@ import { usePendingProperties, useReviewProperty } from "@/hooks/usePropertyAppr
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 
+const REJECTION_REASONS = [
+  "Photos are low quality or don't match the property",
+  "Photos appear to be stock images or taken from the internet",
+  "Property title or description is misleading or incomplete",
+  "Address or location is inaccurate",
+  "Price is unrealistic for the property and area",
+  "Ownership document is missing, unclear, or doesn't match",
+  "Listing contains prohibited content or violates our policies",
+  "Duplicate of an existing listing",
+  "Other (specify below)",
+];
+
 const AdminPropertyApprovals = () => {
   const { data: rows, isLoading } = usePendingProperties();
   const review = useReviewProperty();
   const navigate = useNavigate();
-  const [rejectFor, setRejectFor] = useState<{ id: string; title: string } | null>(null);
-  const [reason, setReason] = useState("");
+  const [rejectFor, setRejectFor] = useState<{ id: string; title: string; host_id: string; host_label: string } | null>(null);
+  const [reasonChoice, setReasonChoice] = useState<string>("");
+  const [reasonDetails, setReasonDetails] = useState("");
+
+
 
   if (isLoading) return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
 
@@ -24,14 +42,54 @@ const AdminPropertyApprovals = () => {
     try { await review.mutateAsync({ id, action: "approve" }); toast.success("Property approved & live"); }
     catch (e: any) { toast.error(e.message); }
   };
+  const resetReject = () => { setRejectFor(null); setReasonChoice(""); setReasonDetails(""); };
+  const composedReason = () => {
+    if (!reasonChoice) return "";
+    if (reasonChoice.startsWith("Other")) return reasonDetails.trim();
+    return reasonDetails.trim() ? `${reasonChoice} — ${reasonDetails.trim()}` : reasonChoice;
+  };
   const handleReject = async () => {
     if (!rejectFor) return;
+    const reason = composedReason();
+    if (!reason) { toast.error("Please choose a reason"); return; }
     try {
       await review.mutateAsync({ id: rejectFor.id, action: "reject", reason });
       toast.success("Property rejected");
-      setRejectFor(null); setReason("");
+      resetReject();
     } catch (e: any) { toast.error(e.message); }
   };
+
+  const handleRejectAndBan = async () => {
+    if (!rejectFor) return;
+    const reason = composedReason();
+    if (!reason) { toast.error("Please choose a reason"); return; }
+    if (!confirm(`Permanently ban ${rejectFor.host_label}? Their email and phone will be blocked from creating a new account.`)) return;
+    try {
+      await review.mutateAsync({ id: rejectFor.id, action: "reject", reason });
+      const { error } = await supabase.rpc("admin_ban_user", {
+        _user_id: rejectFor.host_id,
+        _reason: reason,
+      });
+      if (error) throw error;
+      toast.success("Property rejected and host banned");
+      resetReject();
+    } catch (e: any) { toast.error(e.message || "Failed to ban"); }
+  };
+
+
+
+  const viewOwnershipDoc = async (path: string) => {
+    try {
+      const { data, error } = await supabase.storage
+        .from("host-documents")
+        .createSignedUrl(path, 300);
+      if (error) throw error;
+      if (data?.signedUrl) window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+    } catch (e: any) {
+      toast.error(e.message || "Could not open document");
+    }
+  };
+
 
   return (
     <div className="space-y-6">
@@ -82,7 +140,12 @@ const AdminPropertyApprovals = () => {
                       <Button size="sm" variant="outline" onClick={() => navigate(`/property/${p.id}`)}>
                         <ExternalLink className="h-4 w-4 mr-1" /> View
                       </Button>
-                      <Button size="sm" variant="outline" onClick={() => setRejectFor({ id: p.id, title: p.title })}>
+                      {p.ownership_document_url && (
+                        <Button size="sm" variant="outline" onClick={() => viewOwnershipDoc(p.ownership_document_url)}>
+                          <FileCheck2 className="h-4 w-4 mr-1" /> Ownership doc
+                        </Button>
+                      )}
+                      <Button size="sm" variant="outline" onClick={() => setRejectFor({ id: p.id, title: p.title, host_id: p.host_id, host_label: p.host?.email || p.host?.full_name || "this host" })}>
                         <XCircle className="h-4 w-4 mr-1" /> Reject
                       </Button>
                       <Button size="sm" onClick={() => handleApprove(p.id)} disabled={review.isPending}>
@@ -97,19 +160,57 @@ const AdminPropertyApprovals = () => {
         </CardContent>
       </Card>
 
-      <Dialog open={!!rejectFor} onOpenChange={(o) => { if (!o) { setRejectFor(null); setReason(""); } }}>
+      <Dialog open={!!rejectFor} onOpenChange={(o) => { if (!o) resetReject(); }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Reject "{rejectFor?.title}"</DialogTitle>
-            <DialogDescription>Tell the host why so they can fix it.</DialogDescription>
+            <DialogDescription>Pick what's wrong — the host will see this in their email.</DialogDescription>
           </DialogHeader>
-          <Textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={4} placeholder="e.g. Photos don't match the address, please upload accurate images." />
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setRejectFor(null)}>Cancel</Button>
-            <Button variant="destructive" onClick={handleReject} disabled={review.isPending || !reason.trim()}>Reject</Button>
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <Label>What's wrong?</Label>
+              <Select value={reasonChoice} onValueChange={setReasonChoice}>
+                <SelectTrigger><SelectValue placeholder="Select a reason" /></SelectTrigger>
+                <SelectContent>
+                  {REJECTION_REASONS.map((r) => (
+                    <SelectItem key={r} value={r}>{r}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>
+                {reasonChoice.startsWith("Other") ? "Describe the issue" : "Additional details (optional)"}
+              </Label>
+              <Textarea
+                value={reasonDetails}
+                onChange={(e) => setReasonDetails(e.target.value)}
+                rows={3}
+                placeholder="Add any specifics the host needs to fix..."
+              />
+            </div>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-2 flex-col sm:flex-row">
+            <Button variant="outline" onClick={resetReject}>Cancel</Button>
+            <Button
+              variant="destructive"
+              onClick={handleRejectAndBan}
+              disabled={review.isPending || !reasonChoice || (reasonChoice.startsWith("Other") && !reasonDetails.trim())}
+              title="Rejects, removes the host account, and blocks the email & phone from signing up again"
+            >
+              Reject & permanently ban host
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleReject}
+              disabled={review.isPending || !reasonChoice || (reasonChoice.startsWith("Other") && !reasonDetails.trim())}
+            >
+              Reject & email host
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
     </div>
   );
 };

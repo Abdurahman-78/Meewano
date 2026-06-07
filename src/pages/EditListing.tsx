@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Upload, Loader2, X, RefreshCw, Clock, XCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import ListingStepIndicator from "@/components/ListingStepIndicator";
 import { useNavigate, useParams } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
@@ -49,6 +50,9 @@ const EditListing = () => {
   const [newImageFiles, setNewImageFiles] = useState<File[]>([]);
   const [newImagePreviews, setNewImagePreviews] = useState<string[]>([]);
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [existingFloorPlan, setExistingFloorPlan] = useState<string | null>(null);
+  const [floorPlanFile, setFloorPlanFile] = useState<File | null>(null);
+  const floorPlanInputRef = useRef<HTMLInputElement>(null);
 
   // Normalize siteSettings safely
   const settingsMap: Record<string, any> = Array.isArray(siteSettings)
@@ -89,6 +93,7 @@ const EditListing = () => {
         amenities: data.amenities || [], is_active: data.is_active ?? true,
       });
       setExistingImages(data.images || []);
+      setExistingFloorPlan((data as any).floor_plan_url || null);
       setApprovalStatus((data as any).approval_status || "approved");
       setRejectionReason((data as any).rejection_reason || null);
       if (data.latitude != null && data.longitude != null) {
@@ -159,6 +164,18 @@ const EditListing = () => {
     try {
       setUploading(true);
       const uploadedUrls = await uploadNewImages();
+
+      let floorPlanUrl: string | null = existingFloorPlan;
+      if (floorPlanFile) {
+        const file = floorPlanFile.type.startsWith("image/") ? await optimizeImage(floorPlanFile) : floorPlanFile;
+        const ext = (file.name.split(".").pop() || "webp").toLowerCase();
+        const path = `${user.id}/floorplan-${Date.now()}.${ext}`;
+        const { error: fpErr } = await supabase.storage
+          .from("property-images")
+          .upload(path, file, { contentType: file.type, upsert: true });
+        if (fpErr) throw fpErr;
+        floorPlanUrl = supabase.storage.from("property-images").getPublicUrl(path).data.publicUrl;
+      }
       setUploading(false);
       const allImages = [...existingImages, ...uploadedUrls];
 
@@ -172,6 +189,7 @@ const EditListing = () => {
         images: allImages,
         latitude: coords?.lat ?? null,
         longitude: coords?.lng ?? null,
+        floor_plan_url: floorPlanUrl,
       }).eq("id", id).eq("host_id", user.id);
 
       if (error) throw error;
@@ -205,6 +223,8 @@ const EditListing = () => {
             <h1 className="text-4xl font-bold mb-2">Edit Listing</h1>
             <p className="text-muted-foreground">Update your property details</p>
           </div>
+
+          <ListingStepIndicator />
 
           {approvalStatus === "changes_pending" && (
             <Alert className="mb-6 border-blue-500/40 bg-blue-500/5">
@@ -375,6 +395,52 @@ const EditListing = () => {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Floor plan (optional) */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Floor plan <span className="text-sm font-normal text-muted-foreground">(optional)</span></CardTitle>
+                <p className="text-sm text-muted-foreground">Upload a floor plan image so guests can preview the layout. JPG or PNG, max 5MB.</p>
+              </CardHeader>
+              <CardContent>
+                <input
+                  ref={floorPlanInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (!f) return;
+                    if (f.size > 5 * 1024 * 1024) { toast.error("Floor plan must be under 5MB"); return; }
+                    setFloorPlanFile(f);
+                  }}
+                />
+                {floorPlanFile ? (
+                  <div className="flex items-center justify-between rounded-xl border p-3">
+                    <span className="text-sm truncate">{floorPlanFile.name}</span>
+                    <Button type="button" variant="ghost" size="sm" onClick={() => setFloorPlanFile(null)}>Remove</Button>
+                  </div>
+                ) : existingFloorPlan ? (
+                  <div className="space-y-3">
+                    <img src={existingFloorPlan} alt="Floor plan" className="w-full max-h-72 object-contain rounded-xl border bg-muted" />
+                    <div className="flex gap-2">
+                      <Button type="button" variant="outline" size="sm" onClick={() => floorPlanInputRef.current?.click()}>Replace</Button>
+                      <Button type="button" variant="ghost" size="sm" onClick={() => setExistingFloorPlan(null)}>Remove</Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div
+                    onClick={() => floorPlanInputRef.current?.click()}
+                    className="border-2 border-dashed rounded-xl p-6 text-center cursor-pointer hover:border-primary transition-colors"
+                  >
+                    <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground">Click to upload floor plan</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+
 
             {/* Availability Calendar */}
             <Card>

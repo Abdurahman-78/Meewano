@@ -1,17 +1,19 @@
 import { useState, useMemo, useEffect } from "react";
 import { trackEvent } from "@/lib/tracking";
 import { useParams, useNavigate } from "react-router-dom";
-import { Bath, Bed, Home, MapPin, Star, Wifi, Car, Tv, Waves, ChevronLeft, ChevronRight, Loader2, Share2, Heart, Users } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { Bath, Bed, Home, MapPin, Star, Wifi, Car, Tv, Waves, ChevronLeft, ChevronRight, Loader2, Share2, Heart, Users, Maximize2, X, Minus, Plus } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import AppLayout from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import PropertyCard from "@/components/PropertyCard";
+import MarkdownLite from "@/components/MarkdownLite";
+import PropertyLocationMap from "@/components/PropertyLocationMap";
 import ReviewDialog from "@/components/ReviewDialog";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -21,6 +23,7 @@ import { useSiteSettings } from "@/hooks/useAdminData";
 import { normalizeAmenities } from "@/lib/amenities";
 import { useTranslation } from "@/hooks/useTranslation";
 import { supabase } from "@/integrations/supabase/client";
+import BookingStepIndicator from "@/components/BookingStepIndicator";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -34,6 +37,7 @@ const PropertyDetail = () => {
   const [checkIn, setCheckIn] = useState("");
   const [checkOut, setCheckOut] = useState("");
   const [guests, setGuests] = useState(1);
+
   const [loading, setLoading] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showBookingSheet, setShowBookingSheet] = useState(false);
@@ -41,7 +45,10 @@ const PropertyDetail = () => {
   const [contactMessage, setContactMessage] = useState("");
   const [sendingContact, setSendingContact] = useState(false);
   const [reviewOpen, setReviewOpen] = useState(false);
+  const [fullscreenOpen, setFullscreenOpen] = useState(false);
+  const [authPromptOpen, setAuthPromptOpen] = useState(false);
 
+  const queryClient = useQueryClient();
   const { data: property, isLoading, error } = useProperty(id || "");
   const { data: allProperties } = useProperties();
   const { isFavorite, toggleFavorite } = useFavorites(user?.id || null);
@@ -229,6 +236,59 @@ const PropertyDetail = () => {
     return !!blocked?.some((d) => new Date(d).setHours(0, 0, 0, 0) === day);
   };
 
+  // Pre-fill default available dates so dates are always shown
+  useEffect(() => {
+    if (!property) return;
+    if (checkIn || checkOut) return; // respect user selection
+
+    const isDateAvailable = (date: Date) => {
+      const d = new Date(date);
+      d.setHours(0, 0, 0, 0);
+      return (
+        d >= new Date(new Date().setHours(0, 0, 0, 0)) &&
+        !isDateBooked(d) &&
+        !isDateBlocked(d) &&
+        !isDateOutsideAvailability(d)
+      );
+    };
+
+    const findNextAvailable = (start: Date) => {
+      const d = new Date(start);
+      d.setHours(0, 0, 0, 0);
+      for (let i = 0; i < 365; i++) {
+        if (isDateAvailable(d)) return new Date(d);
+        d.setDate(d.getDate() + 1);
+      }
+      return null;
+    };
+
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const ci = findNextAvailable(tomorrow);
+    if (!ci) return;
+
+    const dayAfter = new Date(ci);
+    dayAfter.setDate(dayAfter.getDate() + 1);
+    const co = findNextAvailable(dayAfter);
+    if (!co) return;
+
+    setCheckIn(format(ci, "yyyy-MM-dd"));
+    setCheckOut(format(co, "yyyy-MM-dd"));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [property]);
+
+  const currentNights = checkIn && checkOut
+    ? Math.max(1, Math.ceil((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / (1000 * 60 * 60 * 24)))
+    : 1;
+
+  const setNights = (n: number) => {
+    if (!checkIn || n < 1) return;
+    const ci = new Date(checkIn);
+    ci.setDate(ci.getDate() + n);
+    setCheckOut(format(ci, "yyyy-MM-dd"));
+  };
+
   const calculateTotal = () => {
     if (!checkIn || !checkOut || !property) return 0;
     const start = new Date(checkIn);
@@ -286,8 +346,7 @@ const PropertyDetail = () => {
 
   const handleReserve = async () => {
     if (!user) {
-      toast.error(t("pleaseLoginReservation"));
-      navigate(`/auth?redirect=${encodeURIComponent(`/property/${id}`)}`);
+      setAuthPromptOpen(true);
       return;
     }
 
@@ -356,7 +415,7 @@ const PropertyDetail = () => {
 
       sessionStorage.setItem("pendingBooking", JSON.stringify(bookingData));
       await trackEvent("booking_started", { property_id: property.id, user_id: user?.id, metadata: { nights, total: calculateTotal() } });
-      navigate("/payment");
+      navigate("/booking-details");
     } catch (error: any) {
       toast.error(t("bookingFailed"));
     } finally {
@@ -447,6 +506,15 @@ const PropertyDetail = () => {
                 variant="ghost"
                 size="icon"
                 className="rounded-full bg-card/80 backdrop-blur-sm h-9 w-9"
+                onClick={() => setFullscreenOpen(true)}
+                aria-label="View fullscreen"
+              >
+                <Maximize2 className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="rounded-full bg-card/80 backdrop-blur-sm h-9 w-9"
                 onClick={handleShare}
                 aria-label="Share"
               >
@@ -528,6 +596,15 @@ const PropertyDetail = () => {
             alt={property.title}
             className="w-full h-full object-cover"
           />
+          <Button
+            variant="outline"
+            size="sm"
+            className="absolute top-4 right-4 bg-card/90 backdrop-blur-sm"
+            onClick={() => setFullscreenOpen(true)}
+          >
+            <Maximize2 className="h-4 w-4 mr-2" />
+            Fullscreen
+          </Button>
           {images.length > 1 && (
             <>
               <Button 
@@ -559,6 +636,50 @@ const PropertyDetail = () => {
           )}
         </div>
       </div>
+
+      {/* Fullscreen image viewer */}
+      {fullscreenOpen && (
+        <div
+          className="fixed inset-0 z-[100] bg-black flex items-center justify-center"
+          onClick={() => setFullscreenOpen(false)}
+        >
+          <img
+            src={images[currentImageIndex]}
+            alt={property.title}
+            className="max-w-full max-h-full object-contain"
+            onClick={(e) => e.stopPropagation()}
+          />
+          <button
+            onClick={() => setFullscreenOpen(false)}
+            className="absolute top-4 right-4 h-10 w-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center backdrop-blur-sm"
+            aria-label="Close fullscreen"
+          >
+            <X className="h-5 w-5" />
+          </button>
+          {images.length > 1 && (
+            <>
+              <button
+                onClick={(e) => { e.stopPropagation(); prevImage(); }}
+                className="absolute left-4 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center backdrop-blur-sm"
+                aria-label="Previous image"
+              >
+                <ChevronLeft className="h-6 w-6" />
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); nextImage(); }}
+                className="absolute right-4 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center backdrop-blur-sm"
+                aria-label="Next image"
+              >
+                <ChevronRight className="h-6 w-6" />
+              </button>
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-white/10 text-white text-sm px-3 py-1 rounded-full backdrop-blur-sm">
+                {currentImageIndex + 1} / {images.length}
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
 
       <main className="container mx-auto px-4 pb-8 md:py-0">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
@@ -635,6 +756,33 @@ const PropertyDetail = () => {
               </Card>
             </div>
 
+            {/* Floor plan (only shown when host uploaded one) */}
+            {(property as any).floor_plan_url && (
+              <div>
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" className="h-11 gap-2">
+                      <Home className="h-4 w-4" />
+                      View floor plan
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-3xl">
+                    <DialogHeader>
+                      <DialogTitle>Floor plan</DialogTitle>
+                      <DialogDescription>{property.title}</DialogDescription>
+                    </DialogHeader>
+                    <img
+                      src={(property as any).floor_plan_url}
+                      alt={`Floor plan for ${property.title}`}
+                      className="w-full h-auto rounded-lg border bg-muted"
+                    />
+                  </DialogContent>
+                </Dialog>
+              </div>
+            )}
+
+
+
             {/* Host Info */}
             <Card>
               <CardContent className="p-4 md:p-6">
@@ -675,6 +823,14 @@ const PropertyDetail = () => {
               </p>
             </div>
 
+            {/* Cleaning Policy */}
+            {(property as any).cleaning_policy && (
+              <div>
+                <h2 className="text-lg md:text-2xl font-bold mb-2 md:mb-4">Cleaning policy</h2>
+                <MarkdownLite text={(property as any).cleaning_policy} />
+              </div>
+            )}
+
             {/* Amenities */}
             {property.amenities && property.amenities.length > 0 && (
               <div>
@@ -704,13 +860,22 @@ const PropertyDetail = () => {
             <div>
               <h2 className="text-lg md:text-2xl font-bold mb-3 md:mb-4">{t("location")}</h2>
               <Card>
-                <CardContent className="p-0">
-                  <div className="w-full h-[200px] md:h-[300px] bg-accent rounded-xl flex items-center justify-center">
-                    <div className="text-center">
-                      <MapPin className="h-8 w-8 md:h-12 md:w-12 mx-auto mb-2 text-muted-foreground" />
-                      <p className="text-sm md:text-base text-muted-foreground">{t("mapViewOf")} {property.location}</p>
+                <CardContent className="p-0 overflow-hidden rounded-xl">
+                  {property.latitude && property.longitude ? (
+                    <PropertyLocationMap
+                      lat={property.latitude}
+                      lng={property.longitude}
+                      title={property.title}
+                      location={property.location}
+                    />
+                  ) : (
+                    <div className="w-full h-[200px] md:h-[300px] bg-accent flex items-center justify-center">
+                      <div className="text-center">
+                        <MapPin className="h-8 w-8 md:h-12 md:w-12 mx-auto mb-2 text-muted-foreground" />
+                        <p className="text-sm md:text-base text-muted-foreground">{t("mapViewOf")} {property.location}</p>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </CardContent>
               </Card>
             </div>
@@ -846,6 +1011,36 @@ const PropertyDetail = () => {
                     </Popover>
                   </div>
                   <div>
+                    <label className="text-sm font-medium mb-2 block">{t("nights") || "Nights"}</label>
+                    <div className="flex items-center justify-between rounded-lg border border-border bg-background p-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => setNights(Math.max(1, currentNights - 1))}
+                        disabled={!checkIn || currentNights <= 1}
+                        aria-label="Decrease nights"
+                      >
+                        <Minus className="h-4 w-4" />
+                      </Button>
+                      <div className="text-sm font-medium">
+                        {currentNights} {currentNights === 1 ? "night" : "nights"}
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => setNights(currentNights + 1)}
+                        disabled={!checkIn}
+                        aria-label="Increase nights"
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                  <div>
                     <label className="text-sm font-medium mb-2 block">{t("guests")}</label>
                     <select
                       value={guests}
@@ -909,6 +1104,7 @@ const PropertyDetail = () => {
                   price={listing.price_per_night}
                   rating={listing.rating || 0}
                   reviews={listing.review_count}
+                    approvalStatus={(listing as any).approval_status}
                 />
               ))}
             </div>
@@ -924,6 +1120,11 @@ const PropertyDetail = () => {
               <span className="text-lg font-bold">{formatPrice(property.price_per_night)}</span>
               <span className="text-xs text-muted-foreground">/ {t("perNight")}</span>
             </div>
+            {checkIn && checkOut && (
+              <div className="text-xs font-medium text-foreground mt-0.5">
+                {format(new Date(checkIn), "MMM d")} – {format(new Date(checkOut), "MMM d")}
+              </div>
+            )}
             <div className="flex items-center gap-1 text-xs text-muted-foreground">
               <Star className="h-3 w-3 fill-yellow-500 text-yellow-500" />
               <span>{property.rating || 0} ({property.review_count || 0})</span>
@@ -939,6 +1140,39 @@ const PropertyDetail = () => {
           </Button>
         </div>
       </div>
+
+      {/* Auth prompt before reservation */}
+      <Dialog open={authPromptOpen} onOpenChange={setAuthPromptOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Sign in to reserve</DialogTitle>
+            <DialogDescription>
+              You need an account to book this property. Log in if you already have one, or create a new account in seconds.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-2 pt-2">
+            <Button
+              className="w-full"
+              onClick={() => {
+                setAuthPromptOpen(false);
+                navigate(`/auth?redirect=${encodeURIComponent(`/property/${id}`)}`);
+              }}
+            >
+              Log in
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => {
+                setAuthPromptOpen(false);
+                navigate(`/auth?mode=signup&redirect=${encodeURIComponent(`/property/${id}`)}`);
+              }}
+            >
+              Create an account
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Contact Host Dialog */}
       <Dialog open={contactOpen} onOpenChange={setContactOpen}>
@@ -978,7 +1212,11 @@ const PropertyDetail = () => {
           propertyId={property.id}
           hostId={property.host_id}
           propertyTitle={property.title}
-          onSuccess={() => refetchReviewable()}
+          onSuccess={() => {
+            refetchReviewable();
+            queryClient.invalidateQueries({ queryKey: ["property-reviews", id] });
+            queryClient.invalidateQueries({ queryKey: ["property", id] });
+          }}
         />
       )}
 

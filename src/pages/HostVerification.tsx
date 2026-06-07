@@ -1,24 +1,19 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Upload, CheckCircle2, XCircle, Clock, Loader2, FileText, Camera, FileCheck2, ShieldCheck } from "lucide-react";
+import { Upload, CheckCircle2, XCircle, Clock, Loader2, Camera, ShieldCheck, CreditCard, FileText } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useMyHostVerification, useUpsertHostVerification } from "@/hooks/useHostVerification";
 
-type DocKey = "id_document_url" | "selfie_url" | "ownership_document_url";
-
-const DOCS: { key: DocKey; title: string; desc: string; icon: any; accept: string }[] = [
-  { key: "id_document_url", title: "Government-issued ID", desc: "Upload a clear photo of your national ID or passport.", icon: FileText, accept: "image/*,.pdf" },
-  { key: "selfie_url", title: "Selfie holding your ID", desc: "Take a photo of yourself holding the same ID.", icon: Camera, accept: "image/*" },
-  { key: "ownership_document_url", title: "Proof of property ownership", desc: "Title deed, rental agreement, or utility bill in your name.", icon: FileCheck2, accept: "image/*,.pdf" },
-];
+type PayoutMethod = "" | "fastpay" | "zaincash" | "qi_card" | "fib";
 
 const HostVerification = () => {
   const navigate = useNavigate();
@@ -26,13 +21,19 @@ const HostVerification = () => {
   const { data: verification, isLoading } = useMyHostVerification();
   const upsert = useUpsertHostVerification();
 
-  const [uploading, setUploading] = useState<DocKey | null>(null);
+  const [uploadingSelfie, setUploadingSelfie] = useState(false);
+  const [uploadingId, setUploadingId] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [docs, setDocs] = useState<Record<DocKey, string | null>>({
-    id_document_url: null,
-    selfie_url: null,
-    ownership_document_url: null,
-  });
+  const [selfieUrl, setSelfieUrl] = useState<string | null>(null);
+  const [idUrl, setIdUrl] = useState<string | null>(null);
+
+  // Payment details state
+  const [payoutLoaded, setPayoutLoaded] = useState(false);
+  const [method, setMethod] = useState<PayoutMethod>("");
+  const [accountName, setAccountName] = useState("");
+  const [accountNumber, setAccountNumber] = useState("");
+  const [bankName, setBankName] = useState("");
+  const [phone, setPhone] = useState("");
 
   useEffect(() => {
     if (!authLoading && !user) navigate(`/auth?redirect=${encodeURIComponent("/host/verification")}`);
@@ -40,40 +41,102 @@ const HostVerification = () => {
 
   useEffect(() => {
     if (verification) {
-      setDocs({
-        id_document_url: verification.id_document_url,
-        selfie_url: verification.selfie_url,
-        ownership_document_url: verification.ownership_document_url,
-      });
+      setSelfieUrl(verification.selfie_url);
+      setIdUrl(verification.id_document_url);
     }
   }, [verification]);
 
-  const handleUpload = async (key: DocKey, file: File) => {
+  useEffect(() => {
     if (!user) return;
-    setUploading(key);
+    (async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("payout_method, payout_details")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (data) {
+        setMethod((data.payout_method as PayoutMethod) || "");
+        const d = (data.payout_details as any) || {};
+        setAccountName(d.account_name || "");
+        setAccountNumber(d.account_number || "");
+        setBankName(d.bank_name || "");
+        setPhone(d.phone || "");
+      }
+      setPayoutLoaded(true);
+    })();
+  }, [user]);
+
+  const handleSelfieUpload = async (file: File) => {
+    if (!user) return;
+    setUploadingSelfie(true);
     try {
       const ext = (file.name.split(".").pop() || "bin").toLowerCase();
-      const path = `${user.id}/${key}-${Date.now()}.${ext}`;
-      const { error } = await supabase.storage.from("host-documents").upload(path, file, { contentType: file.type, upsert: true });
+      const path = `${user.id}/selfie-${Date.now()}.${ext}`;
+      const { error } = await supabase.storage
+        .from("host-documents")
+        .upload(path, file, { contentType: file.type, upsert: true });
       if (error) throw error;
-      setDocs((d) => ({ ...d, [key]: path }));
-      await upsert.mutateAsync({ [key]: path } as any);
+      setSelfieUrl(path);
+      await upsert.mutateAsync({ selfie_url: path } as any);
       toast.success("Uploaded");
     } catch (e: any) {
       toast.error(e.message || "Upload failed");
     } finally {
-      setUploading(null);
+      setUploadingSelfie(false);
     }
   };
 
-  const allUploaded = !!(docs.id_document_url && docs.selfie_url && docs.ownership_document_url);
+  const handleIdUpload = async (file: File) => {
+    if (!user) return;
+    setUploadingId(true);
+    try {
+      const ext = (file.name.split(".").pop() || "bin").toLowerCase();
+      const path = `${user.id}/id-${Date.now()}.${ext}`;
+      const { error } = await supabase.storage
+        .from("host-documents")
+        .upload(path, file, { contentType: file.type, upsert: true });
+      if (error) throw error;
+      setIdUrl(path);
+      await upsert.mutateAsync({ id_document_url: path } as any);
+      toast.success("Uploaded");
+    } catch (e: any) {
+      toast.error(e.message || "Upload failed");
+    } finally {
+      setUploadingId(false);
+    }
+  };
+
+  const needsPhone = method === "fastpay" || method === "zaincash" || method === "fib";
+
+  const payoutValid = () => {
+    if (!method) return false;
+    if (!accountName.trim()) return false;
+    if (needsPhone && !phone.trim()) return false;
+    if (method === "qi_card" && !accountNumber.trim()) return false;
+    return true;
+  };
+
   const status = verification?.status;
   const submitted = !!verification?.submitted_at;
+  const canSubmit = !!selfieUrl && !!idUrl && payoutValid();
 
   const handleSubmit = async () => {
-    if (!allUploaded) { toast.error("Please upload all three documents"); return; }
+    if (!user) return;
+    if (!idUrl) { toast.error("Please upload your ID document"); return; }
+    if (!selfieUrl) { toast.error("Please upload a selfie"); return; }
+    if (!payoutValid()) { toast.error("Please complete your payment details"); return; }
     setSubmitting(true);
     try {
+      // Save payment details on profile
+      const { error: profileErr } = await supabase
+        .from("profiles")
+        .update({
+          payout_method: method,
+          payout_details: { account_name: accountName, account_number: accountNumber, bank_name: bankName, phone },
+        })
+        .eq("id", user.id);
+      if (profileErr) throw profileErr;
+
       await upsert.mutateAsync({ submitted_at: new Date().toISOString(), status: "pending", rejection_reason: null });
       toast.success("Submitted for admin review");
     } catch (e: any) {
@@ -83,7 +146,7 @@ const HostVerification = () => {
     }
   };
 
-  if (authLoading || isLoading) {
+  if (authLoading || isLoading || !payoutLoaded) {
     return (
       <AppLayout>
         <main className="container mx-auto px-4 py-12 flex justify-center">
@@ -93,6 +156,8 @@ const HostVerification = () => {
     );
   }
 
+  const lock = status === "pending" && submitted;
+
   return (
     <AppLayout>
       <main className="container mx-auto px-4 py-8 max-w-3xl">
@@ -101,7 +166,9 @@ const HostVerification = () => {
             <ShieldCheck className="h-7 w-7" />
           </div>
           <h1 className="text-3xl font-bold mb-2">Account Verification</h1>
-          <p className="text-muted-foreground">Verify your identity and property ownership before listing.</p>
+          <p className="text-muted-foreground">
+            Verify your identity and add your payment details so we can pay you out for bookings.
+          </p>
         </div>
 
         {/* Status banner */}
@@ -119,7 +186,7 @@ const HostVerification = () => {
           <Alert className="mb-6 border-yellow-500/40 bg-yellow-500/5">
             <Clock className="h-4 w-4 text-yellow-600" />
             <AlertTitle>Pending admin review</AlertTitle>
-            <AlertDescription>We'll email you once your documents are reviewed (usually within 24 hours).</AlertDescription>
+            <AlertDescription>We'll email you once your details are reviewed (usually within 24 hours).</AlertDescription>
           </Alert>
         )}
         {status === "rejected" && (
@@ -127,56 +194,149 @@ const HostVerification = () => {
             <XCircle className="h-4 w-4 text-destructive" />
             <AlertTitle>Verification rejected</AlertTitle>
             <AlertDescription>
-              {verification?.rejection_reason || "Please re-upload corrected documents and submit again."}
+              {verification?.rejection_reason || "Please update your details and submit again."}
             </AlertDescription>
           </Alert>
         )}
 
         <div className="space-y-4">
-          {DOCS.map(({ key, title, desc, icon: Icon, accept }) => {
-            const uploaded = !!docs[key];
-            const isThis = uploading === key;
-            return (
-              <Card key={key}>
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center gap-3 text-base">
-                    <Icon className="h-5 w-5 text-primary" />
-                    <span className="flex-1">{title}</span>
-                    {uploaded && <CheckCircle2 className="h-5 w-5 text-green-600" />}
-                  </CardTitle>
-                  <CardDescription>{desc}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Label htmlFor={`upload-${key}`} className={`block border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${uploaded ? "border-green-500/40 bg-green-500/5" : "border-border hover:border-primary"}`}>
-                    {isThis ? (
-                      <Loader2 className="h-8 w-8 mx-auto text-primary animate-spin" />
-                    ) : (
-                      <>
-                        <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                        <p className="text-sm font-medium">{uploaded ? "Replace file" : "Click to upload"}</p>
-                        <p className="text-xs text-muted-foreground mt-1">JPG, PNG or PDF · max 10MB</p>
-                      </>
-                    )}
-                    <Input
-                      id={`upload-${key}`}
-                      type="file"
-                      className="hidden"
-                      accept={accept}
-                      disabled={status === "pending" && submitted}
-                      onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUpload(key, f); }}
-                    />
-                  </Label>
-                </CardContent>
-              </Card>
-            );
-          })}
+          {/* ID Document */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-3 text-base">
+                <FileText className="h-5 w-5 text-primary" />
+                <span className="flex-1">ID Document</span>
+                {idUrl && <CheckCircle2 className="h-5 w-5 text-green-600" />}
+              </CardTitle>
+              <CardDescription>
+                Upload a clear photo of your government-issued ID (passport, national ID, or driver's license).
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Label
+                htmlFor="upload-id"
+                className={`block border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
+                  idUrl ? "border-green-500/40 bg-green-500/5" : "border-border hover:border-primary"
+                }`}
+              >
+                {uploadingId ? (
+                  <Loader2 className="h-8 w-8 mx-auto text-primary animate-spin" />
+                ) : (
+                  <>
+                    <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                    <p className="text-sm font-medium">{idUrl ? "Replace document" : "Click to upload"}</p>
+                    <p className="text-xs text-muted-foreground mt-1">JPG, PNG, or PDF · max 10MB</p>
+                  </>
+                )}
+                <Input
+                  id="upload-id"
+                  type="file"
+                  className="hidden"
+                  accept="image/*,application/pdf"
+                  disabled={lock}
+                  onChange={(e) => { const f = e.target.files?.[0]; if (f) handleIdUpload(f); }}
+                />
+              </Label>
+            </CardContent>
+          </Card>
+
+          {/* Selfie */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-3 text-base">
+                <Camera className="h-5 w-5 text-primary" />
+                <span className="flex-1">Selfie</span>
+                {selfieUrl && <CheckCircle2 className="h-5 w-5 text-green-600" />}
+              </CardTitle>
+              <CardDescription>A clear photo of your face so we can confirm your identity.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Label
+                htmlFor="upload-selfie"
+                className={`block border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
+                  selfieUrl ? "border-green-500/40 bg-green-500/5" : "border-border hover:border-primary"
+                }`}
+              >
+                {uploadingSelfie ? (
+                  <Loader2 className="h-8 w-8 mx-auto text-primary animate-spin" />
+                ) : (
+                  <>
+                    <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                    <p className="text-sm font-medium">{selfieUrl ? "Replace photo" : "Click to upload"}</p>
+                    <p className="text-xs text-muted-foreground mt-1">JPG or PNG · max 10MB</p>
+                  </>
+                )}
+                <Input
+                  id="upload-selfie"
+                  type="file"
+                  className="hidden"
+                  accept="image/*"
+                  disabled={lock}
+                  onChange={(e) => { const f = e.target.files?.[0]; if (f) handleSelfieUpload(f); }}
+                />
+              </Label>
+            </CardContent>
+          </Card>
+
+          {/* Payment Details */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-3 text-base">
+                <CreditCard className="h-5 w-5 text-primary" />
+                <span className="flex-1">Payment Details</span>
+                {payoutValid() && <CheckCircle2 className="h-5 w-5 text-green-600" />}
+              </CardTitle>
+              <CardDescription>How you'd like to receive payouts from bookings.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label htmlFor="payout-method">Payout method</Label>
+                <Select value={method} onValueChange={(v) => setMethod(v as PayoutMethod)} disabled={lock}>
+                  <SelectTrigger id="payout-method" className="mt-2">
+                    <SelectValue placeholder="Select a method" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover border border-border z-50">
+                  <SelectItem value="fastpay">FastPay</SelectItem>
+                    <SelectItem value="zaincash">ZainCash</SelectItem>
+                    <SelectItem value="qi_card">Qi Card</SelectItem>
+                    <SelectItem value="fib">FIB</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {method && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div>
+                    <Label htmlFor="account-name">Account holder name</Label>
+                    <Input id="account-name" className="mt-2" value={accountName} disabled={lock}
+                      onChange={(e) => setAccountName(e.target.value)} />
+                  </div>
+                  {needsPhone && (
+                    <div className="md:col-span-2">
+                      <Label htmlFor="payout-phone">Wallet phone number</Label>
+                      <Input id="payout-phone" inputMode="tel" placeholder="+964 7XX XXX XXXX"
+                        className="mt-2" value={phone} disabled={lock}
+                        onChange={(e) => setPhone(e.target.value)} />
+                    </div>
+                  )}
+                  {method === "qi_card" && (
+                    <div className="md:col-span-2">
+                      <Label htmlFor="qi-number">Qi Card number</Label>
+                      <Input id="qi-number" className="mt-2" value={accountNumber} disabled={lock}
+                        onChange={(e) => setAccountNumber(e.target.value)} />
+                    </div>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
 
         {status !== "approved" && (
           <div className="mt-6 flex justify-end">
             <Button
               size="lg"
-              disabled={!allUploaded || submitting || (status === "pending" && submitted)}
+              disabled={!canSubmit || submitting || lock}
               onClick={handleSubmit}
             >
               {submitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}

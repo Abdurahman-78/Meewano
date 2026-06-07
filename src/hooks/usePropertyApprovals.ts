@@ -91,14 +91,31 @@ export const useReviewProperty = () => {
 
       // Send email to host
       try {
-        const variant = action === "approve"
-          ? (isEdits ? "changes_approved" : "approved")
-          : (isEdits ? "changes_rejected" : "rejected");
-        await supabase.functions.invoke("send-property-review", {
-          body: { propertyId: id, variant, reason: reason || "" },
-        });
+        const { data: prof } = await supabase
+          .from("profiles")
+          .select("email, full_name")
+          .eq("id", row.host_id)
+          .maybeSingle();
+        if (prof?.email) {
+          const templateName = action === "approve" ? "property-approved" : "property-rejected";
+          await supabase.functions.invoke("send-transactional-email", {
+            body: {
+              templateName,
+              recipientEmail: prof.email,
+              idempotencyKey: `${templateName}-${id}-${Date.now()}`,
+              templateData: {
+                firstName: (prof.full_name || "").split(" ")[0] || "",
+                propertyTitle: row.title,
+                reason: reason || "",
+                isEdits,
+                propertyId: id,
+                siteUrl: window.location.origin,
+              },
+            },
+          });
+        }
       } catch (e) {
-        console.error("send-property-review failed", e);
+        console.error(`send ${action} email failed`, e);
       }
     },
     onSuccess: () => {

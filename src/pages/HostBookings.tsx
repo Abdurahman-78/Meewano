@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Calendar as CalendarIcon, MapPin, DollarSign, User, Loader2, MessageSquare, Check, X, Filter } from "lucide-react";
+import { Calendar as CalendarIcon, MapPin, User, Loader2, MessageSquare, Check, X, Filter, ChevronDown, ChevronUp, Clock } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
@@ -48,6 +48,7 @@ const HostBookings = () => {
   const [loading, setLoading] = useState(true);
   const [acting, setActing] = useState<string | null>(null);
   const [tab, setTab] = useState("pending");
+  const [expandedBooking, setExpandedBooking] = useState<string | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -125,6 +126,72 @@ const HostBookings = () => {
         type: "booking",
         link: action === "confirmed" ? `/payment?bookingId=${b.id}` : "/guest/bookings",
       });
+
+      // Send booking-approved email to the guest with invoice, welcome message, and booking details
+      if (action === "confirmed") {
+        try {
+          // Fetch guest profile
+          const { data: guestProf } = await supabase
+            .from("profiles")
+            .select("email, full_name")
+            .eq("id", b.guest_id)
+            .maybeSingle();
+
+          // Fetch host profile name
+          const { data: hostProf } = await supabase
+            .from("profiles")
+            .select("full_name")
+            .eq("id", user.id)
+            .maybeSingle();
+
+          // Fetch property details (price, welcome_message, cleaning_policy)
+          const { data: propData } = await supabase
+            .from("properties")
+            .select("price_per_night, welcome_message, cleaning_policy")
+            .eq("id", b.property_id)
+            .maybeSingle();
+
+          const guestEmail = guestProf?.email;
+          if (guestEmail) {
+            const nights = Math.max(1, Math.ceil(
+              (new Date(b.check_out).getTime() - new Date(b.check_in).getTime()) / (1000 * 60 * 60 * 24)
+            ));
+            const pricePerNight = (propData as any)?.price_per_night || 0;
+            const subtotal = pricePerNight * nights;
+            const cleaningFee = 50;
+            const tax = Math.round(subtotal * 0.05);
+            const totalCalc = b.total_price || (subtotal + cleaningFee + tax);
+
+            supabase.functions.invoke("send-booking-approved", {
+              body: {
+                email: guestEmail,
+                booking: {
+                  guestName: guestProf?.full_name || "Guest",
+                  confirmationNumber: `MW-${b.id.slice(0, 8).toUpperCase()}`,
+                  propertyName: b.properties?.title || "Property",
+                  propertyLocation: b.properties?.location || "",
+                  hostName: hostProf?.full_name || "Your host",
+                  checkIn: b.check_in,
+                  checkOut: b.check_out,
+                  guests: b.guests,
+                  nights,
+                  pricePerNight,
+                  subtotal,
+                  cleaningFee,
+                  tax,
+                  total: totalCalc,
+                  currency: "IQD",
+                  paymentMethod: "Credit/Debit Card",
+                  welcomeMessage: (propData as any)?.welcome_message || "",
+                  cleaningPolicy: (propData as any)?.cleaning_policy || "",
+                },
+              },
+            }).catch((e) => console.warn("booking approved email failed:", e));
+          }
+        } catch (emailErr) {
+          console.warn("booking approved email setup failed (non-fatal):", emailErr);
+        }
+      }
 
       toast.success(`Booking ${action === "confirmed" ? "approved" : "rejected"}`);
       load();
@@ -218,7 +285,21 @@ const HostBookings = () => {
                     <CardHeader>
                       <div className="flex justify-between items-start gap-2">
                         <CardTitle className="text-lg">{b.properties?.title || "Property"}</CardTitle>
-                        <Badge className={statusColor[b.status] || "bg-gray-500"}>{b.status}</Badge>
+                        <Badge
+                          className={`${statusColor[b.status] || "bg-gray-500"} ${b.status === "pending" ? "cursor-pointer hover:opacity-80 transition-opacity" : ""}`}
+                          onClick={() => {
+                            if (b.status === "pending") {
+                              setExpandedBooking(expandedBooking === b.id ? null : b.id);
+                            }
+                          }}
+                        >
+                          {b.status}
+                          {b.status === "pending" && (
+                            expandedBooking === b.id
+                              ? <ChevronUp className="h-3 w-3 ml-1 inline" />
+                              : <ChevronDown className="h-3 w-3 ml-1 inline" />
+                          )}
+                        </Badge>
                       </div>
                     </CardHeader>
                     <CardContent className="space-y-3">
@@ -243,13 +324,59 @@ const HostBookings = () => {
                         {b.check_in} → {b.check_out}
                       </div>
                       <div className="flex items-center text-sm font-semibold">
-                        <DollarSign className="h-4 w-4 mr-2" />
+                        <span className="text-xs font-bold text-muted-foreground mr-2 bg-accent rounded px-1.5 py-0.5">IQD</span>
                         {formatPrice(b.total_price)}
                       </div>
                       {b.guest_message && (
                         <div className="rounded-md bg-muted/50 p-3 text-xs">
                           <p className="font-medium mb-1">Guest message</p>
                           <p className="text-muted-foreground line-clamp-3">{b.guest_message}</p>
+                        </div>
+                      )}
+                      {/* Expanded details for pending bookings */}
+                      {expandedBooking === b.id && (
+                        <div className="rounded-lg border border-border bg-accent/30 p-4 space-y-3 animate-in slide-in-from-top-2 duration-200">
+                          <h4 className="text-sm font-semibold flex items-center gap-1.5">
+                            <Clock className="h-4 w-4 text-primary" />
+                            Booking Details
+                          </h4>
+                          <div className="grid grid-cols-2 gap-2 text-xs">
+                            <div>
+                              <p className="text-muted-foreground">Booking ID</p>
+                              <p className="font-mono font-medium break-all">{b.id.slice(0, 8).toUpperCase()}</p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground">Requested</p>
+                              <p className="font-medium">{new Date(b.created_at).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}</p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground">Check-in</p>
+                              <p className="font-medium">{new Date(b.check_in).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}</p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground">Check-out</p>
+                              <p className="font-medium">{new Date(b.check_out).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}</p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground">Guests</p>
+                              <p className="font-medium">{b.guests} guest{b.guests > 1 ? "s" : ""}</p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground">Total</p>
+                              <p className="font-medium text-primary">{formatPrice(b.total_price)}</p>
+                            </div>
+                          </div>
+                          {b.guest_message && (
+                            <div>
+                              <p className="text-xs text-muted-foreground mb-1">Guest message</p>
+                              <p className="text-sm bg-card rounded-md p-2 border">{b.guest_message}</p>
+                            </div>
+                          )}
+                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground pt-1 border-t">
+                            <User className="h-3 w-3" />
+                            <span>{b.guest?.full_name || b.guest?.email || "Guest"}</span>
+                            {b.guest?.email && <span className="text-muted-foreground">· {b.guest.email}</span>}
+                          </div>
                         </div>
                       )}
                       <div className="flex flex-wrap gap-2 pt-2">

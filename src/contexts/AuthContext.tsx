@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -48,6 +48,48 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  const welcomeCheckedRef = useRef(false);
+
+  useEffect(() => {
+    if (!user || !user.email_confirmed_at || welcomeCheckedRef.current) return;
+    welcomeCheckedRef.current = true;
+
+    const checkAndSendWelcome = async () => {
+      try {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("welcome_email_sent_at, full_name")
+          .eq("id", user.id)
+          .single();
+
+        if (profile?.welcome_email_sent_at) return;
+
+        const firstName = profile?.full_name?.split(" ")[0] || "";
+
+        await supabase.functions.invoke("send-transactional-email", {
+          body: {
+            templateName: "customer-welcome",
+            recipientEmail: user.email,
+            idempotencyKey: `welcome-${user.id}`,
+            templateData: {
+              firstName,
+              siteUrl: typeof window !== "undefined" ? window.location.origin : "",
+            },
+          },
+        });
+
+        await supabase
+          .from("profiles")
+          .update({ welcome_email_sent_at: new Date().toISOString() })
+          .eq("id", user.id);
+      } catch (e) {
+        console.error("Welcome email failed:", e);
+      }
+    };
+
+    checkAndSendWelcome();
+  }, [user]);
 
   const signOut = async () => {
     await supabase.auth.signOut();

@@ -27,6 +27,7 @@ import BecomeHost from "./pages/BecomeHost";
 import EditListing from "./pages/EditListing";
 import HostProfile from "./pages/HostProfile";
 import Payment from "./pages/Payment";
+import BookingDetails from "./pages/BookingDetails";
 import NotFound from "./pages/NotFound";
 import AccountSettings from "./pages/AccountSettings";
 import HostVerification from "./pages/HostVerification";
@@ -52,6 +53,7 @@ import PasswordResetEmail from "./pages/emails/PasswordResetEmail";
 import NewMessageEmail from "./pages/emails/NewMessageEmail";
 import Blog from "./pages/Blog";
 import BlogPost from "./pages/BlogPost";
+import Unsubscribe from "./pages/Unsubscribe";
 
 const queryClient = new QueryClient();
 
@@ -92,6 +94,7 @@ const AnimatedRoutes = () => {
         
         {/* Booking & Payment Routes */}
         <Route path="/booking-confirmation" element={<PageTransition><BookingConfirmation /></PageTransition>} />
+        <Route path="/booking-details" element={<PageTransition><BookingDetails /></PageTransition>} />
         <Route path="/payment" element={<PageTransition><Payment /></PageTransition>} />
         <Route path="/payment-success" element={<PageTransition><PaymentSuccess /></PageTransition>} />
         <Route path="/payment-failure" element={<PageTransition><PaymentFailure /></PageTransition>} />
@@ -121,6 +124,7 @@ const AnimatedRoutes = () => {
         <Route path="/emails/new-message" element={<PageTransition><NewMessageEmail /></PageTransition>} />
         
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+        <Route path="/unsubscribe" element={<PageTransition><Unsubscribe /></PageTransition>} />
         <Route path="*" element={<PageTransition><NotFound /></PageTransition>} />
       </Routes>
     </AnimatePresence>

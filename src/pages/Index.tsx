@@ -5,16 +5,21 @@ import PropertyCard from "@/components/PropertyCard";
 import RegionCard from "@/components/RegionCard";
 import { useProperties } from "@/hooks/useProperties";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
+import { useAuth } from "@/contexts/AuthContext";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import heroBanner from "@/assets/hero-banner.jpg";
 import kurdish1 from "@/assets/property-kurdish-1.jpg";
 import kurdish8 from "@/assets/property-kurdish-8.jpg";
 import { useTranslation } from "@/hooks/useTranslation";
-import { Star, Loader2, Home } from "lucide-react";
+import { Star, Loader2, Home, CheckCircle2, XCircle, Clock, RefreshCw, Eye, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 const Index = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { formatPrice } = useCurrency();
   const { data: properties, isLoading } = useProperties();
   const { data: settings } = useSiteSettings();
 
@@ -32,18 +37,31 @@ const Index = () => {
   // Default images for regions that don't have custom images
   const defaultImages = [kurdish1, kurdish8];
 
-  // Get properties by city
+  // Public listings: only approved & active. Excludes any rejected/pending
+  // properties belonging to the current host so they never appear in public sections.
+  const publicProperties = (properties || []).filter(
+    (p: any) => p.is_active && p.approval_status === "approved"
+  );
+
+  // Current host's own properties (all statuses) — used for the host-only "My Properties" section.
+  const myProperties = user
+    ? (properties || []).filter((p: any) => p.host_id === user.id)
+    : [];
+
+  // Get properties by city (public approved only)
   const getPropertiesByCity = (city: string) => {
-    return properties?.filter(p => p.city.toLowerCase().includes(city.toLowerCase())) || [];
+    return publicProperties.filter((p) =>
+      p.city.toLowerCase().includes(city.toLowerCase())
+    );
   };
 
-  // Get recently reviewed (highest review count)
-  const recentlyReviewed = [...(properties || [])]
+  // Recently reviewed (public approved only)
+  const recentlyReviewed = [...publicProperties]
     .sort((a, b) => (b.review_count || 0) - (a.review_count || 0))
     .slice(0, 3);
 
   // Get featured properties
-  const featuredProperties = properties?.filter(p => p.is_featured) || [];
+  const featuredProperties = publicProperties.filter((p) => p.is_featured);
 
   // Build regions from settings regions_list
   const regions = regionsData.slice(0, 4).map((region, index) => ({
@@ -78,12 +96,105 @@ const Index = () => {
         </div>
       </section>
 
+      {/* My Properties — visible only to logged-in hosts (users who own properties) */}
+      {user && myProperties.length > 0 && (
+        <section className="container mx-auto px-4 pt-6 md:pt-10">
+          <div className="rounded-2xl border border-border bg-muted/30 p-4 md:p-6">
+            <div className="flex items-center justify-between gap-3 mb-4">
+              <div className="flex items-center gap-2 min-w-0">
+                <Home className="h-5 w-5 md:h-6 md:w-6 text-primary shrink-0" />
+                <h2 className="text-base md:text-2xl font-bold truncate">My Properties</h2>
+                <Badge variant="secondary" className="text-[10px] md:text-xs shrink-0">
+                  {myProperties.length}
+                </Badge>
+              </div>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="shrink-0 text-primary hover:text-primary"
+                onClick={() => navigate("/host/dashboard")}
+              >
+                Manage all
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-3">
+              {myProperties.slice(0, 6).map((p: any) => {
+                const s = p.approval_status;
+                const badge =
+                  s === "approved"
+                    ? { label: "Live", icon: CheckCircle2, cls: "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/30" }
+                    : s === "rejected"
+                    ? { label: "Rejected", icon: XCircle, cls: "bg-destructive/10 text-destructive border-destructive/30" }
+                    : s === "changes_pending"
+                    ? { label: "Edits pending", icon: RefreshCw, cls: "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/30" }
+                    : { label: "Pending review", icon: Clock, cls: "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/30" };
+                const Icon = badge.icon;
+                const canView = s === "approved";
+                return (
+                  <div
+                    key={p.id}
+                    className="flex items-center gap-3 p-3 rounded-xl border border-border bg-card transition-shadow hover:shadow-sm"
+                  >
+                    <img
+                      src={p.images?.[0] || "/placeholder.svg"}
+                      alt={p.title}
+                      className="h-14 w-14 md:h-16 md:w-16 rounded-lg object-cover flex-shrink-0"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="font-medium text-sm truncate max-w-full">{p.title}</p>
+                        <Badge variant="outline" className={`text-[10px] shrink-0 ${badge.cls}`}>
+                          <Icon className="h-3 w-3 mr-1" />
+                          {badge.label}
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground truncate">{p.location}</p>
+                      <p className="text-xs text-primary font-semibold mt-0.5">
+                        {formatPrice(p.price_per_night)}/night
+                      </p>
+                      {s === "rejected" && p.rejection_reason && (
+                        <p className="text-[11px] text-destructive mt-1 line-clamp-2">
+                          Reason: {p.rejection_reason}
+                        </p>
+                      )}
+                    </div>
+                    {canView && (
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="shrink-0"
+                        onClick={() => navigate(`/property/${p.id}`)}
+                        aria-label="View"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            <Button
+              variant="default"
+              className="w-full mt-4 h-11"
+              onClick={() => navigate("/host/add-listing")}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add new property
+            </Button>
+          </div>
+        </section>
+      )}
+
+
       {isLoading ? (
         <div className="flex items-center justify-center py-20">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
-      ) : properties && properties.length > 0 ? (
+      ) : publicProperties.length > 0 ? (
         <>
+
           {/* Popular in Ranya */}
           {ranyaProperties.length > 0 && (
             <section className="container mx-auto px-4 py-8 md:py-16">
@@ -101,6 +212,7 @@ const Index = () => {
                     price={property.price_per_night}
                     rating={property.rating || 0}
                     reviews={property.review_count}
+                    approvalStatus={(property as any).approval_status}
                   />
                 ))}
               </div>
@@ -127,6 +239,7 @@ const Index = () => {
                     price={property.price_per_night}
                     rating={property.rating || 0}
                     reviews={property.review_count}
+                    approvalStatus={(property as any).approval_status}
                   />
                 ))}
               </div>
@@ -170,6 +283,7 @@ const Index = () => {
                     price={property.price_per_night}
                     rating={property.rating || 0}
                     reviews={property.review_count}
+                    approvalStatus={(property as any).approval_status}
                   />
                 ))}
               </div>

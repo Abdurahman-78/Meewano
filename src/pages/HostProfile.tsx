@@ -187,6 +187,7 @@ const HostProfile = () => {
                     bedrooms={property.bedrooms || 1}
                     bathrooms={property.bathrooms || 1}
                     beds={property.bedrooms || 1}
+                    approvalStatus={(property as any).approval_status}
                   />
                 ))}
               </div>

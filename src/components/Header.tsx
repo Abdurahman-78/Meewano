@@ -18,6 +18,8 @@ import { useMyHostVerification } from "@/hooks/useHostVerification";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import NotificationBell from "@/components/NotificationBell";
 import MobileMenu from "@/components/MobileMenu";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 const Header = () => {
   const { language, setLanguage } = useLanguage();
@@ -29,6 +31,20 @@ const Header = () => {
   const isVerifiedHost = hostVerification?.status === "approved";
   const hostCtaTo = isVerifiedHost ? "/host/add-listing" : "/become-host";
   const navigate = useNavigate();
+
+  const { data: hostPropertiesCount = 0 } = useQuery({
+    queryKey: ["host-property-count", user?.id],
+    enabled: !!user && isVerifiedHost,
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("properties")
+        .select("*", { count: "exact", head: true })
+        .eq("host_id", user!.id);
+      if (error) throw error;
+      return count ?? 0;
+    },
+  });
+  const showListingDot = isVerifiedHost && hostPropertiesCount === 0;
 
   const handleSignOut = async () => {
     await signOut();
@@ -81,10 +97,13 @@ const Header = () => {
         </div>
         
         <div className="flex items-center gap-1 md:gap-3">
-          <Link to={hostCtaTo} className="hidden md:block">
-            <Button variant="ghost" size="sm" className="rounded-full font-semibold hover:bg-accent">
+          <Link to={hostCtaTo} className="hidden md:block relative">
+            <Button variant="ghost" size="sm" className="rounded-full font-semibold hover:bg-accent relative">
               <Home className="h-4 w-4 mr-1.5" />
               {isVerifiedHost ? "List your property" : "List your property"}
+              {showListingDot && (
+                <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-red-500 ring-2 ring-background" />
+              )}
             </Button>
           </Link>
           <DropdownMenu>

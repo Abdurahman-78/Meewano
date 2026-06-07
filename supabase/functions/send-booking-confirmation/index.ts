@@ -43,6 +43,8 @@ interface Props {
   total: number
   currency: string
   paymentMethod: string
+  welcomeMessage?: string
+  cleaningPolicy?: string
 }
 
 const money = (n: number, c: string) => `${c} ${Number(n).toLocaleString('en-US', { maximumFractionDigits: 0 })}`
@@ -85,6 +87,13 @@ function BookingEmail(p: Props) {
           row('Nights', String(p.nights)),
         ),
 
+        p.welcomeMessage && React.createElement(Section, {
+          style: { backgroundColor: BRAND_SOFT, borderLeft: `4px solid ${BRAND}`, borderRadius: 8, padding: '14px 18px', marginBottom: 20 }
+        },
+          React.createElement(Text, { style: { color: BRAND, fontWeight: 700, fontSize: 12, margin: '0 0 6px', letterSpacing: '0.4px' } }, 'A MESSAGE FROM YOUR HOST'),
+          React.createElement(Text, { style: { color: INK, fontSize: 14, lineHeight: '22px', margin: 0, whiteSpace: 'pre-wrap' } }, p.welcomeMessage),
+        ),
+
         React.createElement(Heading, { as: 'h2', style: { color: INK, fontSize: 18, fontWeight: 700, margin: '0 0 12px' } }, 'Invoice'),
         React.createElement(Section, { style: { border: `1px solid ${BORDER}`, borderRadius: 12, padding: '18px 20px', marginBottom: 24 } },
           row(`${money(p.pricePerNight, p.currency)} × ${p.nights} nights`, money(p.subtotal, p.currency)),
@@ -94,6 +103,14 @@ function BookingEmail(p: Props) {
           row('Total paid', money(p.total, p.currency), true),
           React.createElement(Text, { style: { color: MUTED, fontSize: 12, margin: '10px 0 0' } }, `Payment method: ${p.paymentMethod}`),
         ),
+
+        p.cleaningPolicy && React.createElement(React.Fragment, null,
+          React.createElement(Heading, { as: 'h2', style: { color: INK, fontSize: 18, fontWeight: 700, margin: '0 0 12px' } }, 'Cleaning policy'),
+          React.createElement(Section, { style: { border: `1px solid ${BORDER}`, borderRadius: 12, padding: '16px 20px', marginBottom: 24 } },
+            React.createElement(Text, { style: { color: INK, fontSize: 14, lineHeight: '22px', margin: 0, whiteSpace: 'pre-wrap' } }, p.cleaningPolicy),
+          ),
+        ),
+
 
         React.createElement(Section, { style: { textAlign: 'center', marginBottom: 8 } },
           React.createElement(Button, {

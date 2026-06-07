@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Calendar, MapPin, DollarSign, X, Loader2, MessageSquare } from "lucide-react";
+import { Calendar, MapPin, X, Loader2, MessageSquare } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
@@ -140,7 +140,7 @@ const GuestBookings = () => {
           {b.check_in} → {b.check_out}
         </div>
         <div className="flex items-center text-sm font-semibold">
-          <DollarSign className="h-4 w-4 mr-2" />
+          <span className="text-xs font-bold text-muted-foreground mr-2 bg-accent rounded px-1.5 py-0.5">IQD</span>
           {formatPrice(b.total_price)}
         </div>
         <div className="flex flex-wrap gap-2 pt-4">

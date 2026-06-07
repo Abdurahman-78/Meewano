@@ -354,6 +354,7 @@ const SearchResults = () => {
                           price={property.price_per_night}
                           rating={property.rating || 0}
                           reviews={property.review_count}
+                    approvalStatus={(property as any).approval_status}
                         />
                       </div>
                     ))}
@@ -387,6 +388,7 @@ const SearchResults = () => {
                           price={property.price_per_night}
                           rating={property.rating || 0}
                           reviews={property.review_count}
+                    approvalStatus={(property as any).approval_status}
                         />
                       ))}
                     </div>

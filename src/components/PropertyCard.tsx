@@ -17,6 +17,7 @@ interface PropertyCardProps {
   price: number;
   rating: number;
   reviews?: number;
+  approvalStatus?: string;
 }
 
 const PropertyCard = ({
@@ -30,6 +31,7 @@ const PropertyCard = ({
   price,
   rating,
   reviews,
+  approvalStatus,
 }: PropertyCardProps) => {
   const { t } = useTranslation();
   const { formatPrice } = useCurrency();
@@ -66,6 +68,11 @@ const PropertyCard = ({
           alt={name}
           className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
         />
+        {(approvalStatus === "pending" || approvalStatus === "changes_pending") && (
+          <div className="absolute top-3 left-3 z-10 rounded-full bg-yellow-500/95 text-white text-[10px] md:text-xs font-semibold px-2.5 py-1 shadow-sm">
+            Waiting for verification
+          </div>
+        )}
         <button
           onClick={handleFavoriteClick}
           className="absolute top-3 right-3 p-2 rounded-full bg-white/90 hover:bg-white transition-all duration-200 hover:scale-110 z-10"

@@ -597,7 +597,7 @@ const AdminDashboard = () => {
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                   <CardTitle>Property Management ({filteredProperties.length})</CardTitle>
                   <div className="flex gap-2 w-full md:w-auto">
-                    <Button onClick={() => setCreatingProperty(true)}>
+                    <Button onClick={() => navigate("/host/add-listing")}>
                       <Plus className="h-4 w-4 mr-2" />
                       Add Property
                     </Button>
@@ -679,10 +679,13 @@ const AdminDashboard = () => {
                                   {p.is_featured ? "Remove Featured" : "Make Featured"}
                                 </DropdownMenuItem>
                                 <DropdownMenuItem 
-                                  onClick={() => updateProperty.mutate({ 
-                                    id: p.id, 
-                                    is_active: !p.is_active 
-                                  })}
+                                  onClick={() => updateProperty.mutate(
+                                    { id: p.id, is_active: !p.is_active },
+                                    {
+                                      onSuccess: () => toast.success(p.is_active ? "Property deactivated" : "Property activated"),
+                                      onError: (e: any) => toast.error(e?.message || "Failed to update"),
+                                    }
+                                  )}
                                 >
                                   {p.is_active ? <X className="h-4 w-4 mr-2" /> : <Check className="h-4 w-4 mr-2" />}
                                   {p.is_active ? "Deactivate" : "Activate"}

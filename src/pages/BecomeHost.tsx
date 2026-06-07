@@ -16,6 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import PasswordStrengthMeter, { evaluatePassword } from "@/components/PasswordStrengthMeter";
+import LocationPicker from "@/components/LocationPicker";
 
 const TOTAL_STEPS = 6;
 const EMAIL_OTP_LENGTH = 8;
@@ -57,10 +58,41 @@ const Counter = ({ value, onChange, min = 1, max = 20 }: { value: number; onChan
   </div>
 );
 
+const BECOME_HOST_DRAFT_KEY = "meewano:become-host-draft:v1";
+
+const DEFAULT_FORM = {
+  bedrooms: 2,
+  bathrooms: 1,
+  city: "",
+  area: "",
+  first_name: "",
+  last_name: "",
+  email: "",
+  phone: "+964 ",
+  password: "",
+  latitude: null as number | null,
+  longitude: null as number | null,
+};
+
+const loadDraft = (): { form: typeof DEFAULT_FORM; step: number } | null => {
+  try {
+    const raw = localStorage.getItem(BECOME_HOST_DRAFT_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return {
+      form: { ...DEFAULT_FORM, ...(parsed.form ?? {}), password: "" }, // never restore password
+      step: typeof parsed.step === "number" ? parsed.step : 1,
+    };
+  } catch {
+    return null;
+  }
+};
+
 const BecomeHost = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
-  const [step, setStep] = useState(1);
+  const initial = loadDraft();
+  const [step, setStep] = useState(initial?.step ?? 1);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -75,17 +107,16 @@ const BecomeHost = () => {
     return () => clearTimeout(t);
   }, [resendCooldown]);
 
-  const [form, setForm] = useState({
-    bedrooms: 2,
-    bathrooms: 1,
-    city: "",
-    area: "",
-    first_name: "",
-    last_name: "",
-    email: "",
-    phone: "+964 ",
-    password: "",
-  });
+  const [form, setForm] = useState(initial?.form ?? DEFAULT_FORM);
+
+  // Persist draft on every change (excluding password for safety)
+  useEffect(() => {
+    try {
+      const { password: _pw, ...safeForm } = form;
+      localStorage.setItem(BECOME_HOST_DRAFT_KEY, JSON.stringify({ form: safeForm, step }));
+    } catch { /* ignore quota errors */ }
+  }, [form, step]);
+
 
   // If already logged in, skip wizard — they already have an account
   useEffect(() => {
@@ -139,6 +170,8 @@ const BecomeHost = () => {
             intended_bathrooms: form.bathrooms,
             intended_city: form.city.trim(),
             intended_area: form.area.trim(),
+            intended_latitude: form.latitude,
+            intended_longitude: form.longitude,
             signup_intent: "host",
           },
         },
@@ -164,6 +197,8 @@ const BecomeHost = () => {
       });
       if (error) throw error;
       toast.success("Email verified!");
+      // Clear the saved wizard draft now that the account exists
+      try { localStorage.removeItem(BECOME_HOST_DRAFT_KEY); } catch { /* ignore */ }
       // Fire welcome email + next-steps (non-blocking)
       supabase.functions.invoke("send-host-welcome", {
         body: { email: form.email.trim(), firstName: form.first_name.trim() },
@@ -333,6 +368,21 @@ const BecomeHost = () => {
                         <Input id="area" className="mt-2 h-12" placeholder="e.g. Ankawa"
                           value={form.area} onChange={(e) => update({ area: e.target.value })} />
                       </div>
+                      <div>
+                        <Label className="mb-2 block">
+                          Pin your property on the map <span className="text-muted-foreground text-xs">(optional)</span>
+                        </Label>
+                        <LocationPicker
+                          value={form.latitude && form.longitude ? { lat: form.latitude, lng: form.longitude } : null}
+                          onChange={(c) => update({ latitude: c.lat, longitude: c.lng })}
+                          height="280px"
+                        />
+                        {form.latitude && form.longitude && (
+                          <p className="text-xs text-muted-foreground mt-2">
+                            Location set: {form.latitude.toFixed(4)}, {form.longitude.toFixed(4)}
+                          </p>
+                        )}
+                      </div>
                     </div>
                   )}
 
@@ -416,7 +466,7 @@ const BecomeHost = () => {
                         </div>
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        After submitting, we'll email you a verification code. Once verified, you'll upload your ID and ownership documents.
+                        After submitting, we'll email you a verification code. Once verified, you'll add your payment details and a selfie to complete your host account.
                       </p>
                     </div>
                   )}

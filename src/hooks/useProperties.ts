@@ -30,6 +30,8 @@ export interface DbProperty {
   longitude?: number;
   created_at: string;
   updated_at: string;
+  cleaning_policy?: string;
+  welcome_message?: string;
 }
 
 export const useProperties = (options?: { hostId?: string; city?: string; featured?: boolean }) => {
@@ -114,6 +116,8 @@ export const useUpdateProperty = () => {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["properties"] });
+      queryClient.invalidateQueries({ queryKey: ["all-properties"] });
+      queryClient.invalidateQueries({ queryKey: ["pending-properties"] });
       queryClient.invalidateQueries({ queryKey: ["property", data.id] });
     },
   });

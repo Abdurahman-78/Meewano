@@ -41,18 +41,8 @@ const ReviewDialog = ({ open, onOpenChange, bookingId, propertyId, hostId, prope
       });
       if (error) throw error;
 
-      // Update property aggregate rating
-      const { data: reviews } = await supabase
-        .from("reviews")
-        .select("rating")
-        .eq("property_id", propertyId);
-      if (reviews && reviews.length > 0) {
-        const avg = reviews.reduce((s, r) => s + r.rating, 0) / reviews.length;
-        await supabase
-          .from("properties")
-          .update({ rating: Math.round(avg * 10) / 10, review_count: reviews.length })
-          .eq("id", propertyId);
-      }
+      // Property aggregate (rating, review_count) is updated automatically by a DB trigger.
+
 
       await createNotification({
         user_id: hostId,

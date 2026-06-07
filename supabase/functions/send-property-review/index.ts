@@ -80,10 +80,19 @@ function PropertyEmail({
             (reason || '').trim() || 'Please review your listing details, photos, and pricing, then resubmit.'),
         ),
 
+        !isApprove && React.createElement(Section, { style: { backgroundColor: '#ffffff', border: '1px solid #F0F0F0', borderRadius: 12, padding: '20px 22px', marginBottom: 18 } },
+          React.createElement(Text, { style: { color: BRAND, fontWeight: 700, fontSize: 13, margin: '0 0 8px', letterSpacing: '0.4px' } }, 'NEXT STEPS — WHAT TO DO'),
+          React.createElement(Text, { style: { color: INK, fontSize: 14, margin: '0 0 4px', lineHeight: 1.5 } }, '1. Read the reason for rejection carefully above.'),
+          React.createElement(Text, { style: { color: INK, fontSize: 14, margin: '0 0 4px', lineHeight: 1.5 } }, '2. Update your photos, description, or pricing based on the feedback.'),
+          React.createElement(Text, { style: { color: INK, fontSize: 14, margin: '0 0 4px', lineHeight: 1.5 } }, '3. Click "Update and resubmit" — our team will review again within 24 hours.'),
+          React.createElement(Text, { style: { color: INK, fontSize: 14, margin: 0, lineHeight: 1.5 } }, '4. Need help? Reply to this email and we\'ll guide you.')),
+
         isApprove && React.createElement(Section, { style: { backgroundColor: BRAND_SOFT, borderRadius: 12, padding: '20px 22px', marginBottom: 18 } },
-          React.createElement(Text, { style: { color: BRAND, fontWeight: 700, fontSize: 13, margin: '0 0 4px', letterSpacing: '0.4px' } }, 'WHAT HAPPENS NEXT'),
-          React.createElement(Text, { style: { color: INK, fontSize: 14, margin: 0, lineHeight: 1.5 } },
-            'Guests can now find and book your property. You\'ll be notified by email and in-app whenever a new booking request comes in.')),
+          React.createElement(Text, { style: { color: BRAND, fontWeight: 700, fontSize: 13, margin: '0 0 8px', letterSpacing: '0.4px' } }, 'NEXT STEPS — WHAT TO DO'),
+          React.createElement(Text, { style: { color: INK, fontSize: 14, margin: '0 0 4px', lineHeight: 1.5 } }, '1. Review your live listing to make sure everything looks perfect.'),
+          React.createElement(Text, { style: { color: INK, fontSize: 14, margin: '0 0 4px', lineHeight: 1.5 } }, '2. Set your availability calendar so guests know when they can book.'),
+          React.createElement(Text, { style: { color: INK, fontSize: 14, margin: '0 0 4px', lineHeight: 1.5 } }, '3. Respond to booking requests quickly — fast responses improve your ranking.'),
+          React.createElement(Text, { style: { color: INK, fontSize: 14, margin: 0, lineHeight: 1.5 } }, '4. Keep your listing updated with fresh photos and accurate pricing.')),
 
         React.createElement(Section, { style: { textAlign: 'center', marginBottom: 8 } },
           React.createElement(Button, {

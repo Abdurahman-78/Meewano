@@ -80,6 +80,33 @@ export type Database = {
         }
         Relationships: []
       }
+      blocked_identities: {
+        Row: {
+          blocked_by: string | null
+          created_at: string
+          email: string | null
+          id: string
+          phone: string | null
+          reason: string | null
+        }
+        Insert: {
+          blocked_by?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          phone?: string | null
+          reason?: string | null
+        }
+        Update: {
+          blocked_by?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          phone?: string | null
+          reason?: string | null
+        }
+        Relationships: []
+      }
       blog_categories: {
         Row: {
           created_at: string
@@ -727,6 +754,7 @@ export type Database = {
           description: string | null
           description_ar: string | null
           description_ku: string | null
+          floor_plan_url: string | null
           host_id: string
           id: string
           images: string[] | null
@@ -739,6 +767,7 @@ export type Database = {
           longitude: number | null
           max_guests: number | null
           minimum_nights: number | null
+          ownership_document_url: string | null
           pending_changes: Json | null
           price_per_night: number
           rating: number | null
@@ -769,6 +798,7 @@ export type Database = {
           description?: string | null
           description_ar?: string | null
           description_ku?: string | null
+          floor_plan_url?: string | null
           host_id: string
           id?: string
           images?: string[] | null
@@ -781,6 +811,7 @@ export type Database = {
           longitude?: number | null
           max_guests?: number | null
           minimum_nights?: number | null
+          ownership_document_url?: string | null
           pending_changes?: Json | null
           price_per_night: number
           rating?: number | null
@@ -811,6 +842,7 @@ export type Database = {
           description?: string | null
           description_ar?: string | null
           description_ku?: string | null
+          floor_plan_url?: string | null
           host_id?: string
           id?: string
           images?: string[] | null
@@ -823,6 +855,7 @@ export type Database = {
           longitude?: number | null
           max_guests?: number | null
           minimum_nights?: number | null
+          ownership_document_url?: string | null
           pending_changes?: Json | null
           price_per_night?: number
           rating?: number | null
@@ -990,6 +1023,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_ban_user: {
+        Args: { _reason: string; _user_id: string }
+        Returns: Json
+      }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
@@ -1021,6 +1058,10 @@ export type Database = {
           msg_id: number
           read_ct: number
         }[]
+      }
+      recompute_property_rating: {
+        Args: { _property_id: string }
+        Returns: undefined
       }
     }
     Enums: {
