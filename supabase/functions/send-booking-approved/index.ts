@@ -14,8 +14,8 @@ const corsHeaders = {
 }
 
 const SITE_NAME = 'Meewano'
-const SENDER_DOMAIN = 'notify.meewano.com'
-const FROM_DOMAIN = 'meewano.com'
+const SENDER_DOMAIN = 'notify.mail.meewano.com'
+const FROM_DOMAIN = 'notify.mail.meewano.com'
 const SITE_URL = 'https://meewano.com'
 const LOGO_URL =
   `${Deno.env.get('SUPABASE_URL')}/storage/v1/object/public/email-assets/meewano-logo.png`
