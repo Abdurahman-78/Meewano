@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import PropertyCard from "@/components/PropertyCard";
@@ -756,6 +756,41 @@ const PropertyDetail = () => {
               </Card>
             </div>
 
+            {/* Mobile inline date picker */}
+            <div className="lg:hidden">
+              <label className="text-sm font-medium mb-2 block">{t("checkIn")} → {t("checkOut")}</label>
+              <div className="rounded-lg border border-border bg-background overflow-hidden">
+                <Calendar
+                  mode="range"
+                  selected={{
+                    from: checkIn ? new Date(checkIn) : undefined,
+                    to: checkOut ? new Date(checkOut) : undefined,
+                  }}
+                  onSelect={(range) => {
+                    if (range?.from) setCheckIn(format(range.from, "yyyy-MM-dd"));
+                    else setCheckIn("");
+                    if (range?.to) setCheckOut(format(range.to, "yyyy-MM-dd"));
+                    else setCheckOut("");
+                  }}
+                  disabled={(date) =>
+                    date < new Date(new Date().setHours(0, 0, 0, 0)) ||
+                    isDateBooked(date) ||
+                    isDateBlocked(date) ||
+                    isDateOutsideAvailability(date)
+                  }
+                  modifiers={{ booked: bookedDates }}
+                  modifiersClassNames={{
+                    booked: "line-through text-destructive bg-destructive/10 rounded-md",
+                  }}
+                  className="p-3 pointer-events-auto"
+                />
+                <div className="px-3 pb-3 text-xs text-muted-foreground flex items-center gap-2">
+                  <span className="inline-block w-3 h-3 rounded bg-destructive/20 border border-destructive/40" />
+                  Booked — not available
+                </div>
+              </div>
+            </div>
+
             {/* Floor plan (only shown when host uploaded one) */}
             {(property as any).floor_plan_url && (
               <div>
@@ -969,46 +1004,36 @@ const PropertyDetail = () => {
                 <div className="space-y-4 mb-6">
                   <div>
                     <label className="text-sm font-medium mb-2 block">{t("checkIn")} → {t("checkOut")}</label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button variant="outline" className="w-full justify-start text-left font-normal">
-                          {checkIn && checkOut
-                            ? `${format(new Date(checkIn), "MMM d")} → ${format(new Date(checkOut), "MMM d")}`
-                            : "Select dates"}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0 bg-popover z-50" align="start">
-                        <Calendar
-                          mode="range"
-                          numberOfMonths={2}
-                          selected={{
-                            from: checkIn ? new Date(checkIn) : undefined,
-                            to: checkOut ? new Date(checkOut) : undefined,
-                          }}
-                          onSelect={(range) => {
-                            if (range?.from) setCheckIn(format(range.from, "yyyy-MM-dd"));
-                            else setCheckIn("");
-                            if (range?.to) setCheckOut(format(range.to, "yyyy-MM-dd"));
-                            else setCheckOut("");
-                          }}
-                          disabled={(date) =>
-                            date < new Date(new Date().setHours(0, 0, 0, 0)) ||
-                            isDateBooked(date) ||
-                            isDateBlocked(date) ||
-                            isDateOutsideAvailability(date)
-                          }
-                          modifiers={{ booked: bookedDates }}
-                          modifiersClassNames={{
-                            booked: "line-through text-destructive bg-destructive/10 rounded-md",
-                          }}
-                          className="p-3 pointer-events-auto"
-                        />
-                        <div className="px-3 pb-3 text-xs text-muted-foreground flex items-center gap-2">
-                          <span className="inline-block w-3 h-3 rounded bg-destructive/20 border border-destructive/40" />
-                          Booked — not available
-                        </div>
-                      </PopoverContent>
-                    </Popover>
+                    <div className="rounded-lg border border-border bg-background overflow-hidden">
+                      <Calendar
+                        mode="range"
+                        selected={{
+                          from: checkIn ? new Date(checkIn) : undefined,
+                          to: checkOut ? new Date(checkOut) : undefined,
+                        }}
+                        onSelect={(range) => {
+                          if (range?.from) setCheckIn(format(range.from, "yyyy-MM-dd"));
+                          else setCheckIn("");
+                          if (range?.to) setCheckOut(format(range.to, "yyyy-MM-dd"));
+                          else setCheckOut("");
+                        }}
+                        disabled={(date) =>
+                          date < new Date(new Date().setHours(0, 0, 0, 0)) ||
+                          isDateBooked(date) ||
+                          isDateBlocked(date) ||
+                          isDateOutsideAvailability(date)
+                        }
+                        modifiers={{ booked: bookedDates }}
+                        modifiersClassNames={{
+                          booked: "line-through text-destructive bg-destructive/10 rounded-md",
+                        }}
+                        className="p-3 pointer-events-auto"
+                      />
+                      <div className="px-3 pb-3 text-xs text-muted-foreground flex items-center gap-2">
+                        <span className="inline-block w-3 h-3 rounded bg-destructive/20 border border-destructive/40" />
+                        Booked — not available
+                      </div>
+                    </div>
                   </div>
                   <div>
                     <label className="text-sm font-medium mb-2 block">{t("nights") || "Nights"}</label>

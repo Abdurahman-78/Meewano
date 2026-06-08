@@ -10,8 +10,15 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { createNotification } from "@/hooks/useNotifications";
 import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import ReviewDialog from "@/components/ReviewDialog";
@@ -58,8 +65,10 @@ const GuestBookings = () => {
     try {
       const { data, error } = await supabase
         .from("bookings")
-        .select(`id, property_id, host_id, check_in, check_out, total_price, status,
-          properties:properties(title, location, images)`)
+        .select(
+          `id, property_id, host_id, check_in, check_out, total_price, status,
+          properties:properties(title, location, images)`,
+        )
         .eq("guest_id", user.id)
         .order("check_in", { ascending: false });
       if (error) throw error;
@@ -67,10 +76,7 @@ const GuestBookings = () => {
       const ids = (data || []).map((b: any) => b.id);
       let reviewed = new Set<string>();
       if (ids.length) {
-        const { data: revs } = await supabase
-          .from("reviews")
-          .select("booking_id")
-          .in("booking_id", ids);
+        const { data: revs } = await supabase.from("reviews").select("booking_id").in("booking_id", ids);
         reviewed = new Set((revs || []).map((r) => r.booking_id));
       }
       setBookings((data || []).map((b: any) => ({ ...b, has_review: reviewed.has(b.id) })));
@@ -106,10 +112,10 @@ const GuestBookings = () => {
 
   const today = new Date();
   const upcoming = bookings.filter(
-    (b) => new Date(b.check_out) >= today && b.status !== "cancelled" && b.status !== "rejected"
+    (b) => new Date(b.check_out) >= today && b.status !== "cancelled" && b.status !== "rejected",
   );
   const past = bookings.filter(
-    (b) => new Date(b.check_out) < today || b.status === "cancelled" || b.status === "rejected"
+    (b) => new Date(b.check_out) < today || b.status === "cancelled" || b.status === "rejected",
   );
 
   if (authLoading || loading) {
@@ -148,7 +154,9 @@ const GuestBookings = () => {
             <Link to={`/property/${b.property_id}`}>View Property</Link>
           </Button>
           <Button asChild variant="outline" size="icon" title="Message host">
-            <Link to="/messages"><MessageSquare className="h-4 w-4" /></Link>
+            <Link to="/messages">
+              <MessageSquare className="h-4 w-4" />
+            </Link>
           </Button>
           {!isPast && (b.status === "pending" || b.status === "confirmed") && (
             <AlertDialog>
@@ -163,7 +171,10 @@ const GuestBookings = () => {
                   <AlertDialogTitle>Cancel Booking?</AlertDialogTitle>
                   <AlertDialogDescription>
                     This action cannot be undone. Refund depends on the{" "}
-                    <Link to="/cancellation" className="text-primary underline">cancellation policy</Link>.
+                    <Link to="/cancellation" className="text-primary underline">
+                      cancellation policy
+                    </Link>
+                    .
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -184,7 +195,9 @@ const GuestBookings = () => {
             </Button>
           )}
           {isPast && b.has_review && (
-            <Badge variant="secondary" className="self-center">Reviewed</Badge>
+            <Badge variant="secondary" className="self-center">
+              Reviewed
+            </Badge>
           )}
         </div>
       </CardContent>
@@ -199,9 +212,14 @@ const GuestBookings = () => {
         <section className="mb-12">
           <h2 className="text-2xl font-semibold mb-4">Upcoming Stays</h2>
           {upcoming.length === 0 ? (
-            <Card><CardContent className="py-8 text-center text-muted-foreground">
-              No upcoming bookings. <Link to="/search" className="text-primary hover:underline">Browse properties</Link>
-            </CardContent></Card>
+            <Card>
+              <CardContent className="py-8 text-center text-muted-foreground">
+                No upcoming bookings.{" "}
+                <Link to="/search" className="text-primary hover:underline">
+                  Browse properties
+                </Link>
+              </CardContent>
+            </Card>
           ) : (
             <div className="grid gap-6 md:grid-cols-2">{upcoming.map((b) => renderCard(b, false))}</div>
           )}
@@ -210,9 +228,9 @@ const GuestBookings = () => {
         <section>
           <h2 className="text-2xl font-semibold mb-4">Past Stays</h2>
           {past.length === 0 ? (
-            <Card><CardContent className="py-8 text-center text-muted-foreground">
-              No past bookings yet.
-            </CardContent></Card>
+            <Card>
+              <CardContent className="py-8 text-center text-muted-foreground">No past bookings yet.</CardContent>
+            </Card>
           ) : (
             <div className="grid gap-6 md:grid-cols-2">{past.map((b) => renderCard(b, true))}</div>
           )}

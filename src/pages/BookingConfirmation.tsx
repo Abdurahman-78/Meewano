@@ -1,6 +1,17 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { CheckCircle, Home, Calendar, MapPin, User, CreditCard, Banknote, Smartphone, Loader2, MessageSquare } from "lucide-react";
+import {
+  CheckCircle,
+  Home,
+  Calendar,
+  MapPin,
+  User,
+  CreditCard,
+  Banknote,
+  Smartphone,
+  Loader2,
+  MessageSquare,
+} from "lucide-react";
 import AppLayout from "@/components/AppLayout";
 import BookingStepIndicator from "@/components/BookingStepIndicator";
 import { Button } from "@/components/ui/button";
@@ -111,9 +122,7 @@ const BookingConfirmation = () => {
             </div>
           </div>
           <h1 className="text-2xl md:text-4xl font-bold mb-2 md:mb-3">{t("bookingConfirmed")}</h1>
-          <p className="text-sm md:text-lg text-muted-foreground">
-            {t("bookingSuccess")}
-          </p>
+          <p className="text-sm md:text-lg text-muted-foreground">{t("bookingSuccess")}</p>
           <p className="text-xs md:text-sm text-muted-foreground mt-2">
             {t("confirmationNumber")}: <span className="font-mono font-semibold">{confirmationNumber}</span>
           </p>
@@ -121,12 +130,12 @@ const BookingConfirmation = () => {
 
         <Card className="max-w-3xl mx-auto">
           <CardContent className="p-0">
-            <img 
-              src={booking.propertyImage || "/placeholder.svg"} 
+            <img
+              src={booking.propertyImage || "/placeholder.svg"}
               alt={booking.propertyName}
               className="w-full h-48 md:h-64 object-cover rounded-t-xl"
             />
-            
+
             <div className="p-4 md:p-8 space-y-5 md:space-y-6">
               {/* Property Details */}
               <div>
@@ -157,7 +166,9 @@ const BookingConfirmation = () => {
                   <User className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground mt-0.5 flex-shrink-0" />
                   <div>
                     <p className="text-xs md:text-sm text-muted-foreground">{t("guests")}</p>
-                    <p className="text-sm md:text-base font-semibold">{booking.guests} {t("guests")}</p>
+                    <p className="text-sm md:text-base font-semibold">
+                      {booking.guests} {t("guests")}
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-start gap-2 md:gap-3">
@@ -170,7 +181,9 @@ const BookingConfirmation = () => {
                   )}
                   <div>
                     <p className="text-xs md:text-sm text-muted-foreground">Payment</p>
-                    <p className="text-sm md:text-base font-semibold">{paymentMethodLabels[booking.paymentMethod] || booking.paymentMethod}</p>
+                    <p className="text-sm md:text-base font-semibold">
+                      {paymentMethodLabels[booking.paymentMethod] || booking.paymentMethod}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -193,7 +206,9 @@ const BookingConfirmation = () => {
                   )}
                   <div className="flex justify-between pt-3 border-t">
                     <span className="font-bold text-base md:text-lg">{t("total")}</span>
-                    <span className="font-bold text-base md:text-lg text-primary">{formatPrice(booking.totalPrice)}</span>
+                    <span className="font-bold text-base md:text-lg text-primary">
+                      {formatPrice(booking.totalPrice)}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -206,7 +221,8 @@ const BookingConfirmation = () => {
                     <p className="text-sm font-semibold">Message sent to host</p>
                   </div>
                   <p className="text-xs text-muted-foreground mb-3">
-                    We automatically sent your booking details to the host. You can continue the conversation in Messages.
+                    We automatically sent your booking details to the host. You can continue the conversation in
+                    Messages.
                   </p>
                   <Button
                     variant="outline"
@@ -228,9 +244,7 @@ const BookingConfirmation = () => {
                   </Button>
                 </Link>
                 <Link to="/" className="flex-1">
-                  <Button className="w-full h-11 md:h-12 text-sm md:text-base">
-                    {t("returnHome")}
-                  </Button>
+                  <Button className="w-full h-11 md:h-12 text-sm md:text-base">{t("returnHome")}</Button>
                 </Link>
               </div>
             </div>

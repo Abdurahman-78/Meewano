@@ -434,6 +434,7 @@ const AddListing = () => {
                           selected={availableRange}
                           onSelect={setAvailableRange}
                           numberOfMonths={2}
+                          disabled={{ before: new Date() }}
                           className="p-3 pointer-events-auto"
                         />
                       </PopoverContent>
@@ -458,6 +459,12 @@ const AddListing = () => {
                           selected={unavailableRange}
                           onSelect={setUnavailableRange}
                           numberOfMonths={2}
+                          defaultMonth={availableRange?.from}
+                          disabled={
+                            availableRange?.from && availableRange?.to
+                              ? [{ before: availableRange.from }, { after: availableRange.to }]
+                              : { before: new Date() }
+                          }
                           className="p-3 pointer-events-auto"
                         />
                       </PopoverContent>

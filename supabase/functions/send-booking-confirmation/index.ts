@@ -14,8 +14,8 @@ const corsHeaders = {
 }
 
 const SITE_NAME = 'Meewano'
-const SENDER_DOMAIN = 'notify.mail.meewano.com'
-const FROM_DOMAIN = 'notify.mail.meewano.com'
+const SENDER_DOMAIN = 'notify.meewano.com'
+const FROM_DOMAIN = 'meewano.com'
 const SITE_URL = 'https://meewano.com'
 const LOGO_URL =
   `${Deno.env.get('SUPABASE_URL')}/storage/v1/object/public/email-assets/meewano-logo.png`
@@ -139,9 +139,9 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders })
   try {
     const body = await req.json()
-    let { email, guest_id, firstName, booking } = body as { email: string | null; guest_id?: string; firstName?: string; booking: Omit<Props, 'firstName' | 'isFirstBooking'> }
-    if (!booking) {
-      return new Response(JSON.stringify({ error: 'booking required' }),
+    const { email, firstName, booking } = body as { email: string; firstName?: string; booking: Omit<Props, 'firstName' | 'isFirstBooking'> }
+    if (!email || !booking) {
+      return new Response(JSON.stringify({ error: 'email and booking required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
@@ -150,28 +150,11 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     )
 
-    // If email wasn't provided, try to resolve it from the guest's profile or auth.users
-    if (!email && guest_id) {
-      const { data: prof } = await supabase.from('profiles').select('email').eq('id', guest_id).maybeSingle()
-      email = prof?.email || null
-
-      if (!email) {
-        const { data: authUser } = await supabase.auth.admin.getUserById(guest_id)
-        email = authUser?.user?.email || null
-      }
-    }
-
-    if (!email) {
-      console.error('send-booking-confirmation: no email found for guest', guest_id)
-      return new Response(JSON.stringify({ error: 'no guest email found' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-    }
-
-    // First-booking detection: count prior bookings for this guest
+    // First-booking detection: count prior bookings for this guest by email
+    const { data: prof } = await supabase.from('profiles').select('id').eq('email', email).maybeSingle()
     let isFirstBooking = true
-    const resolvedGuestId = guest_id || (await supabase.from('profiles').select('id').eq('email', email).maybeSingle())?.data?.id
-    if (resolvedGuestId) {
-      const { count } = await supabase.from('bookings').select('id', { count: 'exact', head: true }).eq('guest_id', resolvedGuestId)
+    if (prof?.id) {
+      const { count } = await supabase.from('bookings').select('id', { count: 'exact', head: true }).eq('guest_id', prof.id)
       isFirstBooking = (count ?? 0) <= 1
     }
 
@@ -185,9 +168,8 @@ Deno.serve(async (req) => {
     })
 
     const { error } = await supabase.rpc('enqueue_email', {
-      queue_name: 'auth_emails',
+      queue_name: 'transactional_emails',
       payload: {
-        run_id: messageId,
         message_id: messageId,
         to: email,
         from: `${SITE_NAME} <noreply@${FROM_DOMAIN}>`,
@@ -196,6 +178,7 @@ Deno.serve(async (req) => {
         html, text,
         purpose: 'transactional',
         label: 'booking_confirmation',
+        idempotency_key: `booking-confirmation-${booking.confirmationNumber}`,
         queued_at: new Date().toISOString(),
       },
     })

@@ -1,5 +1,17 @@
 import { useEffect, useState } from "react";
-import { Calendar as CalendarIcon, MapPin, User, Loader2, MessageSquare, Check, X, Filter, ChevronDown, ChevronUp, Clock } from "lucide-react";
+import {
+  Calendar as CalendarIcon,
+  MapPin,
+  User,
+  Loader2,
+  MessageSquare,
+  Check,
+  X,
+  Filter,
+  ChevronDown,
+  ChevronUp,
+  Clock,
+} from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
@@ -8,8 +20,15 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -66,10 +85,12 @@ const HostBookings = () => {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "bookings", filter: `host_id=eq.${user.id}` },
-        () => load()
+        () => load(),
       )
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user]);
 
   const load = async () => {
@@ -77,9 +98,11 @@ const HostBookings = () => {
     try {
       const { data, error } = await supabase
         .from("bookings")
-        .select(`id, property_id, guest_id, check_in, check_out, total_price, status,
+        .select(
+          `id, property_id, guest_id, check_in, check_out, total_price, status,
           guests, guest_message, created_at,
-          properties:properties(title, location, images)`)
+          properties:properties(title, location, images)`,
+        )
         .eq("host_id", user.id)
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -94,9 +117,7 @@ const HostBookings = () => {
           .in("id", guestIds);
         guestMap = new Map((profs || []).map((p) => [p.id, p]));
       }
-      setBookings(
-        (data || []).map((b: any) => ({ ...b, guest: guestMap.get(b.guest_id) || null }))
-      );
+      setBookings((data || []).map((b: any) => ({ ...b, guest: guestMap.get(b.guest_id) || null })));
     } catch (e) {
       console.error(e);
       toast.error("Failed to load bookings");
@@ -151,42 +172,46 @@ const HostBookings = () => {
             .eq("id", b.property_id)
             .maybeSingle();
 
-          const guestEmail = guestProf?.email || null;
-            const nights = Math.max(1, Math.ceil(
-              (new Date(b.check_out).getTime() - new Date(b.check_in).getTime()) / (1000 * 60 * 60 * 24)
-            ));
+          const guestEmail = guestProf?.email;
+          if (guestEmail) {
+            const nights = Math.max(
+              1,
+              Math.ceil((new Date(b.check_out).getTime() - new Date(b.check_in).getTime()) / (1000 * 60 * 60 * 24)),
+            );
             const pricePerNight = (propData as any)?.price_per_night || 0;
             const subtotal = pricePerNight * nights;
             const cleaningFee = 50;
             const tax = Math.round(subtotal * 0.05);
-            const totalCalc = b.total_price || (subtotal + cleaningFee + tax);
+            const totalCalc = b.total_price || subtotal + cleaningFee + tax;
 
-            supabase.functions.invoke("send-booking-approved", {
-              body: {
-                email: guestEmail,
-                guest_id: b.guest_id,
-                booking: {
-                  guestName: guestProf?.full_name || "Guest",
-                  confirmationNumber: `MW-${b.id.slice(0, 8).toUpperCase()}`,
-                  propertyName: b.properties?.title || "Property",
-                  propertyLocation: b.properties?.location || "",
-                  hostName: hostProf?.full_name || "Your host",
-                  checkIn: b.check_in,
-                  checkOut: b.check_out,
-                  guests: b.guests,
-                  nights,
-                  pricePerNight,
-                  subtotal,
-                  cleaningFee,
-                  tax,
-                  total: totalCalc,
-                  currency: "IQD",
-                  paymentMethod: "Credit/Debit Card",
-                  welcomeMessage: (propData as any)?.welcome_message || "",
-                  cleaningPolicy: (propData as any)?.cleaning_policy || "",
+            supabase.functions
+              .invoke("send-booking-approved", {
+                body: {
+                  email: guestEmail,
+                  booking: {
+                    guestName: guestProf?.full_name || "Guest",
+                    confirmationNumber: `MW-${b.id.slice(0, 8).toUpperCase()}`,
+                    propertyName: b.properties?.title || "Property",
+                    propertyLocation: b.properties?.location || "",
+                    hostName: hostProf?.full_name || "Your host",
+                    checkIn: b.check_in,
+                    checkOut: b.check_out,
+                    guests: b.guests,
+                    nights,
+                    pricePerNight,
+                    subtotal,
+                    cleaningFee,
+                    tax,
+                    total: totalCalc,
+                    currency: "IQD",
+                    paymentMethod: "Credit/Debit Card",
+                    welcomeMessage: (propData as any)?.welcome_message || "",
+                    cleaningPolicy: (propData as any)?.cleaning_policy || "",
+                  },
                 },
-              },
-            }).catch((e) => console.warn("booking approved email failed:", e));
+              })
+              .catch((e) => console.warn("booking approved email failed:", e));
+          }
         } catch (emailErr) {
           console.warn("booking approved email setup failed (non-fatal):", emailErr);
         }
@@ -210,10 +235,8 @@ const HostBookings = () => {
   const today = new Date();
   const filtered = bookings.filter((b) => {
     if (tab === "pending") return b.status === "pending";
-    if (tab === "upcoming")
-      return (b.status === "confirmed") && new Date(b.check_out) >= today;
-    if (tab === "past")
-      return new Date(b.check_out) < today || b.status === "completed";
+    if (tab === "upcoming") return b.status === "confirmed" && new Date(b.check_out) >= today;
+    if (tab === "past") return new Date(b.check_out) < today || b.status === "completed";
     if (tab === "cancelled") return b.status === "cancelled" || b.status === "rejected";
     return true;
   });
@@ -244,7 +267,10 @@ const HostBookings = () => {
             <p className="text-muted-foreground">Approve, reject and manage guest stays</p>
           </div>
           <Button variant="outline" asChild>
-            <Link to="/host"><Filter className="h-4 w-4 mr-2" />Back to Dashboard</Link>
+            <Link to="/host">
+              <Filter className="h-4 w-4 mr-2" />
+              Back to Dashboard
+            </Link>
           </Button>
         </div>
 
@@ -275,11 +301,7 @@ const HostBookings = () => {
                 {filtered.map((b) => (
                   <Card key={b.id} className="overflow-hidden">
                     {b.properties?.images?.[0] && (
-                      <img
-                        src={b.properties.images[0]}
-                        alt={b.properties.title}
-                        className="w-full h-32 object-cover"
-                      />
+                      <img src={b.properties.images[0]} alt={b.properties.title} className="w-full h-32 object-cover" />
                     )}
                     <CardHeader>
                       <div className="flex justify-between items-start gap-2">
@@ -293,11 +315,12 @@ const HostBookings = () => {
                           }}
                         >
                           {b.status}
-                          {b.status === "pending" && (
-                            expandedBooking === b.id
-                              ? <ChevronUp className="h-3 w-3 ml-1 inline" />
-                              : <ChevronDown className="h-3 w-3 ml-1 inline" />
-                          )}
+                          {b.status === "pending" &&
+                            (expandedBooking === b.id ? (
+                              <ChevronUp className="h-3 w-3 ml-1 inline" />
+                            ) : (
+                              <ChevronDown className="h-3 w-3 ml-1 inline" />
+                            ))}
                         </Badge>
                       </div>
                     </CardHeader>
@@ -315,7 +338,9 @@ const HostBookings = () => {
                         </Avatar>
                         <div className="text-sm">
                           <p className="font-medium leading-tight">{b.guest?.full_name || "Guest"}</p>
-                          <p className="text-xs text-muted-foreground">{b.guests} guest{b.guests > 1 ? "s" : ""}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {b.guests} guest{b.guests > 1 ? "s" : ""}
+                          </p>
                         </div>
                       </div>
                       <div className="flex items-center text-sm text-muted-foreground">
@@ -323,7 +348,9 @@ const HostBookings = () => {
                         {b.check_in} → {b.check_out}
                       </div>
                       <div className="flex items-center text-sm font-semibold">
-                        <span className="text-xs font-bold text-muted-foreground mr-2 bg-accent rounded px-1.5 py-0.5">IQD</span>
+                        <span className="text-xs font-bold text-muted-foreground mr-2 bg-accent rounded px-1.5 py-0.5">
+                          IQD
+                        </span>
                         {formatPrice(b.total_price)}
                       </div>
                       {b.guest_message && (
@@ -346,19 +373,39 @@ const HostBookings = () => {
                             </div>
                             <div>
                               <p className="text-muted-foreground">Requested</p>
-                              <p className="font-medium">{new Date(b.created_at).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}</p>
+                              <p className="font-medium">
+                                {new Date(b.created_at).toLocaleDateString("en-US", {
+                                  year: "numeric",
+                                  month: "short",
+                                  day: "numeric",
+                                })}
+                              </p>
                             </div>
                             <div>
                               <p className="text-muted-foreground">Check-in</p>
-                              <p className="font-medium">{new Date(b.check_in).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}</p>
+                              <p className="font-medium">
+                                {new Date(b.check_in).toLocaleDateString("en-US", {
+                                  year: "numeric",
+                                  month: "short",
+                                  day: "numeric",
+                                })}
+                              </p>
                             </div>
                             <div>
                               <p className="text-muted-foreground">Check-out</p>
-                              <p className="font-medium">{new Date(b.check_out).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}</p>
+                              <p className="font-medium">
+                                {new Date(b.check_out).toLocaleDateString("en-US", {
+                                  year: "numeric",
+                                  month: "short",
+                                  day: "numeric",
+                                })}
+                              </p>
                             </div>
                             <div>
                               <p className="text-muted-foreground">Guests</p>
-                              <p className="font-medium">{b.guests} guest{b.guests > 1 ? "s" : ""}</p>
+                              <p className="font-medium">
+                                {b.guests} guest{b.guests > 1 ? "s" : ""}
+                              </p>
                             </div>
                             <div>
                               <p className="text-muted-foreground">Total</p>
@@ -382,12 +429,7 @@ const HostBookings = () => {
                         <Button asChild variant="outline" size="sm" className="flex-1 min-w-[100px]">
                           <Link to={`/property/${b.property_id}`}>View Property</Link>
                         </Button>
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          title="Message guest"
-                          onClick={() => messageGuest(b)}
-                        >
+                        <Button variant="outline" size="icon" title="Message guest" onClick={() => messageGuest(b)}>
                           <MessageSquare className="h-4 w-4" />
                         </Button>
                         {b.status === "pending" && (
@@ -403,7 +445,12 @@ const HostBookings = () => {
                             </Button>
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
-                                <Button variant="destructive" size="sm" className="flex-1 min-w-[90px]" disabled={acting === b.id}>
+                                <Button
+                                  variant="destructive"
+                                  size="sm"
+                                  className="flex-1 min-w-[90px]"
+                                  disabled={acting === b.id}
+                                >
                                   <X className="h-4 w-4 mr-1" />
                                   Reject
                                 </Button>

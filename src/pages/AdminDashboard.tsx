@@ -539,7 +539,12 @@ const AdminDashboard = () => {
                                   {role}
                                 </Badge>
                               ))}
-                              {u.roles.length === 0 && <Badge variant="secondary">guest</Badge>}
+                              {u.is_host && (
+                                <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-700">
+                                  host
+                                </Badge>
+                              )}
+                              {u.roles.length === 0 && !u.is_host && <Badge variant="secondary">guest</Badge>}
                             </div>
                           </TableCell>
                           <TableCell>
