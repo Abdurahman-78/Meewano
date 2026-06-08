@@ -37,9 +37,9 @@ const EMAIL_TEMPLATES: Record<string, React.ComponentType<any>> = {
 
 // Configuration
 const SITE_NAME = "Meewano"
-const SENDER_DOMAIN = "notify.mail.meewano.com"
+const SENDER_DOMAIN = "meewano.com"
 const ROOT_DOMAIN = "meewano.com"
-const FROM_DOMAIN = "notify.mail.meewano.com" // Must match the verified sender domain for delivery
+const FROM_DOMAIN = "meewano.com" // Must match the verified sender domain for delivery
 
 // Sample data for preview mode ONLY (not used in actual email sending).
 // URLs are baked in at scaffold time from the project's real data.
