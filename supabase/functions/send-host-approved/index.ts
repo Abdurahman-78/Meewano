@@ -13,7 +13,7 @@ const corsHeaders = {
 }
 
 const SITE_NAME = 'Meewano'
-const SENDER_DOMAIN = 'meewano.com'
+const SENDER_DOMAIN = 'home.meewano.com'
 const FROM_DOMAIN = 'meewano.com'
 const SITE_URL = 'https://meewano.com'
 const LOGO_URL =

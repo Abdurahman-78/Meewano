@@ -37,7 +37,7 @@ const EMAIL_TEMPLATES: Record<string, React.ComponentType<any>> = {
 
 // Configuration
 const SITE_NAME = "Meewano"
-const SENDER_DOMAIN = "meewano.com"
+const SENDER_DOMAIN = "home.meewano.com"
 const ROOT_DOMAIN = "meewano.com"
 const FROM_DOMAIN = "meewano.com" // Must match the verified sender domain for delivery
 
