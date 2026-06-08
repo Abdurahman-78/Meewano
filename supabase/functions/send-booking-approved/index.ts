@@ -162,20 +162,39 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders })
   try {
     const body = await req.json()
-    const { email, booking } = body as { email: string; booking: Props }
-    if (!email || !booking) {
-      return new Response(JSON.stringify({ error: 'email and booking required' }),
+    let { email, guest_id, booking } = body as { email: string | null; guest_id?: string; booking: Props }
+    if (!booking) {
+      return new Response(JSON.stringify({ error: 'booking required' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+    )
+
+    // If email wasn't provided, try to resolve it from the guest's profile or auth.users
+    if (!email && guest_id) {
+      // Try profiles first
+      const { data: prof } = await supabase.from('profiles').select('email').eq('id', guest_id).maybeSingle()
+      email = prof?.email || null
+
+      // Fall back to auth.users (requires service role)
+      if (!email) {
+        const { data: authUser } = await supabase.auth.admin.getUserById(guest_id)
+        email = authUser?.user?.email || null
+      }
+    }
+
+    if (!email) {
+      console.error('send-booking-approved: no email found for guest', guest_id)
+      return new Response(JSON.stringify({ error: 'no guest email found' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
     const props: Props = { ...booking }
     const html = await renderAsync(React.createElement(BookingApprovedEmail, props) as any)
     const text = await renderAsync(React.createElement(BookingApprovedEmail, props) as any, { plainText: true })
-
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-    )
 
     const messageId = crypto.randomUUID()
     await supabase.from('email_send_log').insert({

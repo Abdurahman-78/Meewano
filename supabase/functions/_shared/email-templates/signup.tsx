@@ -24,7 +24,7 @@ interface SignupEmailProps {
 }
 
 const LOGO_URL =
-  'https://oyqaztlebhbgvkglfmbe.supabase.co/storage/v1/object/public/email-assets/meewano-logo.png'
+  'https://oiqfqzuioukujbkzqvhk.supabase.co/storage/v1/object/public/email-assets/meewano-logo.png'
 
 export const SignupEmail = ({ recipient, token }: SignupEmailProps) => (
   <Html lang="en" dir="ltr">

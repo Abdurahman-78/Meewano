@@ -127,20 +127,39 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders })
   try {
     const body = await req.json()
-    const { email, booking } = body as { email: string; booking: Props }
-    if (!email || !booking) {
-      return new Response(JSON.stringify({ error: 'email and booking required' }),
+    let { email, host_id, booking } = body as { email: string | null; host_id?: string; booking: Props }
+    if (!booking) {
+      return new Response(JSON.stringify({ error: 'booking required' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+    )
+
+    // If email wasn't provided, try to resolve it from the host's profile or auth.users
+    if (!email && host_id) {
+      // Try profiles first
+      const { data: prof } = await supabase.from('profiles').select('email').eq('id', host_id).maybeSingle()
+      email = prof?.email || null
+
+      // Fall back to auth.users (requires service role)
+      if (!email) {
+        const { data: authUser } = await supabase.auth.admin.getUserById(host_id)
+        email = authUser?.user?.email || null
+      }
+    }
+
+    if (!email) {
+      console.error('send-host-booking-notification: no email found for host', host_id)
+      return new Response(JSON.stringify({ error: 'no host email found' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
     const props: Props = { ...booking }
     const html = await renderAsync(React.createElement(HostBookingNotificationEmail, props) as any)
     const text = await renderAsync(React.createElement(HostBookingNotificationEmail, props) as any, { plainText: true })
-
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-    )
 
     const messageId = crypto.randomUUID()
     await supabase.from('email_send_log').insert({

@@ -139,9 +139,9 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders })
   try {
     const body = await req.json()
-    const { email, firstName, booking } = body as { email: string; firstName?: string; booking: Omit<Props, 'firstName' | 'isFirstBooking'> }
-    if (!email || !booking) {
-      return new Response(JSON.stringify({ error: 'email and booking required' }),
+    let { email, guest_id, firstName, booking } = body as { email: string | null; guest_id?: string; firstName?: string; booking: Omit<Props, 'firstName' | 'isFirstBooking'> }
+    if (!booking) {
+      return new Response(JSON.stringify({ error: 'booking required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
@@ -150,11 +150,28 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     )
 
-    // First-booking detection: count prior bookings for this guest by email
-    const { data: prof } = await supabase.from('profiles').select('id').eq('email', email).maybeSingle()
+    // If email wasn't provided, try to resolve it from the guest's profile or auth.users
+    if (!email && guest_id) {
+      const { data: prof } = await supabase.from('profiles').select('email').eq('id', guest_id).maybeSingle()
+      email = prof?.email || null
+
+      if (!email) {
+        const { data: authUser } = await supabase.auth.admin.getUserById(guest_id)
+        email = authUser?.user?.email || null
+      }
+    }
+
+    if (!email) {
+      console.error('send-booking-confirmation: no email found for guest', guest_id)
+      return new Response(JSON.stringify({ error: 'no guest email found' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+
+    // First-booking detection: count prior bookings for this guest
     let isFirstBooking = true
-    if (prof?.id) {
-      const { count } = await supabase.from('bookings').select('id', { count: 'exact', head: true }).eq('guest_id', prof.id)
+    const resolvedGuestId = guest_id || (await supabase.from('profiles').select('id').eq('email', email).maybeSingle())?.data?.id
+    if (resolvedGuestId) {
+      const { count } = await supabase.from('bookings').select('id', { count: 'exact', head: true }).eq('guest_id', resolvedGuestId)
       isFirstBooking = (count ?? 0) <= 1
     }
 

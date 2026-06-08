@@ -151,8 +151,7 @@ const HostBookings = () => {
             .eq("id", b.property_id)
             .maybeSingle();
 
-          const guestEmail = guestProf?.email;
-          if (guestEmail) {
+          const guestEmail = guestProf?.email || null;
             const nights = Math.max(1, Math.ceil(
               (new Date(b.check_out).getTime() - new Date(b.check_in).getTime()) / (1000 * 60 * 60 * 24)
             ));
@@ -165,6 +164,7 @@ const HostBookings = () => {
             supabase.functions.invoke("send-booking-approved", {
               body: {
                 email: guestEmail,
+                guest_id: b.guest_id,
                 booking: {
                   guestName: guestProf?.full_name || "Guest",
                   confirmationNumber: `MW-${b.id.slice(0, 8).toUpperCase()}`,
@@ -187,7 +187,6 @@ const HostBookings = () => {
                 },
               },
             }).catch((e) => console.warn("booking approved email failed:", e));
-          }
         } catch (emailErr) {
           console.warn("booking approved email setup failed (non-fatal):", emailErr);
         }
