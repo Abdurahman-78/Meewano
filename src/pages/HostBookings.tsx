@@ -217,6 +217,50 @@ const HostBookings = () => {
         }
       }
 
+      // Send booking-rejected email to the guest
+      if (action === "rejected") {
+        try {
+          const { data: guestProf } = await supabase
+            .from("profiles")
+            .select("email, full_name")
+            .eq("id", b.guest_id)
+            .maybeSingle();
+          const { data: hostProf } = await supabase
+            .from("profiles")
+            .select("full_name")
+            .eq("id", user.id)
+            .maybeSingle();
+          const guestEmail = guestProf?.email;
+          if (guestEmail) {
+            const nights = Math.max(
+              1,
+              Math.ceil((new Date(b.check_out).getTime() - new Date(b.check_in).getTime()) / (1000 * 60 * 60 * 24)),
+            );
+            supabase.functions
+              .invoke("send-booking-rejected", {
+                body: {
+                  email: guestEmail,
+                  booking: {
+                    guestName: guestProf?.full_name || "Guest",
+                    hostName: hostProf?.full_name || "Your host",
+                    confirmationNumber: `MW-${b.id.slice(0, 8).toUpperCase()}`,
+                    propertyName: b.properties?.title || "Property",
+                    propertyLocation: b.properties?.location || "",
+                    checkIn: b.check_in,
+                    checkOut: b.check_out,
+                    guests: b.guests,
+                    nights,
+                    reason: "",
+                  },
+                },
+              })
+              .catch((e) => console.warn("booking rejected email failed:", e));
+          }
+        } catch (emailErr) {
+          console.warn("booking rejected email setup failed (non-fatal):", emailErr);
+        }
+      }
+
       toast.success(`Booking ${action === "confirmed" ? "approved" : "rejected"}`);
       load();
     } catch (e: any) {

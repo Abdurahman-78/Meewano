@@ -1,5 +1,4 @@
-// Sends a "Booking Approved" email to the guest when the host confirms their booking.
-// Includes: confirmation, invoice/price breakdown, welcome message, cleaning policy, and booking details.
+// Sends "Your booking was approved" email to the guest after the host approves.
 import * as React from 'npm:react@18.3.1'
 import { renderAsync } from 'npm:@react-email/components@0.0.22'
 import { createClient } from 'npm:@supabase/supabase-js@2'
@@ -14,8 +13,8 @@ const corsHeaders = {
 }
 
 const SITE_NAME = 'Meewano'
-const SENDER_DOMAIN = 'notify.mail.meewano.com'
-const FROM_DOMAIN = 'notify.mail.meewano.com'
+const SENDER_DOMAIN = 'home.meewano.com'
+const FROM_DOMAIN = 'meewano.com'
 const SITE_URL = 'https://meewano.com'
 const LOGO_URL =
   `${Deno.env.get('SUPABASE_URL')}/storage/v1/object/public/email-assets/meewano-logo.png`
@@ -25,13 +24,15 @@ const BRAND_SOFT = '#FFE8EE'
 const INK = '#1a1a1a'
 const MUTED = '#6b7280'
 const BORDER = '#F0F0F0'
+const GREEN_SOFT = '#E7F8EF'
+const GREEN = '#0F8C50'
 
-interface Props {
+interface Booking {
   guestName: string
+  hostName: string
   confirmationNumber: string
   propertyName: string
   propertyLocation: string
-  hostName: string
   checkIn: string
   checkOut: string
   guests: number
@@ -42,112 +43,13 @@ interface Props {
   tax: number
   total: number
   currency: string
-  paymentMethod: string
+  paymentMethod?: string
   welcomeMessage?: string
   cleaningPolicy?: string
 }
 
-const money = (n: number, c: string) => `${c} ${Number(n).toLocaleString('en-US', { maximumFractionDigits: 0 })}`
-
-function BookingApprovedEmail(p: Props) {
-  const name = p.guestName || 'there'
-  return React.createElement(Html, null,
-    React.createElement(Head, null),
-    React.createElement(Preview, null, `Great news! Your booking at ${p.propertyName} has been approved`),
-    React.createElement(Body, {
-      style: { backgroundColor: '#FAFAFA', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif', margin: 0, padding: '32px 0' }
-    },
-      React.createElement(Container, {
-        style: { backgroundColor: '#ffffff', border: `1px solid ${BORDER}`, borderRadius: 16, maxWidth: 600, margin: '0 auto', padding: '36px 32px' }
-      },
-        React.createElement(Section, { style: { textAlign: 'center', marginBottom: 16 } },
-          React.createElement(Img, { src: LOGO_URL, alt: SITE_NAME, width: 56, height: 56, style: { borderRadius: 12 } }),
-        ),
-
-        // Approval hero
-        React.createElement(Section, {
-          style: { backgroundColor: '#D1FAE5', borderRadius: 12, padding: '20px 18px', marginBottom: 20, textAlign: 'center' }
-        },
-          React.createElement(Text, { style: { fontSize: 32, margin: '0 0 6px' } }, '🎉'),
-          React.createElement(Heading, { style: { color: '#065F46', fontSize: 24, fontWeight: 700, margin: '0 0 6px' } },
-            'Booking Approved!'),
-          React.createElement(Text, { style: { color: '#047857', fontSize: 14, margin: 0 } },
-            `Your reservation has been confirmed by ${p.hostName || 'the host'}`),
-        ),
-
-        React.createElement(Text, { style: { color: INK, fontSize: 15, lineHeight: '24px', margin: '0 0 8px' } },
-          `Hi ${name},`),
-        React.createElement(Text, { style: { color: INK, fontSize: 15, lineHeight: '24px', margin: '0 0 20px' } },
-          `Great news! Your booking request has been approved. Here are your complete booking details and invoice.`),
-        React.createElement(Text, { style: { color: MUTED, fontSize: 13, margin: '0 0 20px' } },
-          `Confirmation # ${p.confirmationNumber}`),
-
-        // Welcome message from host
-        p.welcomeMessage && React.createElement(Section, {
-          style: { backgroundColor: BRAND_SOFT, borderLeft: `4px solid ${BRAND}`, borderRadius: 8, padding: '14px 18px', marginBottom: 20 }
-        },
-          React.createElement(Text, { style: { color: BRAND, fontWeight: 700, fontSize: 12, margin: '0 0 6px', letterSpacing: '0.4px' } }, '💌 WELCOME MESSAGE FROM YOUR HOST'),
-          React.createElement(Text, { style: { color: INK, fontSize: 14, lineHeight: '22px', margin: 0, whiteSpace: 'pre-wrap' } }, p.welcomeMessage),
-        ),
-
-        // Booking details
-        React.createElement(Heading, { as: 'h2', style: { color: INK, fontSize: 18, fontWeight: 700, margin: '0 0 12px' } }, 'Booking Details'),
-        React.createElement(Section, { style: { backgroundColor: '#F7F7F7', borderRadius: 12, padding: '18px 20px', marginBottom: 20 } },
-          React.createElement(Text, { style: { color: INK, fontWeight: 600, fontSize: 16, margin: '0 0 2px' } }, p.propertyName),
-          React.createElement(Text, { style: { color: MUTED, fontSize: 13, margin: '0 0 12px' } }, p.propertyLocation),
-          row('Check-in', p.checkIn),
-          row('Check-out', p.checkOut),
-          row('Guests', String(p.guests)),
-          row('Nights', String(p.nights)),
-          row('Host', p.hostName || 'Your host'),
-        ),
-
-        // Invoice
-        React.createElement(Heading, { as: 'h2', style: { color: INK, fontSize: 18, fontWeight: 700, margin: '0 0 12px' } }, '📄 Invoice'),
-        React.createElement(Section, { style: { border: `1px solid ${BORDER}`, borderRadius: 12, padding: '18px 20px', marginBottom: 24 } },
-          row(`${money(p.pricePerNight, p.currency)} × ${p.nights} nights`, money(p.subtotal, p.currency)),
-          row('Cleaning fee', money(p.cleaningFee, p.currency)),
-          row('Taxes & fees', money(p.tax, p.currency)),
-          React.createElement(Hr, { style: { borderColor: BORDER, margin: '12px 0' } }),
-          row('Total paid', money(p.total, p.currency), true),
-          React.createElement(Text, { style: { color: MUTED, fontSize: 12, margin: '10px 0 0' } }, `Payment method: ${p.paymentMethod}`),
-        ),
-
-        // Cleaning policy
-        p.cleaningPolicy && React.createElement(React.Fragment, null,
-          React.createElement(Heading, { as: 'h2', style: { color: INK, fontSize: 18, fontWeight: 700, margin: '0 0 12px' } }, '🧹 Cleaning Policy'),
-          React.createElement(Section, { style: { border: `1px solid ${BORDER}`, borderRadius: 12, padding: '16px 20px', marginBottom: 24 } },
-            React.createElement(Text, { style: { color: INK, fontSize: 14, lineHeight: '22px', margin: 0, whiteSpace: 'pre-wrap' } }, p.cleaningPolicy),
-          ),
-        ),
-
-        // What's next
-        React.createElement(Section, {
-          style: { backgroundColor: '#F0F9FF', borderRadius: 10, padding: '16px 18px', marginBottom: 20 }
-        },
-          React.createElement(Text, { style: { color: '#1E40AF', fontWeight: 700, fontSize: 12, letterSpacing: '0.4px', margin: '0 0 8px' } }, "WHAT'S NEXT?"),
-          React.createElement(Text, { style: { color: INK, fontSize: 14, lineHeight: '22px', margin: '0 0 4px' } }, '✅ Your booking is confirmed — no further action needed.'),
-          React.createElement(Text, { style: { color: INK, fontSize: 14, lineHeight: '22px', margin: '0 0 4px' } }, '💬 Message your host for check-in instructions.'),
-          React.createElement(Text, { style: { color: INK, fontSize: 14, lineHeight: '22px', margin: '0 0 4px' } }, '📋 Review the house rules and cleaning policy before arrival.'),
-          React.createElement(Text, { style: { color: INK, fontSize: 14, lineHeight: '22px', margin: 0 } }, '🗺️ Save the property location for easy navigation.'),
-        ),
-
-        React.createElement(Section, { style: { textAlign: 'center', marginBottom: 8 } },
-          React.createElement(Button, {
-            href: `${SITE_URL}/guest/bookings`,
-            style: { backgroundColor: BRAND, color: '#ffffff', borderRadius: 10, padding: '13px 28px', fontWeight: 600, fontSize: 15, textDecoration: 'none' },
-          }, 'View My Bookings'),
-        ),
-
-        React.createElement(Hr, { style: { borderColor: BORDER, margin: '28px 0 16px' } }),
-        React.createElement(Text, { style: { color: MUTED, fontSize: 12, textAlign: 'center', margin: '0 0 4px' } },
-          `Need help? Reply to this email or contact support@meewano.com`),
-        React.createElement(Text, { style: { color: MUTED, fontSize: 12, textAlign: 'center', margin: 0 } },
-          `Discover Kurdistan with ${SITE_NAME} · Erbil · Sulaymaniyah · Duhok`),
-      ),
-    ),
-  )
-}
+const money = (n: number, c: string) =>
+  `${c} ${Number(n).toLocaleString('en-US', { maximumFractionDigits: 0 })}`
 
 function row(label: string, value: string, bold = false) {
   return React.createElement(Row, { style: { marginBottom: 6 } },
@@ -158,13 +60,88 @@ function row(label: string, value: string, bold = false) {
   )
 }
 
+function ApprovedEmail(b: Booking) {
+  const name = b.guestName || 'there'
+  return React.createElement(Html, null,
+    React.createElement(Head, null),
+    React.createElement(Preview, null, `Your ${SITE_NAME} booking ${b.confirmationNumber} was approved`),
+    React.createElement(Body, {
+      style: { backgroundColor: '#ffffff', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif', margin: 0, padding: '32px 0' }
+    },
+      React.createElement(Container, {
+        style: { backgroundColor: '#ffffff', border: `1px solid ${BORDER}`, borderRadius: 16, maxWidth: 600, margin: '0 auto', padding: '36px 32px' }
+      },
+        React.createElement(Section, { style: { textAlign: 'center', marginBottom: 16 } },
+          React.createElement(Img, { src: LOGO_URL, alt: SITE_NAME, width: 56, height: 56, style: { borderRadius: 12 } }),
+        ),
+        React.createElement(Heading, { style: { color: INK, fontSize: 26, fontWeight: 700, textAlign: 'center', margin: '8px 0 6px' } },
+          `Great news, ${name} — your booking is approved!`),
+        React.createElement(Text, { style: { color: MUTED, fontSize: 15, textAlign: 'center', margin: '0 0 8px' } },
+          `Confirmation # ${b.confirmationNumber}`),
+
+        React.createElement(Section, {
+          style: { backgroundColor: GREEN_SOFT, borderRadius: 12, padding: '16px 18px', margin: '16px 0 8px', borderLeft: `4px solid ${GREEN}` }
+        },
+          React.createElement(Text, { style: { color: GREEN, fontWeight: 700, fontSize: 13, margin: '0 0 4px', letterSpacing: '0.4px' } }, 'NEXT STEP — COMPLETE PAYMENT'),
+          React.createElement(Text, { style: { color: INK, fontSize: 14, margin: 0 } },
+            `Your host accepted your request. Please complete payment to fully confirm your stay.`)),
+
+        React.createElement(Hr, { style: { borderColor: BORDER, margin: '24px 0 20px' } }),
+
+        React.createElement(Heading, { as: 'h2', style: { color: INK, fontSize: 18, fontWeight: 700, margin: '0 0 12px' } }, 'Booking detail'),
+        React.createElement(Section, { style: { backgroundColor: '#F7F7F7', borderRadius: 12, padding: '18px 20px', marginBottom: 20 } },
+          React.createElement(Text, { style: { color: INK, fontWeight: 600, fontSize: 16, margin: '0 0 2px' } }, b.propertyName),
+          React.createElement(Text, { style: { color: MUTED, fontSize: 13, margin: '0 0 12px' } }, b.propertyLocation),
+          row('Host', b.hostName || '—'),
+          row('Check-in', b.checkIn),
+          row('Check-out', b.checkOut),
+          row('Guests', String(b.guests)),
+          row('Nights', String(b.nights)),
+        ),
+
+        b.welcomeMessage && React.createElement(Section, {
+          style: { backgroundColor: BRAND_SOFT, borderLeft: `4px solid ${BRAND}`, borderRadius: 8, padding: '14px 18px', marginBottom: 20 }
+        },
+          React.createElement(Text, { style: { color: BRAND, fontWeight: 700, fontSize: 12, margin: '0 0 6px', letterSpacing: '0.4px' } }, 'A MESSAGE FROM YOUR HOST'),
+          React.createElement(Text, { style: { color: INK, fontSize: 14, lineHeight: '22px', margin: 0, whiteSpace: 'pre-wrap' } }, b.welcomeMessage),
+        ),
+
+        React.createElement(Heading, { as: 'h2', style: { color: INK, fontSize: 18, fontWeight: 700, margin: '0 0 12px' } }, 'Invoice preview'),
+        React.createElement(Section, { style: { border: `1px solid ${BORDER}`, borderRadius: 12, padding: '18px 20px', marginBottom: 24 } },
+          row(`${money(b.pricePerNight, b.currency)} × ${b.nights} nights`, money(b.subtotal, b.currency)),
+          row('Cleaning fee', money(b.cleaningFee, b.currency)),
+          row('Taxes & fees', money(b.tax, b.currency)),
+          React.createElement(Hr, { style: { borderColor: BORDER, margin: '12px 0' } }),
+          row('Total due', money(b.total, b.currency), true),
+        ),
+
+        b.cleaningPolicy && React.createElement(React.Fragment, null,
+          React.createElement(Heading, { as: 'h2', style: { color: INK, fontSize: 18, fontWeight: 700, margin: '0 0 12px' } }, 'Cleaning policy'),
+          React.createElement(Section, { style: { border: `1px solid ${BORDER}`, borderRadius: 12, padding: '16px 20px', marginBottom: 24 } },
+            React.createElement(Text, { style: { color: INK, fontSize: 14, lineHeight: '22px', margin: 0, whiteSpace: 'pre-wrap' } }, b.cleaningPolicy),
+          ),
+        ),
+
+        React.createElement(Section, { style: { textAlign: 'center', marginBottom: 8 } },
+          React.createElement(Button, {
+            href: `${SITE_URL}/guest/bookings`,
+            style: { backgroundColor: BRAND, color: '#ffffff', borderRadius: 10, padding: '13px 28px', fontWeight: 600, fontSize: 15, textDecoration: 'none' },
+          }, 'Complete payment')),
+
+        React.createElement(Hr, { style: { borderColor: BORDER, margin: '28px 0 16px' } }),
+        React.createElement(Text, { style: { color: MUTED, fontSize: 12, textAlign: 'center', margin: 0 } },
+          `Discover Kurdistan with ${SITE_NAME} · Erbil · Sulaymaniyah · Duhok`),
+      ),
+    ),
+  )
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders })
   try {
-    const body = await req.json()
-    let { email, guest_id, booking } = body as { email: string | null; guest_id?: string; booking: Props }
-    if (!booking) {
-      return new Response(JSON.stringify({ error: 'booking required' }),
+    const { email, booking } = await req.json() as { email: string; booking: Booking }
+    if (!email || !booking) {
+      return new Response(JSON.stringify({ error: 'email and booking required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
@@ -173,28 +150,8 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     )
 
-    // If email wasn't provided, try to resolve it from the guest's profile or auth.users
-    if (!email && guest_id) {
-      // Try profiles first
-      const { data: prof } = await supabase.from('profiles').select('email').eq('id', guest_id).maybeSingle()
-      email = prof?.email || null
-
-      // Fall back to auth.users (requires service role)
-      if (!email) {
-        const { data: authUser } = await supabase.auth.admin.getUserById(guest_id)
-        email = authUser?.user?.email || null
-      }
-    }
-
-    if (!email) {
-      console.error('send-booking-approved: no email found for guest', guest_id)
-      return new Response(JSON.stringify({ error: 'no guest email found' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-    }
-
-    const props: Props = { ...booking }
-    const html = await renderAsync(React.createElement(BookingApprovedEmail, props) as any)
-    const text = await renderAsync(React.createElement(BookingApprovedEmail, props) as any, { plainText: true })
+    const html = await renderAsync(React.createElement(ApprovedEmail, booking) as any)
+    const text = await renderAsync(React.createElement(ApprovedEmail, booking) as any, { plainText: true })
 
     const messageId = crypto.randomUUID()
     await supabase.from('email_send_log').insert({
@@ -202,17 +159,17 @@ Deno.serve(async (req) => {
     })
 
     const { error } = await supabase.rpc('enqueue_email', {
-      queue_name: 'auth_emails',
+      queue_name: 'transactional_emails',
       payload: {
-        run_id: messageId,
         message_id: messageId,
         to: email,
         from: `${SITE_NAME} <noreply@${FROM_DOMAIN}>`,
         sender_domain: SENDER_DOMAIN,
-        subject: `🎉 Booking Approved — ${booking.propertyName} (${booking.confirmationNumber})`,
+        subject: `Your ${SITE_NAME} booking was approved — ${booking.confirmationNumber}`,
         html, text,
         purpose: 'transactional',
         label: 'booking_approved',
+        idempotency_key: `booking-approved-${booking.confirmationNumber}`,
         queued_at: new Date().toISOString(),
       },
     })
