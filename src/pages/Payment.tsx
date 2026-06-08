@@ -187,32 +187,30 @@ const Payment = () => {
         const recipientEmail = guestProf?.email || user.email;
         const firstName = (guestProf?.full_name || "").split(" ")[0] || "";
         if (recipientEmail) {
-          supabase.functions
-            .invoke("send-booking-confirmation", {
-              body: {
-                email: recipientEmail,
-                firstName,
-                booking: {
-                  confirmationNumber: `MW-${newBooking.id.slice(0, 8).toUpperCase()}`,
-                  propertyName: booking.property_name,
-                  propertyLocation: booking.property_location,
-                  checkIn: booking.check_in,
-                  checkOut: booking.check_out,
-                  guests: booking.guests,
-                  nights: booking.nights,
-                  pricePerNight: booking.price_per_night,
-                  subtotal: booking.total_price,
-                  cleaningFee,
-                  tax,
-                  total,
-                  currency: "IQD",
-                  paymentMethod: "Credit/Debit Card",
-                  welcomeMessage: propExtra?.welcome_message || "",
-                  cleaningPolicy: propExtra?.cleaning_policy || "",
-                },
+          await supabase.functions.invoke("send-booking-confirmation", {
+            body: {
+              email: recipientEmail,
+              firstName,
+              booking: {
+                confirmationNumber: `MW-${newBooking.id.slice(0, 8).toUpperCase()}`,
+                propertyName: booking.property_name,
+                propertyLocation: booking.property_location,
+                checkIn: booking.check_in,
+                checkOut: booking.check_out,
+                guests: booking.guests,
+                nights: booking.nights,
+                pricePerNight: booking.price_per_night,
+                subtotal: booking.total_price,
+                cleaningFee,
+                tax,
+                total,
+                currency: "IQD",
+                paymentMethod: "Credit/Debit Card",
+                welcomeMessage: propExtra?.welcome_message || "",
+                cleaningPolicy: propExtra?.cleaning_policy || "",
               },
-            })
-            .catch((e) => console.warn("booking email failed", e));
+            },
+          });
         }
 
         // Send email notification to the HOST about the new booking request
@@ -223,27 +221,25 @@ const Payment = () => {
           .maybeSingle();
         const hostEmail = hostProf?.email;
         if (hostEmail) {
-          supabase.functions
-            .invoke("send-host-booking-notification", {
-              body: {
-                email: hostEmail,
-                booking: {
-                  hostName: hostProf?.full_name || "Host",
-                  guestName: guestProf?.full_name || "A guest",
-                  propertyName: booking.property_name,
-                  propertyLocation: booking.property_location,
-                  checkIn: booking.check_in,
-                  checkOut: booking.check_out,
-                  guests: booking.guests,
-                  nights: booking.nights,
-                  totalPrice: total,
-                  currency: "IQD",
-                  guestMessage: guestMessage || "",
-                  confirmationNumber: `MW-${newBooking.id.slice(0, 8).toUpperCase()}`,
-                },
+          await supabase.functions.invoke("send-host-booking-notification", {
+            body: {
+              email: hostEmail,
+              booking: {
+                hostName: hostProf?.full_name || "Host",
+                guestName: guestProf?.full_name || "A guest",
+                propertyName: booking.property_name,
+                propertyLocation: booking.property_location,
+                checkIn: booking.check_in,
+                checkOut: booking.check_out,
+                guests: booking.guests,
+                nights: booking.nights,
+                totalPrice: total,
+                currency: "IQD",
+                guestMessage: guestMessage || "",
+                confirmationNumber: `MW-${newBooking.id.slice(0, 8).toUpperCase()}`,
               },
-            })
-            .catch((e) => console.warn("host booking notification email failed", e));
+            },
+          });
         }
       } catch (e) {
         console.warn("email lookup failed (non-fatal):", e);

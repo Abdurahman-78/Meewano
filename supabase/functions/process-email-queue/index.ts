@@ -52,6 +52,50 @@ function parseJwtClaims(token: string): Record<string, unknown> | null {
   }
 }
 
+function generateToken(): string {
+  const bytes = new Uint8Array(32)
+  crypto.getRandomValues(bytes)
+  return Array.from(bytes)
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('')
+}
+
+async function getOrCreateUnsubscribeToken(
+  supabase: ReturnType<typeof createClient>,
+  email: string,
+): Promise<string> {
+  const normalizedEmail = email.toLowerCase()
+
+  const { data: existingToken, error: lookupError } = await supabase
+    .from('email_unsubscribe_tokens')
+    .select('token, used_at')
+    .eq('email', normalizedEmail)
+    .maybeSingle()
+
+  if (lookupError) throw lookupError
+  if (existingToken?.token && !existingToken.used_at) return existingToken.token
+
+  const token = generateToken()
+  const { error: upsertError } = await supabase
+    .from('email_unsubscribe_tokens')
+    .upsert(
+      { token, email: normalizedEmail },
+      { onConflict: 'email', ignoreDuplicates: true },
+    )
+
+  if (upsertError) throw upsertError
+
+  const { data: storedToken, error: rereadError } = await supabase
+    .from('email_unsubscribe_tokens')
+    .select('token')
+    .eq('email', normalizedEmail)
+    .maybeSingle()
+
+  if (rereadError) throw rereadError
+  if (!storedToken?.token) throw new Error('Failed to create unsubscribe token')
+  return storedToken.token
+}
+
 // Move a message to the dead letter queue and log the reason.
 async function moveToDlq(
   supabase: ReturnType<typeof createClient>,
@@ -249,20 +293,31 @@ Deno.serve(async (req) => {
       }
 
       try {
+        const sendPayload = { ...payload }
+        if (
+          sendPayload.purpose === 'transactional' &&
+          !sendPayload.unsubscribe_token &&
+          !sendPayload.run_id &&
+          typeof sendPayload.to === 'string' &&
+          sendPayload.to
+        ) {
+          sendPayload.unsubscribe_token = await getOrCreateUnsubscribeToken(supabase, sendPayload.to)
+        }
+
         await sendLovableEmail(
           {
-            run_id: payload.run_id,
-            to: payload.to,
-            from: payload.from,
-            sender_domain: payload.sender_domain,
-            subject: payload.subject,
-            html: payload.html,
-            text: payload.text,
-            purpose: payload.purpose,
-            label: payload.label,
-            idempotency_key: payload.idempotency_key,
-            unsubscribe_token: payload.unsubscribe_token,
-            message_id: payload.message_id,
+            run_id: sendPayload.run_id,
+            to: sendPayload.to,
+            from: sendPayload.from,
+            sender_domain: sendPayload.sender_domain,
+            subject: sendPayload.subject,
+            html: sendPayload.html,
+            text: sendPayload.text,
+            purpose: sendPayload.purpose,
+            label: sendPayload.label,
+            idempotency_key: sendPayload.idempotency_key,
+            unsubscribe_token: sendPayload.unsubscribe_token,
+            message_id: sendPayload.message_id,
           },
           // sendUrl is optional — when LOVABLE_SEND_URL is not set, the library
           // falls back to the default Lovable API endpoint (https://api.lovable.dev).

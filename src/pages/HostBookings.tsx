@@ -184,33 +184,31 @@ const HostBookings = () => {
             const tax = Math.round(subtotal * 0.05);
             const totalCalc = b.total_price || subtotal + cleaningFee + tax;
 
-            supabase.functions
-              .invoke("send-booking-approved", {
-                body: {
-                  email: guestEmail,
-                  booking: {
-                    guestName: guestProf?.full_name || "Guest",
-                    confirmationNumber: `MW-${b.id.slice(0, 8).toUpperCase()}`,
-                    propertyName: b.properties?.title || "Property",
-                    propertyLocation: b.properties?.location || "",
-                    hostName: hostProf?.full_name || "Your host",
-                    checkIn: b.check_in,
-                    checkOut: b.check_out,
-                    guests: b.guests,
-                    nights,
-                    pricePerNight,
-                    subtotal,
-                    cleaningFee,
-                    tax,
-                    total: totalCalc,
-                    currency: "IQD",
-                    paymentMethod: "Credit/Debit Card",
-                    welcomeMessage: (propData as any)?.welcome_message || "",
-                    cleaningPolicy: (propData as any)?.cleaning_policy || "",
-                  },
+            await supabase.functions.invoke("send-booking-approved", {
+              body: {
+                email: guestEmail,
+                booking: {
+                  guestName: guestProf?.full_name || "Guest",
+                  confirmationNumber: `MW-${b.id.slice(0, 8).toUpperCase()}`,
+                  propertyName: b.properties?.title || "Property",
+                  propertyLocation: b.properties?.location || "",
+                  hostName: hostProf?.full_name || "Your host",
+                  checkIn: b.check_in,
+                  checkOut: b.check_out,
+                  guests: b.guests,
+                  nights,
+                  pricePerNight,
+                  subtotal,
+                  cleaningFee,
+                  tax,
+                  total: totalCalc,
+                  currency: "IQD",
+                  paymentMethod: "Credit/Debit Card",
+                  welcomeMessage: (propData as any)?.welcome_message || "",
+                  cleaningPolicy: (propData as any)?.cleaning_policy || "",
                 },
-              })
-              .catch((e) => console.warn("booking approved email failed:", e));
+              },
+            });
           }
         } catch (emailErr) {
           console.warn("booking approved email setup failed (non-fatal):", emailErr);
@@ -236,25 +234,23 @@ const HostBookings = () => {
               1,
               Math.ceil((new Date(b.check_out).getTime() - new Date(b.check_in).getTime()) / (1000 * 60 * 60 * 24)),
             );
-            supabase.functions
-              .invoke("send-booking-rejected", {
-                body: {
-                  email: guestEmail,
-                  booking: {
-                    guestName: guestProf?.full_name || "Guest",
-                    hostName: hostProf?.full_name || "Your host",
-                    confirmationNumber: `MW-${b.id.slice(0, 8).toUpperCase()}`,
-                    propertyName: b.properties?.title || "Property",
-                    propertyLocation: b.properties?.location || "",
-                    checkIn: b.check_in,
-                    checkOut: b.check_out,
-                    guests: b.guests,
-                    nights,
-                    reason: "",
-                  },
+            await supabase.functions.invoke("send-booking-rejected", {
+              body: {
+                email: guestEmail,
+                booking: {
+                  guestName: guestProf?.full_name || "Guest",
+                  hostName: hostProf?.full_name || "Your host",
+                  confirmationNumber: `MW-${b.id.slice(0, 8).toUpperCase()}`,
+                  propertyName: b.properties?.title || "Property",
+                  propertyLocation: b.properties?.location || "",
+                  checkIn: b.check_in,
+                  checkOut: b.check_out,
+                  guests: b.guests,
+                  nights,
+                  reason: "",
                 },
-              })
-              .catch((e) => console.warn("booking rejected email failed:", e));
+              },
+            });
           }
         } catch (emailErr) {
           console.warn("booking rejected email setup failed (non-fatal):", emailErr);
