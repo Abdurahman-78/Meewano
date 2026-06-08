@@ -63,7 +63,7 @@ function HostEmail(b: Booking) {
         style: { backgroundColor: '#ffffff', border: `1px solid ${BORDER}`, borderRadius: 16, maxWidth: 600, margin: '0 auto', padding: '36px 32px' }
       },
         React.createElement(Section, { style: { textAlign: 'center', marginBottom: 16 } },
-          React.createElement(Img, { src: LOGO_URL, alt: SITE_NAME, width: 56, height: 56, style: { borderRadius: 12 } }),
+          React.createElement(Img, { src: LOGO_URL, alt: SITE_NAME, width: 140, height: 40, style: { display: 'inline-block', objectFit: 'contain' } }),
         ),
         React.createElement(Heading, { style: { color: INK, fontSize: 24, fontWeight: 700, textAlign: 'center', margin: '8px 0 6px' } },
           `New booking request, ${b.hostName}!`),

@@ -72,7 +72,7 @@ function ApprovedEmail(b: Booking) {
         style: { backgroundColor: '#ffffff', border: `1px solid ${BORDER}`, borderRadius: 16, maxWidth: 600, margin: '0 auto', padding: '36px 32px' }
       },
         React.createElement(Section, { style: { textAlign: 'center', marginBottom: 16 } },
-          React.createElement(Img, { src: LOGO_URL, alt: SITE_NAME, width: 56, height: 56, style: { borderRadius: 12 } }),
+          React.createElement(Img, { src: LOGO_URL, alt: SITE_NAME, width: 140, height: 40, style: { display: 'inline-block', objectFit: 'contain' } }),
         ),
         React.createElement(Heading, { style: { color: INK, fontSize: 26, fontWeight: 700, textAlign: 'center', margin: '8px 0 6px' } },
           `Great news, ${name} — your booking is approved!`),
@@ -109,8 +109,6 @@ function ApprovedEmail(b: Booking) {
         React.createElement(Heading, { as: 'h2', style: { color: INK, fontSize: 18, fontWeight: 700, margin: '0 0 12px' } }, 'Invoice preview'),
         React.createElement(Section, { style: { border: `1px solid ${BORDER}`, borderRadius: 12, padding: '18px 20px', marginBottom: 24 } },
           row(`${money(b.pricePerNight, b.currency)} × ${b.nights} nights`, money(b.subtotal, b.currency)),
-          row('Cleaning fee', money(b.cleaningFee, b.currency)),
-          row('Taxes & fees', money(b.tax, b.currency)),
           React.createElement(Hr, { style: { borderColor: BORDER, margin: '12px 0' } }),
           row('Total due', money(b.total, b.currency), true),
         ),
