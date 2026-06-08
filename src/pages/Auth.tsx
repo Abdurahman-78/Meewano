@@ -13,6 +13,7 @@ import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Link } from "react-router-dom";
 import { PasswordStrength } from "@/components/PasswordStrength";
+import PasswordRequirements, { evaluatePasswordRequirements } from "@/components/PasswordRequirements";
 
 type AuthMode = "login" | "signup" | "signup_verify" | "forgot" | "forgot_code" | "forgot_new_password";
 
@@ -86,6 +87,11 @@ const Auth = () => {
         }
         if (password !== confirmPassword) {
           throw new Error("Passwords do not match");
+        }
+        const reqs = evaluatePasswordRequirements(password);
+        const missing = reqs.filter((r) => !r.passed);
+        if (missing.length > 0) {
+          throw new Error("Password does not meet all requirements");
         }
 
         const { data: existing } = await supabase
@@ -560,7 +566,7 @@ const Auth = () => {
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
-                {mode === "signup" && <PasswordStrength password={password} />}
+                {mode === "signup" && <PasswordRequirements password={password} />}
               </div>
               {mode === "signup" && (
                 <div>

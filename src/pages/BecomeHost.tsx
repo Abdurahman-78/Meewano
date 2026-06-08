@@ -17,6 +17,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import PasswordStrengthMeter, { evaluatePassword } from "@/components/PasswordStrengthMeter";
 import LocationPicker from "@/components/LocationPicker";
+import HostStepIndicator from "@/components/HostStepIndicator";
 
 const TOTAL_STEPS = 6;
 const EMAIL_OTP_LENGTH = 8;
@@ -305,16 +306,13 @@ const BecomeHost = () => {
   return (
     <AppLayout>
       <main className="min-h-[calc(100vh-4rem)] bg-gradient-to-br from-accent/30 via-background to-background">
-        {/* Sticky progress */}
-        <div className="sticky top-14 md:top-20 z-30 bg-background/80 backdrop-blur border-b border-border">
-          <div className="container mx-auto px-4 py-3">
-            <div className="flex items-center justify-between mb-2 text-xs text-muted-foreground">
-              <span>Step {step} of {TOTAL_STEPS}</span>
-              <span>{Math.round(progress)}% complete</span>
-            </div>
-            <Progress value={progress} className="h-1.5" />
+        {/* Sticky step indicator */}
+        <div className="sticky top-14 md:top-20 z-30 bg-background/90 backdrop-blur border-b border-border">
+          <div className="container mx-auto px-4 py-3 md:py-4 max-w-3xl">
+            <HostStepIndicator currentStep={step} />
           </div>
         </div>
+
 
         <div className="container mx-auto px-4 py-6 md:py-12">
           <div className="max-w-xl mx-auto">

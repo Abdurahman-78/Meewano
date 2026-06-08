@@ -28,8 +28,12 @@ const Header = () => {
   const { user, signOut } = useAuth();
   const { isAdmin } = useUserRole();
   const { data: hostVerification } = useMyHostVerification();
-  const isVerifiedHost = hostVerification?.status === "approved";
-  const hostCtaTo = isVerifiedHost ? "/host/add-listing" : "/become-host";
+  const isVerifiedHost = !!user && hostVerification?.status === "approved";
+  const hostCtaTo = !user
+    ? "/auth?mode=signup&redirect=/host/verification"
+    : isVerifiedHost
+      ? "/host/add-listing"
+      : "/host/verification";
   const navigate = useNavigate();
 
   const { data: hostPropertiesCount = 0 } = useQuery({
@@ -100,7 +104,7 @@ const Header = () => {
           <Link to={hostCtaTo} className="hidden md:block relative">
             <Button variant="ghost" size="sm" className="rounded-full font-semibold hover:bg-accent relative">
               <Home className="h-4 w-4 mr-1.5" />
-              {isVerifiedHost ? "List your property" : "List your property"}
+              {isVerifiedHost ? "List your property" : "Become host"}
               {showListingDot && (
                 <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-red-500 ring-2 ring-background" />
               )}

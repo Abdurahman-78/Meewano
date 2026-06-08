@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { format } from "date-fns";
-import { Calendar as CalendarIcon, Upload, Loader2, X, FileCheck2, CheckCircle2 } from "lucide-react";
+import { Calendar as CalendarIcon, Upload, Loader2, X, FileCheck2, CheckCircle2, ShieldCheck } from "lucide-react";
 import ListingStepIndicator from "@/components/ListingStepIndicator";
 import { useNavigate } from "react-router-dom";
 import type { DateRange } from "react-day-picker";
@@ -21,6 +21,7 @@ import { useSiteSettings } from "@/hooks/useAdminData";
 import LocationPicker from "@/components/LocationPicker";
 import { optimizeImage } from "@/lib/imageOptimizer";
 import { normalizeAmenities, DEFAULT_AMENITIES } from "@/lib/amenities";
+import { useMyHostVerification } from "@/hooks/useHostVerification";
 
 const formatDateRange = (range?: DateRange) => {
   if (!range?.from) return "Select date range";
@@ -43,8 +44,9 @@ const getDatesInRange = (range?: DateRange) => {
 const draftKey = (uid?: string) => `meewano:add-listing-draft:${uid ?? "anon"}:v1`;
 
 const AddListing = () => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const { data: verification, isLoading: verificationLoading } = useMyHostVerification();
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [showErrors, setShowErrors] = useState(false);
@@ -238,6 +240,7 @@ const AddListing = () => {
 
   const handleSubmit = async (isDraft: boolean = false) => {
     if (!user) { toast.error("Please log in to add a listing"); navigate("/auth"); return; }
+    if (verification?.status !== "approved") { toast.error("Complete account verification first"); navigate("/host/verification"); return; }
     if (!formData.title || !formData.location || !formData.city || !formData.price_per_night || (!isDraft && !ownershipFile)) {
       setShowErrors(true);
       toast.error("Please fill in all required fields and upload proof of ownership");
@@ -292,6 +295,43 @@ const AddListing = () => {
       setUploading(false);
     }
   };
+
+  if (authLoading || (user && verificationLoading)) {
+    return (
+      <AppLayout>
+        <main className="container mx-auto px-4 py-16 flex justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </main>
+      </AppLayout>
+    );
+  }
+
+  if (!user || verification?.status !== "approved") {
+    return (
+      <AppLayout>
+        <main className="container mx-auto px-4 py-16">
+          <Card className="max-w-lg mx-auto text-center">
+            <CardContent className="pt-10 pb-8">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 text-primary mb-5">
+                <ShieldCheck className="h-8 w-8" />
+              </div>
+              <h1 className="text-3xl font-bold mb-2">Become host</h1>
+              <p className="text-muted-foreground mb-6">
+                Create an account and complete verification before listing a property.
+              </p>
+              <Button
+                size="lg"
+                className="w-full"
+                onClick={() => navigate(user ? "/host/verification" : "/auth?mode=signup&redirect=/host/verification")}
+              >
+                {user ? "Verify account" : "Create account"}
+              </Button>
+            </CardContent>
+          </Card>
+        </main>
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout>

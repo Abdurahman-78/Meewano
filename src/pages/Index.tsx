@@ -14,11 +14,13 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { Star, Loader2, Home, CheckCircle2, XCircle, Clock, RefreshCw, Eye, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useMyHostVerification } from "@/hooks/useHostVerification";
 
 const Index = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { data: hostVerification } = useMyHostVerification();
   const { formatPrice } = useCurrency();
   const { data: properties, isLoading } = useProperties();
   const { data: settings } = useSiteSettings();
@@ -74,6 +76,12 @@ const Index = () => {
 
   const ranyaProperties = getPropertiesByCity("Ranya");
   const hajiProperties = getPropertiesByCity("Haji Omran");
+  const isVerifiedHost = !!user && hostVerification?.status === "approved";
+  const hostCtaPath = !user
+    ? "/auth?mode=signup&redirect=/host/verification"
+    : isVerifiedHost
+      ? "/host/add-listing"
+      : "/host/verification";
 
   return (
     <AppLayout>
@@ -178,10 +186,10 @@ const Index = () => {
             <Button
               variant="default"
               className="w-full mt-4 h-11"
-              onClick={() => navigate("/host/add-listing")}
+              onClick={() => navigate(hostCtaPath)}
             >
               <Plus className="h-4 w-4 mr-2" />
-              Add new property
+              {isVerifiedHost ? "Add new property" : "Become host"}
             </Button>
           </div>
         </section>
@@ -299,8 +307,8 @@ const Index = () => {
             <p className="text-muted-foreground mb-6">
               {t("noPropertiesDesc")}
             </p>
-            <Button onClick={() => navigate("/add-listing")} size="lg">
-              {t("addYourProperty")}
+            <Button onClick={() => navigate(hostCtaPath)} size="lg">
+              {isVerifiedHost ? t("addYourProperty") : "Become host"}
             </Button>
           </div>
 

@@ -13,7 +13,7 @@ const corsHeaders = {
 }
 
 const SITE_NAME = 'Meewano'
-const SENDER_DOMAIN = 'home.meewano.com'
+const SENDER_DOMAIN = 'pro.meewano.com'
 const FROM_DOMAIN = 'meewano.com'
 const SITE_URL = 'https://meewano.com'
 const LOGO_URL =
@@ -156,9 +156,8 @@ Deno.serve(async (req) => {
       : `Action needed on your ${SITE_NAME} listing "${prop.title}"`
 
     const { error } = await supabase.rpc('enqueue_email', {
-      queue_name: 'auth_emails',
+      queue_name: 'transactional_emails',
       payload: {
-        run_id: messageId,
         message_id: messageId,
         to: host.email,
         from: `${SITE_NAME} <noreply@${FROM_DOMAIN}>`,
@@ -167,6 +166,7 @@ Deno.serve(async (req) => {
         html, text,
         purpose: 'transactional',
         label,
+        idempotency_key: `property-review-${propertyId}-${variant}`,
         queued_at: new Date().toISOString(),
       },
     })

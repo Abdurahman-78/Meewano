@@ -762,6 +762,7 @@ const PropertyDetail = () => {
               <div className="rounded-lg border border-border bg-background overflow-hidden">
                 <Calendar
                   mode="range"
+                  numberOfMonths={2}
                   selected={{
                     from: checkIn ? new Date(checkIn) : undefined,
                     to: checkOut ? new Date(checkOut) : undefined,
@@ -1007,6 +1008,7 @@ const PropertyDetail = () => {
                     <div className="rounded-lg border border-border bg-background overflow-hidden">
                       <Calendar
                         mode="range"
+                        numberOfMonths={2}
                         selected={{
                           from: checkIn ? new Date(checkIn) : undefined,
                           to: checkOut ? new Date(checkOut) : undefined,
