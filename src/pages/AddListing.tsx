@@ -87,7 +87,6 @@ const AddListing = () => {
 
   const [formData, setFormData] = useState({ ...defaultForm });
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(defaultCoords);
-  const [availableRange, setAvailableRange] = useState<DateRange | undefined>(undefined);
   const [unavailableRange, setUnavailableRange] = useState<DateRange | undefined>(undefined);
   const [draftLoaded, setDraftLoaded] = useState(false);
 
@@ -101,12 +100,10 @@ const AddListing = () => {
         const restored = JSON.parse(raw) as {
           formData?: typeof defaultForm;
           coords?: { lat: number; lng: number } | null;
-          availableRange?: { from?: string; to?: string };
           unavailableRange?: { from?: string; to?: string };
         };
         if (restored.formData) setFormData((f) => ({ ...f, ...restored.formData }));
         if (restored.coords) setCoords(restored.coords);
-        if (restored.availableRange) setAvailableRange(reviveRange(restored.availableRange));
         if (restored.unavailableRange) setUnavailableRange(reviveRange(restored.unavailableRange));
       }
     } catch { /* ignore */ }
@@ -125,12 +122,11 @@ const AddListing = () => {
         JSON.stringify({
           formData,
           coords,
-          availableRange: serializeRange(availableRange),
           unavailableRange: serializeRange(unavailableRange),
         })
       );
     } catch { /* ignore quota errors */ }
-  }, [draftLoaded, user?.id, formData, coords, availableRange, unavailableRange]);
+  }, [draftLoaded, user?.id, formData, coords, unavailableRange]);
 
 
 
@@ -241,7 +237,7 @@ const AddListing = () => {
   const handleSubmit = async (isDraft: boolean = false) => {
     if (!user) { toast.error("Please log in to add a listing"); navigate("/auth"); return; }
     if (verification?.status !== "approved") { toast.error("Complete account verification first"); navigate("/host/verification"); return; }
-    if (!formData.title || !formData.location || !formData.city || !formData.price_per_night || (!isDraft && !ownershipFile)) {
+    if (!formData.title || !formData.location || !formData.city || !formData.price_per_night || !formData.bedrooms || !formData.bathrooms || !formData.max_guests || (!isDraft && !ownershipFile)) {
       setShowErrors(true);
       toast.error("Please fill in all required fields and upload proof of ownership");
       return;
@@ -271,8 +267,6 @@ const AddListing = () => {
         images: imageUrls,
         latitude: coords?.lat ?? null,
         longitude: coords?.lng ?? null,
-        available_from: availableRange?.from ? toDateString(availableRange.from) : null,
-        available_to: availableRange?.to ? toDateString(availableRange.to) : null,
         blocked_dates: getDatesInRange(unavailableRange),
         cleaning_policy: formData.cleaning_policy || null,
         welcome_message: formData.welcome_message || null,
@@ -361,6 +355,9 @@ const AddListing = () => {
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                   />
+                  {showErrors && !formData.title && (
+                    <p className="text-xs text-destructive mt-1">This field is required</p>
+                  )}
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -381,6 +378,9 @@ const AddListing = () => {
                         ))}
                       </SelectContent>
                     </Select>
+                    {showErrors && !formData.city && (
+                      <p className="text-xs text-destructive mt-1">This field is required</p>
+                    )}
                   </div>
                   <div>
                     <Label htmlFor="location" className={showErrors && !formData.location ? "text-destructive" : ""}>Address/Location *</Label>
@@ -391,6 +391,9 @@ const AddListing = () => {
                       value={formData.location}
                       onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                     />
+                    {showErrors && !formData.location && (
+                      <p className="text-xs text-destructive mt-1">This field is required</p>
+                    )}
                   </div>
                 </div>
 
@@ -404,23 +407,53 @@ const AddListing = () => {
                     value={formData.price_per_night}
                     onChange={(e) => setFormData({ ...formData, price_per_night: e.target.value })}
                   />
+                  {showErrors && !formData.price_per_night && (
+                    <p className="text-xs text-destructive mt-1">This field is required</p>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-3 gap-4">
                   <div>
-                    <Label htmlFor="bedrooms">Bedrooms</Label>
-                    <Input id="bedrooms" type="number" placeholder="3" className="mt-2" value={formData.bedrooms}
-                      onChange={(e) => setFormData({ ...formData, bedrooms: e.target.value })} />
+                    <Label htmlFor="bedrooms" className={showErrors && !formData.bedrooms ? "text-destructive" : ""}>Bedrooms *</Label>
+                    <Input id="bedrooms" type="number" min="1" placeholder="3"
+                      className={`mt-2 ${showErrors && !formData.bedrooms ? "border-destructive ring-1 ring-destructive" : ""}`}
+                      value={formData.bedrooms}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value);
+                        setFormData({ ...formData, bedrooms: e.target.value === "" ? "" : String(Math.max(1, isNaN(val) ? 1 : val)) });
+                      }}
+                    />
+                    {showErrors && !formData.bedrooms && (
+                      <p className="text-xs text-destructive mt-1">This field is required</p>
+                    )}
                   </div>
                   <div>
-                    <Label htmlFor="bathrooms">Bathrooms</Label>
-                    <Input id="bathrooms" type="number" placeholder="2" className="mt-2" value={formData.bathrooms}
-                      onChange={(e) => setFormData({ ...formData, bathrooms: e.target.value })} />
+                    <Label htmlFor="bathrooms" className={showErrors && !formData.bathrooms ? "text-destructive" : ""}>Bathrooms *</Label>
+                    <Input id="bathrooms" type="number" min="1" placeholder="2"
+                      className={`mt-2 ${showErrors && !formData.bathrooms ? "border-destructive ring-1 ring-destructive" : ""}`}
+                      value={formData.bathrooms}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value);
+                        setFormData({ ...formData, bathrooms: e.target.value === "" ? "" : String(Math.max(1, isNaN(val) ? 1 : val)) });
+                      }}
+                    />
+                    {showErrors && !formData.bathrooms && (
+                      <p className="text-xs text-destructive mt-1">This field is required</p>
+                    )}
                   </div>
                   <div>
-                    <Label htmlFor="guests">Max Guests</Label>
-                    <Input id="guests" type="number" placeholder="4" className="mt-2" value={formData.max_guests}
-                      onChange={(e) => setFormData({ ...formData, max_guests: e.target.value })} />
+                    <Label htmlFor="guests" className={showErrors && !formData.max_guests ? "text-destructive" : ""}>Max Guests *</Label>
+                    <Input id="guests" type="number" min="1" placeholder="4"
+                      className={`mt-2 ${showErrors && !formData.max_guests ? "border-destructive ring-1 ring-destructive" : ""}`}
+                      value={formData.max_guests}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value);
+                        setFormData({ ...formData, max_guests: e.target.value === "" ? "" : String(Math.max(1, isNaN(val) ? 1 : val)) });
+                      }}
+                    />
+                    {showErrors && !formData.max_guests && (
+                      <p className="text-xs text-destructive mt-1">This field is required</p>
+                    )}
                   </div>
                 </div>
 
@@ -456,61 +489,29 @@ const AddListing = () => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Available date range</Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button variant="outline" className="w-full justify-start text-left font-normal">
-                          <CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
-                          <span className={!availableRange?.from ? "text-muted-foreground" : ""}>
-                            {formatDateRange(availableRange)}
-                          </span>
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="range"
-                          selected={availableRange}
-                          onSelect={setAvailableRange}
-                          numberOfMonths={2}
-                          disabled={{ before: new Date() }}
-                          className="p-3 pointer-events-auto"
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    <p className="text-xs text-muted-foreground">Optional bookable season for this listing.</p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Not available date range</Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button variant="outline" className="w-full justify-start text-left font-normal">
-                          <CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
-                          <span className={!unavailableRange?.from ? "text-muted-foreground" : ""}>
-                            {formatDateRange(unavailableRange)}
-                          </span>
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="range"
-                          selected={unavailableRange}
-                          onSelect={setUnavailableRange}
-                          numberOfMonths={2}
-                          defaultMonth={availableRange?.from}
-                          disabled={
-                            availableRange?.from && availableRange?.to
-                              ? [{ before: availableRange.from }, { after: availableRange.to }]
-                              : { before: new Date() }
-                          }
-                          className="p-3 pointer-events-auto"
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    <p className="text-xs text-muted-foreground">Optional dates guests cannot book.</p>
-                  </div>
+                <div className="space-y-2">
+                  <Label>Dates not available for letting</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className="w-full justify-start text-left font-normal">
+                        <CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
+                        <span className={!unavailableRange?.from ? "text-muted-foreground" : ""}>
+                          {formatDateRange(unavailableRange)}
+                        </span>
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="range"
+                        selected={unavailableRange}
+                        onSelect={setUnavailableRange}
+                        numberOfMonths={2}
+                        disabled={{ before: new Date() }}
+                        className="p-3 pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  <p className="text-xs text-muted-foreground">Optional dates guests cannot book.</p>
                 </div>
 
                 <div>
@@ -621,6 +622,9 @@ const AddListing = () => {
                 <p className="text-xs text-muted-foreground mb-3">
                   Title deed, rental agreement, or utility bill in your name. Required for admin approval.
                 </p>
+                {showErrors && !ownershipFile && (
+                  <p className="text-xs text-destructive mb-2">This field is required</p>
+                )}
                 <input
                   ref={ownershipInputRef}
                   type="file"

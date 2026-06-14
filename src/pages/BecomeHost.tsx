@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  ArrowLeft, ArrowRight, BedDouble, Bath, MapPin, User as UserIcon, Mail,
-  Loader2, CheckCircle2, Eye, EyeOff, MailCheck, Plus, Minus, Phone,
+  ArrowLeft, ArrowRight, BedDouble, Bath, MapPin, UserPlus,
+  Loader2, CheckCircle2, Eye, EyeOff, MailCheck, Phone,
 } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Card, CardContent } from "@/components/ui/card";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -19,7 +20,7 @@ import PasswordStrengthMeter, { evaluatePassword } from "@/components/PasswordSt
 import LocationPicker from "@/components/LocationPicker";
 import HostStepIndicator from "@/components/HostStepIndicator";
 
-const TOTAL_STEPS = 6;
+const TOTAL_STEPS = 5;
 const EMAIL_OTP_LENGTH = 8;
 
 const IRAQ_CITIES = [
@@ -36,27 +37,32 @@ const IRAQ_CITIES = [
 ];
 
 
+
+
+
 const STEPS = [
-  { id: 1, title: "How many rooms?", subtitle: "Bedrooms in your property", icon: BedDouble },
+  { id: 1, title: "How many bedrooms?", subtitle: "Bedrooms in your property", icon: BedDouble },
   { id: 2, title: "How many bathrooms?", subtitle: "Including half-baths", icon: Bath },
   { id: 3, title: "Where's your property?", subtitle: "City and neighborhood", icon: MapPin },
-  { id: 4, title: "What's your name?", subtitle: "Guests will see this", icon: UserIcon },
-  { id: 5, title: "Create your account", subtitle: "Email, mobile and a strong password", icon: Mail },
-  { id: 6, title: "Review & submit", subtitle: "Double-check before we create your account", icon: CheckCircle2 },
+  { id: 4, title: "Create your account", subtitle: "Your name, email, mobile and a strong password", icon: UserPlus },
+  { id: 5, title: "Review & submit", subtitle: "Double-check before we create your account", icon: CheckCircle2 },
 ];
 
-const Counter = ({ value, onChange, min = 1, max = 20 }: { value: number; onChange: (v: number) => void; min?: number; max?: number }) => (
-  <div className="flex items-center justify-center gap-6">
-    <Button type="button" variant="outline" size="icon" className="h-14 w-14 rounded-full"
-      disabled={value <= min} onClick={() => onChange(Math.max(min, value - 1))}>
-      <Minus className="h-5 w-5" />
-    </Button>
-    <div className="text-6xl font-bold tabular-nums w-24 text-center">{value}</div>
-    <Button type="button" variant="outline" size="icon" className="h-14 w-14 rounded-full"
-      disabled={value >= max} onClick={() => onChange(Math.min(max, value + 1))}>
-      <Plus className="h-5 w-5" />
-    </Button>
-  </div>
+const NumberSelect = ({
+  value, onChange, min = 1, max = 20, unit,
+}: { value: number; onChange: (v: number) => void; min?: number; max?: number; unit: string }) => (
+  <Select value={String(value)} onValueChange={(v) => onChange(Number(v))}>
+    <SelectTrigger className="h-14 text-lg">
+      <SelectValue />
+    </SelectTrigger>
+    <SelectContent className="bg-popover border border-border z-50 max-h-72">
+      {Array.from({ length: max - min + 1 }, (_, i) => min + i).map((n) => (
+        <SelectItem key={n} value={String(n)} className="text-base">
+          {n} {n === 1 ? unit : `${unit}s`}
+        </SelectItem>
+      ))}
+    </SelectContent>
+  </Select>
 );
 
 const BECOME_HOST_DRAFT_KEY = "meewano:become-host-draft:v1";
@@ -134,10 +140,10 @@ const BecomeHost = () => {
     if (step === 1) return form.bedrooms >= 1;
     if (step === 2) return form.bathrooms >= 1;
     if (step === 3) return form.city.trim().length >= 2;
-    if (step === 4) return form.first_name.trim().length >= 2 && form.last_name.trim().length >= 2;
-    if (step === 5) {
+    if (step === 4) {
       const { isStrong } = evaluatePassword(form.password);
-      return /\S+@\S+\.\S+/.test(form.email) && isStrong && phoneOk(form.phone);
+      return form.first_name.trim().length >= 2 && form.last_name.trim().length >= 2
+        && /\S+@\S+\.\S+/.test(form.email) && isStrong && phoneOk(form.phone);
     }
     return true;
   };
@@ -145,8 +151,7 @@ const BecomeHost = () => {
   const next = () => {
     if (!canAdvance()) {
       if (step === 3) toast.error("Please enter the city your property is in");
-      else if (step === 4) toast.error("Please enter your first and last name");
-      else if (step === 5) toast.error("Enter a valid email, mobile number and a stronger password");
+      else if (step === 4) toast.error("Please enter your name, a valid email, mobile number and a stronger password");
       return;
     }
     setStep((s) => Math.min(TOTAL_STEPS, s + 1));
@@ -334,32 +339,27 @@ const BecomeHost = () => {
 
                 <div className="bg-card rounded-2xl border border-border shadow-sm p-6 md:p-8 space-y-6">
                   {step === 1 && (
-                    <Counter value={form.bedrooms} onChange={(v) => update({ bedrooms: v })} min={1} max={20} />
+                    <NumberSelect value={form.bedrooms} onChange={(v) => update({ bedrooms: v })} min={1} max={20} unit="bedroom" />
                   )}
 
                   {step === 2 && (
-                    <Counter value={form.bathrooms} onChange={(v) => update({ bathrooms: v })} min={1} max={10} />
+                    <NumberSelect value={form.bathrooms} onChange={(v) => update({ bathrooms: v })} min={1} max={10} unit="bathroom" />
                   )}
 
                   {step === 3 && (
                     <div className="space-y-4">
                       <div>
                         <Label htmlFor="city">City</Label>
-                        <Input
-                          id="city"
-                          autoFocus
-                          className="mt-2 h-12"
-                          placeholder="Start typing a city in Iraq..."
-                          list="iraq-cities"
-                          autoComplete="off"
-                          value={form.city}
-                          onChange={(e) => update({ city: e.target.value })}
-                        />
-                        <datalist id="iraq-cities">
-                          {IRAQ_CITIES.map((c) => (
-                            <option key={c} value={c} />
-                          ))}
-                        </datalist>
+                        <Select value={form.city} onValueChange={(v) => update({ city: v })}>
+                          <SelectTrigger id="city" className="mt-2 h-12">
+                            <SelectValue placeholder="Select a city in Iraq" />
+                          </SelectTrigger>
+                          <SelectContent className="bg-popover border border-border z-50 max-h-72">
+                            {IRAQ_CITIES.map((c) => (
+                              <SelectItem key={c} value={c}>{c}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                       <div>
                         <Label htmlFor="area">Neighborhood / area <span className="text-muted-foreground text-xs">(optional)</span></Label>
@@ -385,22 +385,19 @@ const BecomeHost = () => {
                   )}
 
                   {step === 4 && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="first_name">First name</Label>
-                        <Input id="first_name" autoFocus className="mt-2 h-12" value={form.first_name}
-                          onChange={(e) => update({ first_name: e.target.value })} />
+                    <div className="space-y-5">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="first_name">First name</Label>
+                          <Input id="first_name" autoFocus className="mt-2 h-12" value={form.first_name}
+                            onChange={(e) => update({ first_name: e.target.value })} />
+                        </div>
+                        <div>
+                          <Label htmlFor="last_name">Surname</Label>
+                          <Input id="last_name" className="mt-2 h-12" value={form.last_name}
+                            onChange={(e) => update({ last_name: e.target.value })} />
+                        </div>
                       </div>
-                      <div>
-                        <Label htmlFor="last_name">Surname</Label>
-                        <Input id="last_name" className="mt-2 h-12" value={form.last_name}
-                          onChange={(e) => update({ last_name: e.target.value })} />
-                      </div>
-                    </div>
-                  )}
-
-                  {step === 5 && (
-                    <div className="space-y-4">
                       <div>
                         <Label htmlFor="email">Email</Label>
                         <Input id="email" type="email" autoComplete="email" className="mt-2 h-12"
@@ -434,12 +431,12 @@ const BecomeHost = () => {
                     </div>
                   )}
 
-                  {step === 6 && (
+                  {step === 5 && (
                     <div className="space-y-4">
                       <p className="text-sm text-muted-foreground">Here's what we'll set up for you:</p>
                       <div className="bg-accent/40 rounded-xl p-5 space-y-3 text-sm">
                         <div className="flex justify-between gap-4">
-                          <span className="text-muted-foreground">Rooms</span>
+                          <span className="text-muted-foreground">Bedrooms</span>
                           <span className="font-semibold">{form.bedrooms}</span>
                         </div>
                         <div className="flex justify-between gap-4">

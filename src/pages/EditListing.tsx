@@ -27,6 +27,7 @@ const EditListing = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [showErrors, setShowErrors] = useState(false);
   const [blockedDates, setBlockedDates] = useState<Date[]>([]);
   const [approvalStatus, setApprovalStatus] = useState<string>("approved");
   const [rejectionReason, setRejectionReason] = useState<string | null>(null);
@@ -156,9 +157,11 @@ const EditListing = () => {
 
   const handleSubmit = async () => {
     if (!user || !id) return;
-    if (!formData.title || !formData.location || !formData.city || !formData.price_per_night) {
+    if (!formData.title || !formData.location || !formData.city || !formData.price_per_night || !formData.bedrooms || !formData.bathrooms || !formData.max_guests) {
+      setShowErrors(true);
       toast.error("Please fill in all required fields"); return;
     }
+    setShowErrors(false);
 
     setSaving(true);
     try {
@@ -256,21 +259,29 @@ const EditListing = () => {
               <CardContent className="space-y-6">
                 <div className="space-y-4">
                   <div>
-                    <Label htmlFor="property-name">Property Name *</Label>
-                    <Input id="property-name" placeholder="e.g., Modern Mountain Villa" className="mt-2"
+                    <Label htmlFor="property-name" className={showErrors && !formData.title ? "text-destructive" : ""}>Property Name *</Label>
+                    <Input id="property-name" placeholder="e.g., Modern Mountain Villa"
+                      className={`mt-2 ${showErrors && !formData.title ? "border-destructive ring-1 ring-destructive" : ""}`}
                       value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} />
+                    {showErrors && !formData.title && (
+                      <p className="text-xs text-destructive mt-1">This field is required</p>
+                    )}
                   </div>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="location">Address/Location *</Label>
-                      <Input id="location" placeholder="e.g., Mountain View Road, Ranya" className="mt-2"
+                      <Label htmlFor="location" className={showErrors && !formData.location ? "text-destructive" : ""}>Address/Location *</Label>
+                      <Input id="location" placeholder="e.g., Mountain View Road, Ranya"
+                        className={`mt-2 ${showErrors && !formData.location ? "border-destructive ring-1 ring-destructive" : ""}`}
                         value={formData.location} onChange={(e) => setFormData({ ...formData, location: e.target.value })} />
+                      {showErrors && !formData.location && (
+                        <p className="text-xs text-destructive mt-1">This field is required</p>
+                      )}
                     </div>
                     <div>
-                      <Label htmlFor="city">City *</Label>
+                      <Label htmlFor="city" className={showErrors && !formData.city ? "text-destructive" : ""}>City *</Label>
                       <Select value={formData.city} onValueChange={(value) => setFormData({ ...formData, city: value })}>
-                        <SelectTrigger className="mt-2">
+                        <SelectTrigger className={`mt-2 ${showErrors && !formData.city ? "border-destructive ring-1 ring-destructive" : ""}`}>
                           <SelectValue placeholder="Select a city" />
                         </SelectTrigger>
                         <SelectContent className="bg-popover border border-border z-50">
@@ -281,30 +292,64 @@ const EditListing = () => {
                           ))}
                         </SelectContent>
                       </Select>
+                      {showErrors && !formData.city && (
+                        <p className="text-xs text-destructive mt-1">This field is required</p>
+                      )}
                     </div>
                   </div>
 
                   <div>
-                    <Label htmlFor="price">Price per Night (USD) *</Label>
-                    <Input id="price" type="number" placeholder="150" className="mt-2"
+                    <Label htmlFor="price" className={showErrors && !formData.price_per_night ? "text-destructive" : ""}>Price per Night (USD) *</Label>
+                    <Input id="price" type="number" placeholder="150"
+                      className={`mt-2 ${showErrors && !formData.price_per_night ? "border-destructive ring-1 ring-destructive" : ""}`}
                       value={formData.price_per_night} onChange={(e) => setFormData({ ...formData, price_per_night: e.target.value })} />
+                    {showErrors && !formData.price_per_night && (
+                      <p className="text-xs text-destructive mt-1">This field is required</p>
+                    )}
                   </div>
 
                   <div className="grid grid-cols-3 gap-4">
                     <div>
-                      <Label htmlFor="bedrooms">Bedrooms</Label>
-                      <Input id="bedrooms" type="number" placeholder="3" className="mt-2" value={formData.bedrooms}
-                        onChange={(e) => setFormData({ ...formData, bedrooms: e.target.value })} />
+                      <Label htmlFor="bedrooms" className={showErrors && !formData.bedrooms ? "text-destructive" : ""}>Bedrooms *</Label>
+                      <Input id="bedrooms" type="number" min="1" placeholder="3"
+                        className={`mt-2 ${showErrors && !formData.bedrooms ? "border-destructive ring-1 ring-destructive" : ""}`}
+                        value={formData.bedrooms}
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value);
+                          setFormData({ ...formData, bedrooms: e.target.value === "" ? "" : String(Math.max(1, isNaN(val) ? 1 : val)) });
+                        }}
+                      />
+                      {showErrors && !formData.bedrooms && (
+                        <p className="text-xs text-destructive mt-1">This field is required</p>
+                      )}
                     </div>
                     <div>
-                      <Label htmlFor="bathrooms">Bathrooms</Label>
-                      <Input id="bathrooms" type="number" placeholder="2" className="mt-2" value={formData.bathrooms}
-                        onChange={(e) => setFormData({ ...formData, bathrooms: e.target.value })} />
+                      <Label htmlFor="bathrooms" className={showErrors && !formData.bathrooms ? "text-destructive" : ""}>Bathrooms *</Label>
+                      <Input id="bathrooms" type="number" min="1" placeholder="2"
+                        className={`mt-2 ${showErrors && !formData.bathrooms ? "border-destructive ring-1 ring-destructive" : ""}`}
+                        value={formData.bathrooms}
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value);
+                          setFormData({ ...formData, bathrooms: e.target.value === "" ? "" : String(Math.max(1, isNaN(val) ? 1 : val)) });
+                        }}
+                      />
+                      {showErrors && !formData.bathrooms && (
+                        <p className="text-xs text-destructive mt-1">This field is required</p>
+                      )}
                     </div>
                     <div>
-                      <Label htmlFor="guests">Max Guests</Label>
-                      <Input id="guests" type="number" placeholder="4" className="mt-2" value={formData.max_guests}
-                        onChange={(e) => setFormData({ ...formData, max_guests: e.target.value })} />
+                      <Label htmlFor="guests" className={showErrors && !formData.max_guests ? "text-destructive" : ""}>Max Guests *</Label>
+                      <Input id="guests" type="number" min="1" placeholder="4"
+                        className={`mt-2 ${showErrors && !formData.max_guests ? "border-destructive ring-1 ring-destructive" : ""}`}
+                        value={formData.max_guests}
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value);
+                          setFormData({ ...formData, max_guests: e.target.value === "" ? "" : String(Math.max(1, isNaN(val) ? 1 : val)) });
+                        }}
+                      />
+                      {showErrors && !formData.max_guests && (
+                        <p className="text-xs text-destructive mt-1">This field is required</p>
+                      )}
                     </div>
                   </div>
 

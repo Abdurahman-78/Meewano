@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { trackEvent } from "@/lib/tracking";
 import { useParams, useNavigate } from "react-router-dom";
-import { Bath, Bed, Home, MapPin, Star, Wifi, Car, Tv, Waves, ChevronLeft, ChevronRight, Loader2, Share2, Heart, Users, Maximize2, X, Minus, Plus } from "lucide-react";
+import { Bath, Bed, Home, MapPin, Star, Wifi, Car, Tv, Waves, ChevronLeft, ChevronRight, Loader2, Share2, Heart, Users, Maximize2, X, Minus, Plus, ArrowRight } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import AppLayout from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
@@ -758,11 +758,11 @@ const PropertyDetail = () => {
 
             {/* Mobile inline date picker */}
             <div className="lg:hidden">
-              <label className="text-sm font-medium mb-2 block">{t("checkIn")} → {t("checkOut")}</label>
+              <label className="text-sm font-medium mb-2 block flex items-center gap-2">{t("checkIn")} <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" /> {t("checkOut")}</label>
               <div className="rounded-lg border border-border bg-background overflow-hidden">
                 <Calendar
                   mode="range"
-                  numberOfMonths={2}
+                  numberOfMonths={1}
                   selected={{
                     from: checkIn ? new Date(checkIn) : undefined,
                     to: checkOut ? new Date(checkOut) : undefined,
@@ -1004,11 +1004,11 @@ const PropertyDetail = () => {
 
                 <div className="space-y-4 mb-6">
                   <div>
-                    <label className="text-sm font-medium mb-2 block">{t("checkIn")} → {t("checkOut")}</label>
+                    <label className="text-sm font-medium mb-2 block flex items-center gap-2">{t("checkIn")} <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" /> {t("checkOut")}</label>
                     <div className="rounded-lg border border-border bg-background overflow-hidden">
                       <Calendar
                         mode="range"
-                        numberOfMonths={2}
+                        numberOfMonths={1}
                         selected={{
                           from: checkIn ? new Date(checkIn) : undefined,
                           to: checkOut ? new Date(checkOut) : undefined,

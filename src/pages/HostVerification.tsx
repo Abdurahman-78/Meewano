@@ -12,8 +12,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useMyHostVerification, useUpsertHostVerification } from "@/hooks/useHostVerification";
-
-type PayoutMethod = "" | "fastpay" | "zaincash" | "qi_card" | "fib";
+import { detectFacesInFile } from "@/lib/faceDetection";
+import { validatePayoutDetails, isPayoutValid, type PayoutMethod } from "@/lib/payoutValidation";
 
 const HostVerification = () => {
   const navigate = useNavigate();
@@ -70,6 +70,23 @@ const HostVerification = () => {
     if (!user) return;
     setUploadingSelfie(true);
     try {
+      try {
+        const { faceCount, confidence } = await detectFacesInFile(file);
+        if (faceCount === 0) {
+          toast.error("No face detected. Please upload a clear selfie of your face.");
+          return;
+        }
+        if (faceCount > 1) {
+          toast.error("Multiple faces detected. Please upload a selfie with only you in the frame.");
+          return;
+        }
+        if (confidence < 0.5) {
+          toast.error("Face is unclear. Please retake in better lighting.");
+          return;
+        }
+      } catch (err) {
+        console.warn("Face detection failed, allowing upload:", err);
+      }
       const ext = (file.name.split(".").pop() || "bin").toLowerCase();
       const path = `${user.id}/selfie-${Date.now()}.${ext}`;
       const { error } = await supabase.storage
@@ -78,7 +95,7 @@ const HostVerification = () => {
       if (error) throw error;
       setSelfieUrl(path);
       await upsert.mutateAsync({ selfie_url: path } as any);
-      toast.success("Uploaded");
+      toast.success("Selfie verified and uploaded");
     } catch (e: any) {
       toast.error(e.message || "Upload failed");
     } finally {
@@ -90,6 +107,17 @@ const HostVerification = () => {
     if (!user) return;
     setUploadingId(true);
     try {
+      if (file.type.startsWith("image/")) {
+        try {
+          const { faceCount } = await detectFacesInFile(file);
+          if (faceCount === 0) {
+            toast.error("No face found on the ID. Please upload a clear photo of your ID showing your face.");
+            return;
+          }
+        } catch (err) {
+          console.warn("Face detection failed, allowing upload:", err);
+        }
+      }
       const ext = (file.name.split(".").pop() || "bin").toLowerCase();
       const path = `${user.id}/id-${Date.now()}.${ext}`;
       const { error } = await supabase.storage
@@ -98,7 +126,7 @@ const HostVerification = () => {
       if (error) throw error;
       setIdUrl(path);
       await upsert.mutateAsync({ id_document_url: path } as any);
-      toast.success("Uploaded");
+      toast.success("ID verified and uploaded");
     } catch (e: any) {
       toast.error(e.message || "Upload failed");
     } finally {
@@ -108,16 +136,12 @@ const HostVerification = () => {
 
   const needsPhone = method === "fastpay" || method === "zaincash" || method === "fib";
 
-  const payoutValid = () => {
-    if (!method) return false;
-    if (!accountName.trim()) return false;
-    if (needsPhone && !phone.trim()) return false;
-    if (method === "qi_card" && !accountNumber.trim()) return false;
-    return true;
-  };
+  const payoutErrors = validatePayoutDetails({ method, accountName, phone, accountNumber });
+  const payoutValid = () => !!method && isPayoutValid(payoutErrors);
 
   const status = verification?.status;
   const submitted = !!verification?.submitted_at;
+  const rejected = status === "rejected";
   const canSubmit = !!selfieUrl && !!idUrl && payoutValid();
 
   const handleSubmit = async () => {
@@ -201,16 +225,19 @@ const HostVerification = () => {
 
         <div className="space-y-4">
           {/* ID Document */}
-          <Card>
+          <Card className={rejected ? "border-destructive/60 bg-destructive/5" : ""}>
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-3 text-base">
-                <FileText className="h-5 w-5 text-primary" />
+                <FileText className={`h-5 w-5 ${rejected ? "text-destructive" : "text-primary"}`} />
                 <span className="flex-1">ID Document</span>
-                {idUrl && <CheckCircle2 className="h-5 w-5 text-green-600" />}
+                {rejected ? <XCircle className="h-5 w-5 text-destructive" /> : idUrl && <CheckCircle2 className="h-5 w-5 text-green-600" />}
               </CardTitle>
               <CardDescription>
                 Upload a clear photo of your government-issued ID (passport, national ID, or driver's license).
               </CardDescription>
+              {rejected && (
+                <p className="text-xs text-destructive font-medium mt-1">Rejected — please replace and resubmit.</p>
+              )}
             </CardHeader>
             <CardContent>
               <Label
@@ -241,14 +268,17 @@ const HostVerification = () => {
           </Card>
 
           {/* Selfie */}
-          <Card>
+          <Card className={rejected ? "border-destructive/60 bg-destructive/5" : ""}>
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-3 text-base">
-                <Camera className="h-5 w-5 text-primary" />
+                <Camera className={`h-5 w-5 ${rejected ? "text-destructive" : "text-primary"}`} />
                 <span className="flex-1">Selfie</span>
-                {selfieUrl && <CheckCircle2 className="h-5 w-5 text-green-600" />}
+                {rejected ? <XCircle className="h-5 w-5 text-destructive" /> : selfieUrl && <CheckCircle2 className="h-5 w-5 text-green-600" />}
               </CardTitle>
               <CardDescription>A clear photo of your face so we can confirm your identity.</CardDescription>
+              {rejected && (
+                <p className="text-xs text-destructive font-medium mt-1">Rejected — please replace and resubmit.</p>
+              )}
             </CardHeader>
             <CardContent>
               <Label
@@ -279,14 +309,17 @@ const HostVerification = () => {
           </Card>
 
           {/* Payment Details */}
-          <Card>
+          <Card className={rejected ? "border-destructive/60 bg-destructive/5" : ""}>
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-3 text-base">
-                <CreditCard className="h-5 w-5 text-primary" />
+                <CreditCard className={`h-5 w-5 ${rejected ? "text-destructive" : "text-primary"}`} />
                 <span className="flex-1">Payment Details</span>
-                {payoutValid() && <CheckCircle2 className="h-5 w-5 text-green-600" />}
+                {rejected ? <XCircle className="h-5 w-5 text-destructive" /> : payoutValid() && <CheckCircle2 className="h-5 w-5 text-green-600" />}
               </CardTitle>
               <CardDescription>How you'd like to receive payouts from bookings.</CardDescription>
+              {rejected && (
+                <p className="text-xs text-destructive font-medium mt-1">Rejected — please review and resubmit.</p>
+              )}
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
@@ -306,24 +339,66 @@ const HostVerification = () => {
 
               {method && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div>
+                  <div className="md:col-span-2">
                     <Label htmlFor="account-name">Account holder name</Label>
-                    <Input id="account-name" className="mt-2" value={accountName} disabled={lock}
-                      onChange={(e) => setAccountName(e.target.value)} />
+                    <Input
+                      id="account-name"
+                      className={`mt-2 ${accountName && payoutErrors.accountName ? "border-destructive focus-visible:ring-destructive" : ""}`}
+                      value={accountName}
+                      disabled={lock}
+                      placeholder="e.g. Ahmed Hassan"
+                      onChange={(e) => setAccountName(e.target.value)}
+                      aria-invalid={!!(accountName && payoutErrors.accountName)}
+                    />
+                    {accountName && payoutErrors.accountName && (
+                      <p className="text-xs text-destructive mt-1">{payoutErrors.accountName}</p>
+                    )}
                   </div>
                   {needsPhone && (
                     <div className="md:col-span-2">
                       <Label htmlFor="payout-phone">Wallet phone number</Label>
-                      <Input id="payout-phone" inputMode="tel" placeholder="+964 7XX XXX XXXX"
-                        className="mt-2" value={phone} disabled={lock}
-                        onChange={(e) => setPhone(e.target.value)} />
+                      <Input
+                        id="payout-phone"
+                        inputMode="tel"
+                        placeholder="+964 7XX XXX XXXX"
+                        className={`mt-2 ${phone && payoutErrors.phone ? "border-destructive focus-visible:ring-destructive" : ""}`}
+                        value={phone}
+                        disabled={lock}
+                        onChange={(e) => setPhone(e.target.value)}
+                        aria-invalid={!!(phone && payoutErrors.phone)}
+                      />
+                      {phone && payoutErrors.phone ? (
+                        <p className="text-xs text-destructive mt-1">{payoutErrors.phone}</p>
+                      ) : (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Iraqi mobile format. Include country code or start with 0.
+                        </p>
+                      )}
                     </div>
                   )}
                   {method === "qi_card" && (
                     <div className="md:col-span-2">
                       <Label htmlFor="qi-number">Qi Card number</Label>
-                      <Input id="qi-number" className="mt-2" value={accountNumber} disabled={lock}
-                        onChange={(e) => setAccountNumber(e.target.value)} />
+                      <Input
+                        id="qi-number"
+                        inputMode="numeric"
+                        maxLength={19}
+                        placeholder="XXXX XXXX XXXX XXXX"
+                        className={`mt-2 font-mono tracking-wider ${accountNumber && payoutErrors.accountNumber ? "border-destructive focus-visible:ring-destructive" : ""}`}
+                        value={accountNumber}
+                        disabled={lock}
+                        onChange={(e) => {
+                          const d = e.target.value.replace(/[^\d]/g, "").slice(0, 16);
+                          const grouped = d.replace(/(.{4})/g, "$1 ").trim();
+                          setAccountNumber(grouped);
+                        }}
+                        aria-invalid={!!(accountNumber && payoutErrors.accountNumber)}
+                      />
+                      {accountNumber && payoutErrors.accountNumber ? (
+                        <p className="text-xs text-destructive mt-1">{payoutErrors.accountNumber}</p>
+                      ) : (
+                        <p className="text-xs text-muted-foreground mt-1">16-digit Qi Card number.</p>
+                      )}
                     </div>
                   )}
                 </div>
