@@ -1,4 +1,4 @@
-import { BedDouble, Bath, MapPin, UserPlus, CheckCircle2, CheckCircle } from "lucide-react";
+import { BedDouble, Bath, MapPin, UserPlus, ShieldCheck, CheckCircle } from "lucide-react";
 
 interface Step {
   number: number;
@@ -11,7 +11,7 @@ const steps: Step[] = [
   { number: 2, label: "Bathrooms", icon: <Bath className="h-4 w-4" /> },
   { number: 3, label: "Location", icon: <MapPin className="h-4 w-4" /> },
   { number: 4, label: "Account", icon: <UserPlus className="h-4 w-4" /> },
-  { number: 5, label: "Review", icon: <CheckCircle2 className="h-4 w-4" /> },
+  { number: 5, label: "Verify", icon: <ShieldCheck className="h-4 w-4" /> },
 ];
 
 interface HostStepIndicatorProps {

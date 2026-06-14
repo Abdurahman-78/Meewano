@@ -30,7 +30,7 @@ const Header = () => {
   const { data: hostVerification } = useMyHostVerification();
   const isVerifiedHost = !!user && hostVerification?.status === "approved";
   const hostCtaTo = !user
-    ? "/auth?mode=signup&redirect=/host/verification"
+    ? "/become-host"
     : isVerifiedHost
       ? "/host/add-listing"
       : "/host/verification";

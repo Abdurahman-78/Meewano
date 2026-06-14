@@ -78,7 +78,7 @@ const Index = () => {
   const hajiProperties = getPropertiesByCity("Haji Omran");
   const isVerifiedHost = !!user && hostVerification?.status === "approved";
   const hostCtaPath = !user
-    ? "/auth?mode=signup&redirect=/host/verification"
+    ? "/become-host"
     : isVerifiedHost
       ? "/host/add-listing"
       : "/host/verification";

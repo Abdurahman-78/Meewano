@@ -316,7 +316,7 @@ const AddListing = () => {
               <Button
                 size="lg"
                 className="w-full"
-                onClick={() => navigate(user ? "/host/verification" : "/auth?mode=signup&redirect=/host/verification")}
+                onClick={() => navigate(user ? "/host/verification" : "/become-host")}
               >
                 {user ? "Verify account" : "Create account"}
               </Button>

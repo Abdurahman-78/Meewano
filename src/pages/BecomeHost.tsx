@@ -3,14 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, ArrowRight, BedDouble, Bath, MapPin, UserPlus,
-  Loader2, CheckCircle2, Eye, EyeOff, MailCheck, Phone,
+  Loader2, Eye, EyeOff, Phone, ShieldCheck,
 } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Progress } from "@/components/ui/progress";
-import { Card, CardContent } from "@/components/ui/card";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
@@ -43,9 +41,9 @@ const IRAQ_CITIES = [
 const STEPS = [
   { id: 1, title: "How many bedrooms?", subtitle: "Bedrooms in your property", icon: BedDouble },
   { id: 2, title: "How many bathrooms?", subtitle: "Including half-baths", icon: Bath },
-  { id: 3, title: "Where's your property?", subtitle: "City and neighborhood", icon: MapPin },
+  { id: 3, title: "Where's your property?", subtitle: "City, street and address", icon: MapPin },
   { id: 4, title: "Create your account", subtitle: "Your name, email, mobile and a strong password", icon: UserPlus },
-  { id: 5, title: "Review & submit", subtitle: "Double-check before we create your account", icon: CheckCircle2 },
+  { id: 5, title: "Verify your email", subtitle: "Enter the code we sent you", icon: ShieldCheck },
 ];
 
 const NumberSelect = ({
@@ -71,6 +69,8 @@ const DEFAULT_FORM = {
   bedrooms: 2,
   bathrooms: 1,
   city: "",
+  street: "",
+  address: "",
   area: "",
   first_name: "",
   last_name: "",
@@ -99,7 +99,7 @@ const BecomeHost = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const initial = loadDraft();
-  const [step, setStep] = useState(initial?.step ?? 1);
+  const [step, setStep] = useState(1);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -145,21 +145,29 @@ const BecomeHost = () => {
       return form.first_name.trim().length >= 2 && form.last_name.trim().length >= 2
         && /\S+@\S+\.\S+/.test(form.email) && isStrong && phoneOk(form.phone);
     }
+    if (step === 5) return otp.length === EMAIL_OTP_LENGTH;
     return true;
   };
 
-  const next = () => {
+  const next = async () => {
     if (!canAdvance()) {
       if (step === 3) toast.error("Please enter the city your property is in");
       else if (step === 4) toast.error("Please enter your name, a valid email, mobile number and a stronger password");
       return;
     }
+    // When advancing from step 4 (Account) to step 5 (Verify), auto-create the account
+    if (step === 4 && !submitted) {
+      await handleSubmit();
+      return; // handleSubmit sets submitted=true which triggers step 5
+    }
     setStep((s) => Math.min(TOTAL_STEPS, s + 1));
   };
-  const back = () => setStep((s) => Math.max(1, s - 1));
+  const back = () => {
+    if (step === 5) return; // Can't go back from verification
+    setStep((s) => Math.max(1, s - 1));
+  };
 
   const handleSubmit = async () => {
-    if (!canAdvance()) return;
     setSubmitting(true);
     try {
       const { error } = await supabase.auth.signUp({
@@ -175,6 +183,8 @@ const BecomeHost = () => {
             intended_bedrooms: form.bedrooms,
             intended_bathrooms: form.bathrooms,
             intended_city: form.city.trim(),
+            intended_street: form.street.trim(),
+            intended_address: form.address.trim(),
             intended_area: form.area.trim(),
             intended_latitude: form.latitude,
             intended_longitude: form.longitude,
@@ -185,6 +195,7 @@ const BecomeHost = () => {
       if (error) throw error;
       toast.success("We've sent a verification code to your email");
       setSubmitted(true);
+      setStep(5); // Move to verify step
     } catch (e: any) {
       toast.error(e.message || "Failed to create account");
     } finally {
@@ -244,69 +255,10 @@ const BecomeHost = () => {
     );
   }
 
-  if (submitted) {
-    return (
-      <AppLayout>
-        <main className="container mx-auto px-4 py-12 max-w-xl">
-          <Card>
-            <CardContent className="pt-10 pb-8 text-center">
-              <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-primary/10 text-primary mb-5">
-                <MailCheck className="h-10 w-10" />
-              </div>
-              <h1 className="text-3xl font-bold mb-2">Enter your code</h1>
-              <p className="text-muted-foreground mb-1">We sent a verification code to</p>
-              <p className="font-semibold mb-6 break-all">{form.email}</p>
-
-              <div className="flex justify-center mb-6">
-                <InputOTP maxLength={EMAIL_OTP_LENGTH} value={otp} onChange={setOtp} autoFocus>
-                  <InputOTPGroup>
-                    <InputOTPSlot index={0} />
-                    <InputOTPSlot index={1} />
-                    <InputOTPSlot index={2} />
-                    <InputOTPSlot index={3} />
-                    <InputOTPSlot index={4} />
-                    <InputOTPSlot index={5} />
-                    <InputOTPSlot index={6} />
-                    <InputOTPSlot index={7} />
-                  </InputOTPGroup>
-                </InputOTP>
-              </div>
-
-              <Button
-                size="lg"
-                className="w-full h-12 mb-3"
-                onClick={handleVerifyOtp}
-                disabled={otp.length !== EMAIL_OTP_LENGTH || verifying}
-              >
-                {verifying && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                Verify & continue
-              </Button>
-
-              <button
-                onClick={handleResendOtp}
-                disabled={resending || resendCooldown > 0}
-                className="text-sm text-primary hover:underline disabled:text-muted-foreground disabled:no-underline"
-              >
-                {resendCooldown > 0
-                  ? `Resend code in ${resendCooldown}s`
-                  : resending
-                    ? "Sending..."
-                    : "Didn't get it? Resend code"}
-              </button>
-
-              <p className="text-xs text-muted-foreground mt-6">
-                Check your spam folder if you don't see the email within a minute.
-              </p>
-            </CardContent>
-          </Card>
-        </main>
-      </AppLayout>
-    );
-  }
+  // No longer render a separate submitted screen — step 5 handles verification inline
 
   const current = STEPS[step - 1];
   const Icon = current.icon;
-  const progress = (step / TOTAL_STEPS) * 100;
 
   return (
     <AppLayout>
@@ -360,6 +312,16 @@ const BecomeHost = () => {
                             ))}
                           </SelectContent>
                         </Select>
+                      </div>
+                      <div>
+                        <Label htmlFor="street">Street</Label>
+                        <Input id="street" className="mt-2 h-12" placeholder="e.g. 60m Street"
+                          value={form.street} onChange={(e) => update({ street: e.target.value })} />
+                      </div>
+                      <div>
+                        <Label htmlFor="address">Address</Label>
+                        <Input id="address" className="mt-2 h-12" placeholder="e.g. Building 15, Apartment 3"
+                          value={form.address} onChange={(e) => update({ address: e.target.value })} />
                       </div>
                       <div>
                         <Label htmlFor="area">Neighborhood / area <span className="text-muted-foreground text-xs">(optional)</span></Label>
@@ -432,57 +394,67 @@ const BecomeHost = () => {
                   )}
 
                   {step === 5 && (
-                    <div className="space-y-4">
-                      <p className="text-sm text-muted-foreground">Here's what we'll set up for you:</p>
-                      <div className="bg-accent/40 rounded-xl p-5 space-y-3 text-sm">
-                        <div className="flex justify-between gap-4">
-                          <span className="text-muted-foreground">Bedrooms</span>
-                          <span className="font-semibold">{form.bedrooms}</span>
-                        </div>
-                        <div className="flex justify-between gap-4">
-                          <span className="text-muted-foreground">Bathrooms</span>
-                          <span className="font-semibold">{form.bathrooms}</span>
-                        </div>
-                        <div className="flex justify-between gap-4">
-                          <span className="text-muted-foreground">Location</span>
-                          <span className="font-semibold text-right">{form.city}{form.area ? `, ${form.area}` : ""}</span>
-                        </div>
-                        <div className="flex justify-between gap-4">
-                          <span className="text-muted-foreground">Name</span>
-                          <span className="font-semibold">{form.first_name} {form.last_name}</span>
-                        </div>
-                        <div className="flex justify-between gap-4">
-                          <span className="text-muted-foreground">Email</span>
-                          <span className="font-semibold break-all text-right">{form.email}</span>
-                        </div>
-                        <div className="flex justify-between gap-4">
-                          <span className="text-muted-foreground">Mobile</span>
-                          <span className="font-semibold text-right">{form.phone}</span>
-                        </div>
+                    <div className="space-y-6 text-center">
+                      <p className="text-muted-foreground">We sent a verification code to</p>
+                      <p className="font-semibold break-all">{form.email}</p>
+
+                      <div className="flex justify-center">
+                        <InputOTP maxLength={EMAIL_OTP_LENGTH} value={otp} onChange={setOtp} autoFocus>
+                          <InputOTPGroup>
+                            <InputOTPSlot index={0} />
+                            <InputOTPSlot index={1} />
+                            <InputOTPSlot index={2} />
+                            <InputOTPSlot index={3} />
+                            <InputOTPSlot index={4} />
+                            <InputOTPSlot index={5} />
+                            <InputOTPSlot index={6} />
+                            <InputOTPSlot index={7} />
+                          </InputOTPGroup>
+                        </InputOTP>
                       </div>
+
+                      <Button
+                        size="lg"
+                        className="w-full h-12"
+                        onClick={handleVerifyOtp}
+                        disabled={otp.length !== EMAIL_OTP_LENGTH || verifying}
+                      >
+                        {verifying && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                        Verify & continue
+                      </Button>
+
+                      <button
+                        onClick={handleResendOtp}
+                        disabled={resending || resendCooldown > 0}
+                        className="text-sm text-primary hover:underline disabled:text-muted-foreground disabled:no-underline"
+                      >
+                        {resendCooldown > 0
+                          ? `Resend code in ${resendCooldown}s`
+                          : resending
+                            ? "Sending..."
+                            : "Didn't get it? Resend code"}
+                      </button>
+
                       <p className="text-xs text-muted-foreground">
-                        After submitting, we'll email you a verification code. Once verified, you'll add your payment details and a selfie to complete your host account.
+                        Check your spam folder if you don't see the email within a minute.
                       </p>
                     </div>
                   )}
                 </div>
 
-                {/* Nav buttons */}
-                <div className="flex items-center justify-between mt-6 gap-3">
-                  <Button variant="ghost" onClick={back} disabled={step === 1}>
-                    <ArrowLeft className="h-4 w-4 mr-2" /> Back
-                  </Button>
-                  {step < TOTAL_STEPS ? (
-                    <Button size="lg" className="h-12 px-6" onClick={next} disabled={!canAdvance()}>
-                      Continue <ArrowRight className="h-4 w-4 ml-2" />
+                {/* Nav buttons — hidden on step 5 (verification has its own buttons) */}
+                {step < 5 && (
+                  <div className="flex items-center justify-between mt-6 gap-3">
+                    <Button variant="ghost" onClick={back} disabled={step === 1}>
+                      <ArrowLeft className="h-4 w-4 mr-2" /> Back
                     </Button>
-                  ) : (
-                    <Button size="lg" className="h-12 px-6" onClick={handleSubmit} disabled={submitting}>
+                    <Button size="lg" className="h-12 px-6" onClick={next} disabled={!canAdvance() || submitting}>
                       {submitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                      Create my host account
+                      {step === 4 ? "Create account" : "Continue"}
+                      {!submitting && <ArrowRight className="h-4 w-4 ml-2" />}
                     </Button>
-                  )}
-                </div>
+                  </div>
+                )}
               </motion.div>
             </AnimatePresence>
           </div>
