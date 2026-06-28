@@ -19,7 +19,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useNavigate } from "react-router-dom";
 import { optimizeImage } from "@/lib/imageOptimizer";
-import { normalizeAmenities, DEFAULT_AMENITIES, type AmenityItem } from "@/lib/amenities";
+import { normalizeAmenities, DEFAULT_AMENITIES, AMENITY_CATEGORIES, type AmenityItem } from "@/lib/amenities";
 import {
   Table,
   TableBody,
@@ -102,6 +102,7 @@ const AdminDashboard = () => {
 
   // Local state
   const [searchUsers, setSearchUsers] = useState("");
+  const [roleFilter, setRoleFilter] = useState<"all" | "guest" | "host" | "admin">("all");
   const [searchProperties, setSearchProperties] = useState("");
   const [searchBookings, setSearchBookings] = useState("");
   const [editingUser, setEditingUser] = useState<any>(null);
@@ -130,6 +131,9 @@ const AdminDashboard = () => {
   const [deleteConfirm, setDeleteConfirm] = useState<{ type: string; id: string } | null>(null);
   const [editingSettings, setEditingSettings] = useState<Record<string, any>>({});
   const [newAmenity, setNewAmenity] = useState("");
+  const [newAmenityCategory, setNewAmenityCategory] = useState<string>("Other");
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [editingCategory, setEditingCategory] = useState<{ original: string; updated: string } | null>(null);
   const [editingAmenity, setEditingAmenity] = useState<{ original: string; updated: string } | null>(null);
   const [uploadingIconFor, setUploadingIconFor] = useState<string | null>(null);
   const amenityIconInputRef = useRef<HTMLInputElement>(null);
@@ -205,10 +209,16 @@ const AdminDashboard = () => {
   }
 
   // Filter functions
-  const filteredUsers = users?.filter(u => 
-    u.email?.toLowerCase().includes(searchUsers.toLowerCase()) ||
-    u.full_name?.toLowerCase().includes(searchUsers.toLowerCase())
-  ) || [];
+  const filteredUsers = users?.filter(u => {
+    const matchesSearch = u.email?.toLowerCase().includes(searchUsers.toLowerCase()) ||
+      u.full_name?.toLowerCase().includes(searchUsers.toLowerCase());
+    if (!matchesSearch) return false;
+    if (roleFilter === "all") return true;
+    if (roleFilter === "admin") return u.roles.includes("admin");
+    if (roleFilter === "host") return u.is_host;
+    if (roleFilter === "guest") return !u.is_host && !u.roles.includes("admin");
+    return true;
+  }) || [];
 
   const filteredProperties = properties?.filter(p => 
     p.title?.toLowerCase().includes(searchProperties.toLowerCase()) ||
@@ -503,6 +513,17 @@ const AdminDashboard = () => {
                         onChange={(e) => setSearchUsers(e.target.value)}
                       />
                     </div>
+                    <Select value={roleFilter} onValueChange={(v: any) => setRoleFilter(v)}>
+                      <SelectTrigger className="w-full md:w-40">
+                        <SelectValue placeholder="Filter role" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All roles</SelectItem>
+                        <SelectItem value="guest">Guests</SelectItem>
+                        <SelectItem value="host">Hosts</SelectItem>
+                        <SelectItem value="admin">Admins</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <Button variant="outline" onClick={() => refetchUsers()}>
                       <RefreshCw className="h-4 w-4" />
                     </Button>
@@ -534,17 +555,20 @@ const AdminDashboard = () => {
                           <TableCell>{u.email}</TableCell>
                           <TableCell>
                             <div className="flex gap-1 flex-wrap">
-                              {u.roles.map((role) => (
-                                <Badge key={role} variant={role === "admin" ? "default" : "outline"}>
-                                  {role}
-                                </Badge>
-                              ))}
-                              {u.is_host && (
-                                <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-700">
-                                  host
+                              {u.roles.includes("admin") && (
+                                <Badge className="bg-red-100 text-red-800 border-red-300 dark:bg-red-900/30 dark:text-red-400 dark:border-red-700 hover:bg-red-100">
+                                  <Shield className="h-3 w-3 mr-1" />admin
                                 </Badge>
                               )}
-                              {u.roles.length === 0 && !u.is_host && <Badge variant="secondary">guest</Badge>}
+                              {u.is_host ? (
+                                <Badge className="bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-700 hover:bg-amber-100">
+                                  <Home className="h-3 w-3 mr-1" />host
+                                </Badge>
+                              ) : (
+                                <Badge className="bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-700 hover:bg-blue-100">
+                                  <Users className="h-3 w-3 mr-1" />guest
+                                </Badge>
+                              )}
                             </div>
                           </TableCell>
                           <TableCell>
@@ -841,6 +865,14 @@ const AdminDashboard = () => {
                   const currentList = normalizeAmenities(
                     getSetting("amenities_list", DEFAULT_AMENITIES)
                   );
+                  const rawCats = getSetting("amenity_categories", AMENITY_CATEGORIES);
+                  const categories: string[] = Array.isArray(rawCats) && rawCats.length
+                    ? rawCats.filter((c: any) => typeof c === "string")
+                    : [...AMENITY_CATEGORIES];
+
+                  const saveCategories = async (list: string[]) => {
+                    await updateSiteSetting.mutateAsync({ key: "amenity_categories", value: list });
+                  };
 
                   const saveList = async (list: AmenityItem[]) => {
                     await updateSiteSetting.mutateAsync({ key: "amenities_list", value: list });
@@ -853,7 +885,7 @@ const AdminDashboard = () => {
                       toast.error("Amenity already exists");
                       return;
                     }
-                    await saveList([...currentList, { name }]);
+                    await saveList([...currentList, { name, category: newAmenityCategory }]);
                     toast.success(`Added "${name}" to amenities`);
                     setNewAmenity("");
                   };
@@ -889,7 +921,108 @@ const AdminDashboard = () => {
                           if (file) handleIconFile(file);
                         }}
                       />
-                      <div className="flex gap-2">
+                      {/* Category management */}
+                      <div className="rounded-lg border p-4 space-y-3 bg-muted/30">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h3 className="font-semibold text-sm">Categories</h3>
+                            <p className="text-xs text-muted-foreground">Group amenities under headings shown on the property page</p>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Input
+                            placeholder="New category (e.g., Kitchen & Dining)"
+                            value={newCategoryName}
+                            onChange={(e) => setNewCategoryName(e.target.value)}
+                            onKeyPress={async (e) => {
+                              if (e.key === "Enter") {
+                                const n = newCategoryName.trim();
+                                if (!n) return;
+                                if (categories.some((c) => c.toLowerCase() === n.toLowerCase())) {
+                                  toast.error("Category already exists");
+                                  return;
+                                }
+                                await saveCategories([...categories, n]);
+                                setNewCategoryName("");
+                                toast.success(`Added "${n}"`);
+                              }
+                            }}
+                          />
+                          <Button
+                            disabled={updateSiteSetting.isPending || !newCategoryName.trim()}
+                            onClick={async () => {
+                              const n = newCategoryName.trim();
+                              if (!n) return;
+                              if (categories.some((c) => c.toLowerCase() === n.toLowerCase())) {
+                                toast.error("Category already exists");
+                                return;
+                              }
+                              await saveCategories([...categories, n]);
+                              setNewCategoryName("");
+                              toast.success(`Added "${n}"`);
+                            }}
+                          >
+                            <Plus className="h-4 w-4 mr-2" /> Add
+                          </Button>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {categories.map((cat) => {
+                            const isEd = editingCategory?.original === cat;
+                            return (
+                              <div key={cat} className="flex items-center gap-1 bg-background border rounded-full pl-3 pr-1 py-1">
+                                {isEd ? (
+                                  <Input
+                                    value={editingCategory!.updated}
+                                    onChange={(e) => setEditingCategory({ ...editingCategory!, updated: e.target.value })}
+                                    className="h-6 w-40 text-xs"
+                                    autoFocus
+                                  />
+                                ) : (
+                                  <span className="text-xs font-medium">{cat}</span>
+                                )}
+                                {isEd ? (
+                                  <>
+                                    <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={async () => {
+                                      const nn = editingCategory!.updated.trim();
+                                      if (nn && nn !== cat) {
+                                        if (categories.some((c) => c.toLowerCase() === nn.toLowerCase())) {
+                                          toast.error("Category already exists");
+                                          return;
+                                        }
+                                        await saveCategories(categories.map((c) => c === cat ? nn : c));
+                                        // rename in amenity items
+                                        await saveList(currentList.map((a) => a.category === cat ? { ...a, category: nn } : a));
+                                        toast.success("Category renamed");
+                                      }
+                                      setEditingCategory(null);
+                                    }}>
+                                      <Check className="h-3 w-3 text-primary" />
+                                    </Button>
+                                    <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => setEditingCategory(null)}>
+                                      <X className="h-3 w-3" />
+                                    </Button>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => setEditingCategory({ original: cat, updated: cat })}>
+                                      <Pencil className="h-3 w-3 text-muted-foreground" />
+                                    </Button>
+                                    <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={async () => {
+                                      await saveCategories(categories.filter((c) => c !== cat));
+                                      await saveList(currentList.map((a) => a.category === cat ? { ...a, category: undefined } : a));
+                                      toast.success(`Removed "${cat}"`);
+                                    }}>
+                                      <Trash2 className="h-3 w-3 text-destructive" />
+                                    </Button>
+                                  </>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col sm:flex-row gap-2">
                         <Input
                           placeholder="Add new amenity (e.g., Swimming Pool)"
                           value={newAmenity}
@@ -897,13 +1030,23 @@ const AdminDashboard = () => {
                           onKeyPress={(e) => {
                             if (e.key === "Enter") addAmenity();
                           }}
+                          className="flex-1"
                         />
+                        <Select value={newAmenityCategory} onValueChange={setNewAmenityCategory}>
+                          <SelectTrigger className="sm:w-56">
+                            <SelectValue placeholder="Category" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {categories.map((c) => (
+                              <SelectItem key={c} value={c}>{c}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                         <Button
                           disabled={updateSiteSetting.isPending || !newAmenity.trim()}
                           onClick={addAmenity}
                         >
-                          <Plus className="h-4 w-4 mr-2" />
-                          Add
+                          <Plus className="h-4 w-4 mr-2" /> Add
                         </Button>
                       </div>
 
@@ -947,6 +1090,26 @@ const AdminDashboard = () => {
                                     {amenity.name}
                                   </span>
                                 )}
+
+                                <Select
+                                  value={amenity.category || "Other"}
+                                  onValueChange={async (val) => {
+                                    const updated = currentList.map((a) =>
+                                      a.name === amenity.name ? { ...a, category: val } : a
+                                    );
+                                    await saveList(updated);
+                                  }}
+                                >
+                                  <SelectTrigger className="h-8 w-36 text-xs flex-shrink-0">
+                                    <SelectValue placeholder="Category" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {categories.map((c) => (
+                                      <SelectItem key={c} value={c}>{c}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+
 
                                 <div className="flex gap-0.5 flex-shrink-0">
                                   {isEditing ? (

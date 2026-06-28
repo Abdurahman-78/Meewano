@@ -15,6 +15,7 @@ import { useProperties } from "@/hooks/useProperties";
 import { createNotification } from "@/hooks/useNotifications";
 import ReviewDialog from "@/components/ReviewDialog";
 import { Badge } from "@/components/ui/badge";
+import { useMyHostVerification } from "@/hooks/useHostVerification";
 
 interface Booking {
   id: string;
@@ -39,7 +40,7 @@ interface Profile {
   phone: string | null;
 }
 
-const GuestDashboard = () => {
+export const GuestDashboardContent = ({ withLayout = true }: { withLayout?: boolean } = {}) => {
   const { formatPrice } = useCurrency();
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -176,17 +177,17 @@ const GuestDashboard = () => {
   );
 
   if (authLoading || loading) {
-    return (
-      <AppLayout>
-        <div className="container mx-auto px-4 py-16 flex items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin" />
-        </div>
-      </AppLayout>
+    const loader = (
+      <div className="container mx-auto px-4 py-16 flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
     );
+    return withLayout ? <AppLayout>{loader}</AppLayout> : loader;
   }
 
-  return (
-    <AppLayout>
+  const body = (
+    <>
+
       
       <main className="container mx-auto px-4 py-8">
         <div className="mb-8">
@@ -433,8 +434,22 @@ const GuestDashboard = () => {
           onSuccess={fetchData}
         />
       )}
-    </AppLayout>
+    </>
   );
+
+  return withLayout ? <AppLayout>{body}</AppLayout> : body;
+};
+
+const GuestDashboard = () => {
+  const { user } = useAuth();
+  const { data: verification } = useMyHostVerification();
+  const navigate = useNavigate();
+  useEffect(() => {
+    if (user && verification?.status === "approved") {
+      navigate("/host", { replace: true });
+    }
+  }, [user, verification?.status, navigate]);
+  return <GuestDashboardContent />;
 };
 
 export default GuestDashboard;

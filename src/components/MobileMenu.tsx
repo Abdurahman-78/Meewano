@@ -5,6 +5,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { useTranslation } from "@/hooks/useTranslation";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useMyHostVerification } from "@/hooks/useHostVerification";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Separator } from "@/components/ui/separator";
@@ -14,6 +15,8 @@ const MobileMenu = () => {
   const { t } = useTranslation();
   const { user, signOut } = useAuth();
   const { isAdmin } = useUserRole();
+  const { data: hostVerification } = useMyHostVerification();
+  const isVerifiedHost = !!user && hostVerification?.status === "approved";
   
   const [open, setOpen] = useState(false);
 
@@ -50,8 +53,11 @@ const MobileMenu = () => {
 
           <Separator className="my-2" />
 
-          <NavItem to="/guest" icon={User} label={t("guestDashboard")} />
-          <NavItem to="/host" icon={Home} label={t("hostDashboard")} />
+          {isVerifiedHost ? (
+            <NavItem to="/host" icon={Home} label={t("hostDashboard")} />
+          ) : (
+            <NavItem to="/guest" icon={User} label={t("guestDashboard")} />
+          )}
           <NavItem to="/messages" icon={MessageSquare} label={t("messages")} />
           <NavItem to="/favorites" icon={Heart} label={t("favorites")} />
 

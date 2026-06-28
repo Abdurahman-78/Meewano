@@ -1,7 +1,28 @@
 import { useState, useMemo, useEffect } from "react";
 import { trackEvent } from "@/lib/tracking";
 import { useParams, useNavigate } from "react-router-dom";
-import { Bath, Bed, Home, MapPin, Star, Wifi, Car, Tv, Waves, ChevronLeft, ChevronRight, Loader2, Share2, Heart, Users, Maximize2, X, Minus, Plus, ArrowRight } from "lucide-react";
+import {
+  Bath,
+  Bed,
+  Home,
+  MapPin,
+  Star,
+  Wifi,
+  Car,
+  Tv,
+  Waves,
+  ChevronLeft,
+  ChevronRight,
+  Loader2,
+  Share2,
+  Heart,
+  Users,
+  Maximize2,
+  X,
+  Minus,
+  Plus,
+  ArrowRight,
+} from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import AppLayout from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
@@ -9,7 +30,15 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Calendar } from "@/components/ui/calendar";
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import PropertyCard from "@/components/PropertyCard";
 import MarkdownLite from "@/components/MarkdownLite";
@@ -33,9 +62,11 @@ const PropertyDetail = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { t } = useTranslation();
-  
+
   const [checkIn, setCheckIn] = useState("");
   const [checkOut, setCheckOut] = useState("");
+  const [savedCheckIn, setSavedCheckIn] = useState("");
+  const [savedCheckOut, setSavedCheckOut] = useState("");
   const [guests, setGuests] = useState(1);
 
   const [loading, setLoading] = useState(false);
@@ -191,10 +222,7 @@ const PropertyDetail = () => {
         .order("check_out", { ascending: false });
       if (!bks || bks.length === 0) return null;
       const ids = bks.map((b) => b.id);
-      const { data: existingReviews } = await supabase
-        .from("reviews")
-        .select("booking_id")
-        .in("booking_id", ids);
+      const { data: existingReviews } = await supabase.from("reviews").select("booking_id").in("booking_id", ids);
       const reviewed = new Set((existingReviews || []).map((r) => r.booking_id));
       return bks.find((b) => !reviewed.has(b.id)) || null;
     },
@@ -278,9 +306,25 @@ const PropertyDetail = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [property]);
 
-  const currentNights = checkIn && checkOut
-    ? Math.max(1, Math.ceil((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / (1000 * 60 * 60 * 24)))
-    : 1;
+  // Track saved dates for change detection
+  useEffect(() => {
+    if (checkIn && checkOut && !savedCheckIn && !savedCheckOut) {
+      setSavedCheckIn(checkIn);
+      setSavedCheckOut(checkOut);
+    }
+  }, [checkIn, checkOut, savedCheckIn, savedCheckOut]);
+
+  const currentNights =
+    checkIn && checkOut
+      ? Math.max(1, Math.ceil((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / (1000 * 60 * 60 * 24)))
+      : 1;
+
+  const hasDateChanges = checkIn !== savedCheckIn || checkOut !== savedCheckOut;
+
+  const handleSaveDates = () => {
+    setSavedCheckIn(checkIn);
+    setSavedCheckOut(checkOut);
+  };
 
   const setNights = (n: number) => {
     if (!checkIn || n < 1) return;
@@ -414,7 +458,11 @@ const PropertyDetail = () => {
       };
 
       sessionStorage.setItem("pendingBooking", JSON.stringify(bookingData));
-      await trackEvent("booking_started", { property_id: property.id, user_id: user?.id, metadata: { nights, total: calculateTotal() } });
+      await trackEvent("booking_started", {
+        property_id: property.id,
+        user_id: user?.id,
+        metadata: { nights, total: calculateTotal() },
+      });
       navigate("/booking-details");
     } catch (error: any) {
       toast.error(t("bookingFailed"));
@@ -423,25 +471,27 @@ const PropertyDetail = () => {
     }
   };
 
-  const similarListings = allProperties?.filter(p => p.id !== id).slice(0, 3) || [];
+  const similarListings = allProperties?.filter((p) => p.id !== id).slice(0, 3) || [];
 
   const amenityIcons: Record<string, any> = {
-    "WiFi": Wifi,
+    WiFi: Wifi,
     "Free Parking": Car,
-    "Parking": Car,
-    "TV": Tv,
-    "Pool": Waves,
+    Parking: Car,
+    TV: Tv,
+    Pool: Waves,
   };
 
   const { data: siteSettings } = useSiteSettings();
-  const amenityIconMap = useMemo(() => {
-    const map: Record<string, string> = {};
+  const { amenityIconMap, amenityCategoryMap } = useMemo(() => {
+    const iconMap: Record<string, string> = {};
+    const catMap: Record<string, string> = {};
     const settingsArr = Array.isArray(siteSettings) ? siteSettings : [];
     const entry = settingsArr.find((s: any) => s.key === "amenities_list");
     normalizeAmenities(entry?.value).forEach((a) => {
-      if (a.icon) map[a.name] = a.icon;
+      if (a.icon) iconMap[a.name] = a.icon;
+      if (a.category) catMap[a.name] = a.category;
     });
-    return map;
+    return { amenityIconMap: iconMap, amenityCategoryMap: catMap };
   }, [siteSettings]);
 
   const nextImage = () => {
@@ -486,15 +536,11 @@ const PropertyDetail = () => {
       {/* Mobile: Full-bleed image gallery */}
       <div className="md:hidden relative">
         <div className="relative h-[300px] w-full overflow-hidden">
-          <img 
-            src={images[currentImageIndex]} 
-            alt={property.title}
-            className="w-full h-full object-cover"
-          />
+          <img src={images[currentImageIndex]} alt={property.title} className="w-full h-full object-cover" />
           {/* Top overlay buttons */}
           <div className="absolute top-3 left-3 right-3 flex justify-between items-center z-10">
-            <Button 
-              variant="ghost" 
+            <Button
+              variant="ghost"
               size="icon"
               className="rounded-full bg-card/80 backdrop-blur-sm h-9 w-9"
               onClick={() => navigate(-1)}
@@ -534,16 +580,16 @@ const PropertyDetail = () => {
           {/* Image nav arrows */}
           {images.length > 1 && (
             <>
-              <Button 
-                variant="ghost" 
+              <Button
+                variant="ghost"
                 size="icon"
                 className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-card/60 backdrop-blur-sm h-8 w-8"
                 onClick={prevImage}
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
-              <Button 
-                variant="ghost" 
+              <Button
+                variant="ghost"
                 size="icon"
                 className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-card/60 backdrop-blur-sm h-8 w-8"
                 onClick={nextImage}
@@ -560,9 +606,9 @@ const PropertyDetail = () => {
           {images.length > 1 && images.length <= 8 && (
             <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
               {images.map((_, i) => (
-                <div 
-                  key={i} 
-                  className={`w-1.5 h-1.5 rounded-full transition-all ${i === currentImageIndex ? 'bg-primary-foreground w-3' : 'bg-primary-foreground/50'}`}
+                <div
+                  key={i}
+                  className={`w-1.5 h-1.5 rounded-full transition-all ${i === currentImageIndex ? "bg-primary-foreground w-3" : "bg-primary-foreground/50"}`}
                   onClick={() => setCurrentImageIndex(i)}
                 />
               ))}
@@ -578,7 +624,7 @@ const PropertyDetail = () => {
                 key={i}
                 onClick={() => setCurrentImageIndex(i)}
                 className={`flex-shrink-0 w-16 h-12 rounded-lg overflow-hidden border-2 transition-all ${
-                  i === currentImageIndex ? 'border-primary' : 'border-transparent opacity-60'
+                  i === currentImageIndex ? "border-primary" : "border-transparent opacity-60"
                 }`}
               >
                 <img src={img} alt="" className="w-full h-full object-cover" />
@@ -591,11 +637,7 @@ const PropertyDetail = () => {
       {/* Desktop: Container image gallery */}
       <div className="hidden md:block container mx-auto px-4 pt-8">
         <div className="rounded-2xl overflow-hidden mb-8 h-[500px] relative group">
-          <img 
-            src={images[currentImageIndex]} 
-            alt={property.title}
-            className="w-full h-full object-cover"
-          />
+          <img src={images[currentImageIndex]} alt={property.title} className="w-full h-full object-cover" />
           <Button
             variant="outline"
             size="sm"
@@ -607,16 +649,16 @@ const PropertyDetail = () => {
           </Button>
           {images.length > 1 && (
             <>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 size="icon"
                 className="absolute left-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-card/90"
                 onClick={prevImage}
               >
                 <ChevronLeft className="h-6 w-6" />
               </Button>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 size="icon"
                 className="absolute right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-card/90"
                 onClick={nextImage}
@@ -625,9 +667,9 @@ const PropertyDetail = () => {
               </Button>
               <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
                 {images.map((_, i) => (
-                  <div 
-                    key={i} 
-                    className={`w-2 h-2 rounded-full cursor-pointer ${i === currentImageIndex ? 'bg-primary' : 'bg-primary-foreground/50'}`}
+                  <div
+                    key={i}
+                    className={`w-2 h-2 rounded-full cursor-pointer ${i === currentImageIndex ? "bg-primary" : "bg-primary-foreground/50"}`}
                     onClick={() => setCurrentImageIndex(i)}
                   />
                 ))}
@@ -659,14 +701,20 @@ const PropertyDetail = () => {
           {images.length > 1 && (
             <>
               <button
-                onClick={(e) => { e.stopPropagation(); prevImage(); }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  prevImage();
+                }}
                 className="absolute left-4 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center backdrop-blur-sm"
                 aria-label="Previous image"
               >
                 <ChevronLeft className="h-6 w-6" />
               </button>
               <button
-                onClick={(e) => { e.stopPropagation(); nextImage(); }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  nextImage();
+                }}
                 className="absolute right-4 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center backdrop-blur-sm"
                 aria-label="Next image"
               >
@@ -679,7 +727,6 @@ const PropertyDetail = () => {
           )}
         </div>
       )}
-
 
       <main className="container mx-auto px-4 pb-8 md:py-0">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
@@ -695,11 +742,7 @@ const PropertyDetail = () => {
                     <Share2 className="h-4 w-4 mr-2" />
                     Share
                   </Button>
-                  <Button
-                    variant={favorited ? "default" : "outline"}
-                    size="sm"
-                    onClick={handleToggleFavorite}
-                  >
+                  <Button variant={favorited ? "default" : "outline"} size="sm" onClick={handleToggleFavorite}>
                     <Heart className={`h-4 w-4 mr-2 ${favorited ? "fill-current" : ""}`} />
                     {favorited ? "Saved" : "Save"}
                   </Button>
@@ -709,7 +752,9 @@ const PropertyDetail = () => {
                 <div className="flex items-center gap-1">
                   <Star className="h-4 w-4 md:h-5 md:w-5 fill-yellow-500 text-yellow-500" />
                   <span className="font-semibold text-foreground">{property.rating || 0}</span>
-                  <span>({property.review_count || 0} {t("reviews")})</span>
+                  <span>
+                    ({property.review_count || 0} {t("reviews")})
+                  </span>
                 </div>
                 <span className="hidden md:inline">·</span>
                 <div className="flex items-center gap-1">
@@ -758,7 +803,9 @@ const PropertyDetail = () => {
 
             {/* Mobile inline date picker */}
             <div className="lg:hidden">
-              <label className="text-sm font-medium mb-2 block flex items-center gap-2">{t("checkIn")} <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" /> {t("checkOut")}</label>
+              <label className="text-sm font-medium mb-2 block flex items-center gap-2">
+                {t("checkIn")} <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" /> {t("checkOut")}
+              </label>
               <div className="rounded-lg border border-border bg-background overflow-hidden">
                 <Calendar
                   mode="range"
@@ -789,6 +836,16 @@ const PropertyDetail = () => {
                   <span className="inline-block w-3 h-3 rounded bg-destructive/20 border border-destructive/40" />
                   Booked — not available
                 </div>
+                <div className="px-3 pb-3">
+                  <Button
+                    className="w-full"
+                    size="sm"
+                    onClick={handleSaveDates}
+                    disabled={!hasDateChanges}
+                  >
+                    Save Change
+                  </Button>
+                </div>
               </div>
             </div>
 
@@ -817,8 +874,6 @@ const PropertyDetail = () => {
               </div>
             )}
 
-
-
             {/* Host Info */}
             <Card>
               <CardContent className="p-4 md:p-6">
@@ -832,19 +887,12 @@ const PropertyDetail = () => {
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1">
-                    <h3 className="text-base md:text-xl font-bold">
-                      {hostProfile?.full_name || t("propertyHost")}
-                    </h3>
+                    <h3 className="text-base md:text-xl font-bold">{hostProfile?.full_name || t("propertyHost")}</h3>
                     <p className="text-xs md:text-sm text-muted-foreground">
                       {hostProfile?.is_verified ? t("verifiedHost") : t("propertyHost")}
                     </p>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="md:flex"
-                    onClick={() => setContactOpen(true)}
-                  >
+                  <Button variant="outline" size="sm" className="md:flex" onClick={() => setContactOpen(true)}>
                     Contact
                   </Button>
                 </div>
@@ -859,6 +907,49 @@ const PropertyDetail = () => {
               </p>
             </div>
 
+            {/* Welcome message from host */}
+            {(property as any).welcome_message && (
+              <div>
+                <h2 className="text-lg md:text-2xl font-bold mb-2 md:mb-4">Welcome message from host</h2>
+                <MarkdownLite text={(property as any).welcome_message} />
+              </div>
+            )}
+
+            {/* Stay details */}
+            {((property as any).check_in_time ||
+              (property as any).check_out_time ||
+              (property as any).minimum_nights) && (
+              <div>
+                <h2 className="text-lg md:text-2xl font-bold mb-2 md:mb-4">Stay details</h2>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {(property as any).check_in_time && (
+                    <div className="p-3 rounded-xl border border-border">
+                      <p className="text-xs text-muted-foreground">Check-in</p>
+                      <p className="text-sm md:text-base font-medium">
+                        {(property as any).check_in_time}
+                      </p>
+                    </div>
+                  )}
+                  {(property as any).check_out_time && (
+                    <div className="p-3 rounded-xl border border-border">
+                      <p className="text-xs text-muted-foreground">Check-out</p>
+                      <p className="text-sm md:text-base font-medium">
+                        {(property as any).check_out_time}
+                      </p>
+                    </div>
+                  )}
+                  {(property as any).minimum_nights && (
+                    <div className="p-3 rounded-xl border border-border">
+                      <p className="text-xs text-muted-foreground">Minimum nights</p>
+                      <p className="text-sm md:text-base font-medium">
+                        {(property as any).minimum_nights}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Cleaning Policy */}
             {(property as any).cleaning_policy && (
               <div>
@@ -868,29 +959,96 @@ const PropertyDetail = () => {
             )}
 
             {/* Amenities */}
-            {property.amenities && property.amenities.length > 0 && (
-              <div>
-                <h2 className="text-lg md:text-2xl font-bold mb-3 md:mb-4">{t("whatThisPlaceOffers")}</h2>
-                <div className="grid grid-cols-2 gap-2 md:gap-4">
-                  {property.amenities.map((amenity: string) => {
-                    const customIcon = amenityIconMap[amenity];
-                    const Icon = amenityIcons[amenity] || Home;
-                    return (
-                      <div key={amenity} className="flex items-center gap-2.5 p-2.5 md:p-3 rounded-xl border border-border">
-                        <div className="h-8 w-8 rounded-full bg-accent flex items-center justify-center flex-shrink-0 overflow-hidden">
-                          {customIcon ? (
-                            <img src={customIcon} alt="" className="h-6 w-6 object-contain" />
-                          ) : (
-                            <Icon className="h-4 w-4 text-accent-foreground" />
-                          )}
+            {property.amenities && property.amenities.length > 0 && (() => {
+              const categoryMap: Record<string, string> = {
+                // Bathroom
+                "Shampoo": "Bathroom", "Conditioner": "Bathroom", "Body soap": "Bathroom",
+                "Hot water": "Bathroom", "Shower gel": "Bathroom", "Hair dryer": "Bathroom",
+                "Bathtub": "Bathroom", "Bidet": "Bathroom", "Towels": "Bathroom",
+                // Bedroom & Laundry
+                "Washer": "Bedroom & Laundry", "Dryer": "Bedroom & Laundry",
+                "Essentials": "Bedroom & Laundry", "Hangers": "Bedroom & Laundry",
+                "Bed linens": "Bedroom & Laundry", "Extra pillows and blankets": "Bedroom & Laundry",
+                "Iron": "Bedroom & Laundry", "Clothing storage": "Bedroom & Laundry",
+                "Room-darkening shades": "Bedroom & Laundry",
+                // Entertainment
+                "TV": "Entertainment", "Cable TV": "Entertainment", "Sound system": "Entertainment",
+                "Game console": "Entertainment", "Books": "Entertainment",
+                // Heating & Cooling
+                "Air Conditioning": "Heating & Cooling", "Air conditioning": "Heating & Cooling",
+                "Heating": "Heating & Cooling", "Ceiling fan": "Heating & Cooling",
+                "Portable fans": "Heating & Cooling",
+                // Internet & Office
+                "WiFi": "Internet & Office", "Wifi": "Internet & Office",
+                "Dedicated workspace": "Internet & Office", "Ethernet connection": "Internet & Office",
+                // Kitchen & Dining
+                "Kitchen": "Kitchen & Dining", "Refrigerator": "Kitchen & Dining",
+                "Microwave": "Kitchen & Dining", "Cooking basics": "Kitchen & Dining",
+                "Dishes and silverware": "Kitchen & Dining", "Freezer": "Kitchen & Dining",
+                "Dishwasher": "Kitchen & Dining", "Stove": "Kitchen & Dining",
+                "Oven": "Kitchen & Dining", "Coffee maker": "Kitchen & Dining",
+                "Wine glasses": "Kitchen & Dining", "Toaster": "Kitchen & Dining",
+                "Dining table": "Kitchen & Dining", "Hot Tub": "Kitchen & Dining",
+                // Outdoor
+                "Garden": "Outdoor", "Patio or balcony": "Outdoor", "Backyard": "Outdoor",
+                "BBQ grill": "Outdoor", "Outdoor furniture": "Outdoor",
+                "Outdoor dining area": "Outdoor",
+                // Parking & Facilities
+                "Free Parking": "Parking & Facilities", "Parking": "Parking & Facilities",
+                "Free parking on premises": "Parking & Facilities", "Pool": "Parking & Facilities",
+                "Gym": "Parking & Facilities", "Elevator": "Parking & Facilities",
+                "EV charger": "Parking & Facilities",
+                // Safety
+                "Smoke alarm": "Safety", "Carbon monoxide alarm": "Safety",
+                "Fire extinguisher": "Safety", "First aid kit": "Safety",
+                "Security cameras": "Safety",
+              };
+              const grouped: Record<string, string[]> = {};
+              property.amenities.forEach((a: string) => {
+                const cat = amenityCategoryMap[a] || categoryMap[a] || "Other";
+                (grouped[cat] ||= []).push(a);
+              });
+              const settingsArr = Array.isArray(siteSettings) ? siteSettings : [];
+              const catEntry = settingsArr.find((s: any) => s.key === "amenity_categories");
+              const adminOrder: string[] = Array.isArray(catEntry?.value)
+                ? catEntry!.value.filter((c: any) => typeof c === "string")
+                : [];
+              const fallbackOrder = ["Bathroom","Bedroom & Laundry","Entertainment","Heating & Cooling","Internet & Office","Kitchen & Dining","Outdoor","Parking & Facilities","Safety"];
+              const baseOrder = adminOrder.length ? adminOrder : fallbackOrder;
+              const extras = Object.keys(grouped).filter((c) => !baseOrder.includes(c) && c !== "Other");
+              const order = [...baseOrder, ...extras, "Other"];
+              return (
+                <div>
+                  <h2 className="text-lg md:text-2xl font-bold mb-3 md:mb-4">{t("whatThisPlaceOffers")}</h2>
+                  <div className="space-y-5 md:space-y-6">
+                    {order.filter((c) => grouped[c]?.length).map((cat) => (
+                      <div key={cat}>
+                        <h3 className="text-sm md:text-base font-semibold text-muted-foreground mb-2 md:mb-3 uppercase tracking-wide">{cat}</h3>
+                        <div className="grid grid-cols-2 gap-2 md:gap-4">
+                          {grouped[cat].map((amenity) => {
+                            const customIcon = amenityIconMap[amenity];
+                            const Icon = amenityIcons[amenity] || Home;
+                            return (
+                              <div key={amenity} className="flex items-center gap-2.5 p-2.5 md:p-3 rounded-xl border border-border">
+                                <div className="h-8 w-8 rounded-full bg-accent flex items-center justify-center flex-shrink-0 overflow-hidden">
+                                  {customIcon ? (
+                                    <img src={customIcon} alt="" className="h-6 w-6 object-contain" />
+                                  ) : (
+                                    <Icon className="h-4 w-4 text-accent-foreground" />
+                                  )}
+                                </div>
+                                <span className="text-sm md:text-base">{amenity}</span>
+                              </div>
+                            );
+                          })}
                         </div>
-                        <span className="text-sm md:text-base">{amenity}</span>
                       </div>
-                    );
-                  })}
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
+
 
             {/* Map */}
             <div>
@@ -903,18 +1061,48 @@ const PropertyDetail = () => {
                       lng={property.longitude}
                       title={property.title}
                       location={property.location}
+                      price={formatPrice(property.price_per_night)}
+                      image={images[0]}
                     />
                   ) : (
                     <div className="w-full h-[200px] md:h-[300px] bg-accent flex items-center justify-center">
                       <div className="text-center">
                         <MapPin className="h-8 w-8 md:h-12 md:w-12 mx-auto mb-2 text-muted-foreground" />
-                        <p className="text-sm md:text-base text-muted-foreground">{t("mapViewOf")} {property.location}</p>
+                        <p className="text-sm md:text-base text-muted-foreground">
+                          {t("mapViewOf")} {property.location}
+                        </p>
                       </div>
                     </div>
                   )}
                 </CardContent>
               </Card>
             </div>
+
+            {/* Things to know */}
+            <div>
+              <h2 className="text-lg md:text-2xl font-bold mb-3 md:mb-4">Things to know</h2>
+              <div className="grid gap-4 md:grid-cols-3">
+                <div className="rounded-xl border bg-card p-4">
+                  <h3 className="font-semibold mb-2">House rules</h3>
+                  <div className="text-sm text-muted-foreground whitespace-pre-line">
+                    <MarkdownLite text={(property as any).house_rules || "Check-in after the listed check-in time. No smoking. No parties or events. Pets are not allowed unless agreed with the host."} />
+                  </div>
+                </div>
+                <div className="rounded-xl border bg-card p-4">
+                  <h3 className="font-semibold mb-2">Safety & property</h3>
+                  <div className="text-sm text-muted-foreground whitespace-pre-line">
+                    <MarkdownLite text={(property as any).safety_property || "Smoke alarm not reported. Carbon monoxide alarm not reported. Please review all safety information with the host on arrival."} />
+                  </div>
+                </div>
+                <div className="rounded-xl border bg-card p-4">
+                  <h3 className="font-semibold mb-2">Cancellation policy</h3>
+                  <div className="text-sm text-muted-foreground whitespace-pre-line">
+                    <MarkdownLite text={(property as any).cancellation_policy || "Free cancellation up to 7 days before check-in. After that, cancellations may be partially refundable depending on timing."} />
+                  </div>
+                </div>
+              </div>
+            </div>
+
 
             {/* Reviews */}
             <div id="reviews" className="scroll-mt-24">
@@ -936,9 +1124,7 @@ const PropertyDetail = () => {
                     size="sm"
                     variant="outline"
                     className="text-xs md:text-sm"
-                    onClick={() =>
-                      navigate(`/auth?redirect=${encodeURIComponent(`/property/${id}`)}`)
-                    }
+                    onClick={() => navigate(`/auth?redirect=${encodeURIComponent(`/property/${id}`)}`)}
                   >
                     {t("writeReview")}
                   </Button>
@@ -997,14 +1183,19 @@ const PropertyDetail = () => {
           <div className="hidden lg:block lg:col-span-1">
             <Card className="sticky top-24 border-2">
               <CardContent className="p-6">
-                <div className="flex items-baseline gap-2 mb-6">
-                  <span className="text-3xl font-bold">{formatPrice(property.price_per_night)}</span>
-                  <span className="text-muted-foreground">{t("perNight")}</span>
+                <div className="mb-6">
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-3xl font-bold">{formatPrice(property.price_per_night)}</span>
+                    <span className="text-muted-foreground">{t("perNight")}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">Prices include all fees</p>
                 </div>
 
                 <div className="space-y-4 mb-6">
                   <div>
-                    <label className="text-sm font-medium mb-2 block flex items-center gap-2">{t("checkIn")} <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" /> {t("checkOut")}</label>
+                    <label className="text-sm font-medium mb-2 block flex items-center gap-2">
+                      {t("checkIn")} <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" /> {t("checkOut")}
+                    </label>
                     <div className="rounded-lg border border-border bg-background overflow-hidden">
                       <Calendar
                         mode="range"
@@ -1034,6 +1225,16 @@ const PropertyDetail = () => {
                       <div className="px-3 pb-3 text-xs text-muted-foreground flex items-center gap-2">
                         <span className="inline-block w-3 h-3 rounded bg-destructive/20 border border-destructive/40" />
                         Booked — not available
+                      </div>
+                      <div className="px-3 pb-3">
+                        <Button
+                          className="w-full"
+                          size="sm"
+                          onClick={handleSaveDates}
+                          disabled={!hasDateChanges}
+                        >
+                          Save Change
+                        </Button>
                       </div>
                     </div>
                   </div>
@@ -1075,7 +1276,9 @@ const PropertyDetail = () => {
                       className="w-full p-3 rounded-lg border border-border bg-background"
                     >
                       {Array.from({ length: property.max_guests }, (_, i) => i + 1).map((num) => (
-                        <option key={num} value={num}>{num} {num > 1 ? t("guests") : t("guest")}</option>
+                        <option key={num} value={num}>
+                          {num} {num > 1 ? t("guests") : t("guest")}
+                        </option>
                       ))}
                     </select>
                   </div>
@@ -1084,7 +1287,13 @@ const PropertyDetail = () => {
                 {calculateTotal() > 0 && (
                   <div className="border-t pt-4 mb-4">
                     <div className="flex justify-between mb-2">
-                      <span>{formatPrice(property.price_per_night)} × {Math.ceil((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / (1000 * 60 * 60 * 24))} {t("nights")}</span>
+                      <span>
+                        {formatPrice(property.price_per_night)} ×{" "}
+                        {Math.ceil(
+                          (new Date(checkOut).getTime() - new Date(checkIn).getTime()) / (1000 * 60 * 60 * 24),
+                        )}{" "}
+                        {t("nights")}
+                      </span>
                       <span>{formatPrice(calculateTotal())}</span>
                     </div>
                     <div className="flex justify-between font-bold text-lg">
@@ -1094,12 +1303,7 @@ const PropertyDetail = () => {
                   </div>
                 )}
 
-                <Button 
-                  className="w-full" 
-                  size="lg"
-                  onClick={handleReserve}
-                  disabled={loading}
-                >
+                <Button className="w-full" size="lg" onClick={handleReserve} disabled={loading}>
                   {loading ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -1131,7 +1335,7 @@ const PropertyDetail = () => {
                   price={listing.price_per_night}
                   rating={listing.rating || 0}
                   reviews={listing.review_count}
-                    approvalStatus={(listing as any).approval_status}
+                  approvalStatus={(listing as any).approval_status}
                 />
               ))}
             </div>
@@ -1147,6 +1351,7 @@ const PropertyDetail = () => {
               <span className="text-lg font-bold">{formatPrice(property.price_per_night)}</span>
               <span className="text-xs text-muted-foreground">/ {t("perNight")}</span>
             </div>
+            <p className="text-[10px] text-muted-foreground">Prices include all fees</p>
             {checkIn && checkOut && (
               <div className="text-xs font-medium text-foreground mt-0.5">
                 {format(new Date(checkIn), "MMM d")} – {format(new Date(checkOut), "MMM d")}
@@ -1154,15 +1359,12 @@ const PropertyDetail = () => {
             )}
             <div className="flex items-center gap-1 text-xs text-muted-foreground">
               <Star className="h-3 w-3 fill-yellow-500 text-yellow-500" />
-              <span>{property.rating || 0} ({property.review_count || 0})</span>
+              <span>
+                {property.rating || 0} ({property.review_count || 0})
+              </span>
             </div>
           </div>
-          <Button 
-            size="sm"
-            className="px-6 rounded-xl"
-            onClick={handleReserve}
-            disabled={loading}
-          >
+          <Button size="sm" className="px-6 rounded-xl" onClick={handleReserve} disabled={loading}>
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : t("reserve")}
           </Button>
         </div>
@@ -1174,7 +1376,8 @@ const PropertyDetail = () => {
           <DialogHeader>
             <DialogTitle>Sign in to reserve</DialogTitle>
             <DialogDescription>
-              You need an account to book this property. Log in if you already have one, or create a new account in seconds.
+              You need an account to book this property. Log in if you already have one, or create a new account in
+              seconds.
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-2 pt-2">
@@ -1207,7 +1410,8 @@ const PropertyDetail = () => {
           <DialogHeader>
             <DialogTitle>Message {hostProfile?.full_name || "the host"}</DialogTitle>
             <DialogDescription>
-              About <span className="font-medium text-foreground">{property?.title}</span>. Your message will appear in your Messages thread with the host.
+              About <span className="font-medium text-foreground">{property?.title}</span>. Your message will appear in
+              your Messages thread with the host.
             </DialogDescription>
           </DialogHeader>
           <Textarea
@@ -1292,7 +1496,9 @@ const PropertyDetail = () => {
               </a>
             </Button>
             <Button variant="outline" asChild>
-              <a href={`mailto:?subject=${encodeURIComponent(property?.title || "Property")}&body=${encodeURIComponent(getShareUrl())}`}>
+              <a
+                href={`mailto:?subject=${encodeURIComponent(property?.title || "Property")}&body=${encodeURIComponent(getShareUrl())}`}
+              >
                 Email
               </a>
             </Button>

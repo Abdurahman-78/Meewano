@@ -1,4 +1,18 @@
-import { Globe, User, LogIn, Home, MessageSquare, Settings, Heart, LogOut, Shield, Building2, Info, Map, Compass } from "lucide-react";
+import {
+  Globe,
+  User,
+  LogIn,
+  Home,
+  MessageSquare,
+  Settings,
+  Heart,
+  LogOut,
+  Shield,
+  Building2,
+  Info,
+  Map,
+  Compass,
+} from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import meewanoLogo from "@/assets/meewano-logo.png";
@@ -23,17 +37,13 @@ import { supabase } from "@/integrations/supabase/client";
 
 const Header = () => {
   const { language, setLanguage } = useLanguage();
-  
+
   const { t } = useTranslation();
   const { user, signOut } = useAuth();
   const { isAdmin } = useUserRole();
   const { data: hostVerification } = useMyHostVerification();
   const isVerifiedHost = !!user && hostVerification?.status === "approved";
-  const hostCtaTo = !user
-    ? "/become-host"
-    : isVerifiedHost
-      ? "/host/add-listing"
-      : "/host/verification";
+  const hostCtaTo = !user ? "/become-host" : isVerifiedHost ? "/host/add-listing" : "/host/verification";
   const navigate = useNavigate();
 
   const { data: hostPropertiesCount = 0 } = useQuery({
@@ -67,31 +77,27 @@ const Header = () => {
         <div className="flex items-center gap-2 md:gap-6">
           <MobileMenu />
           <Link to="/" className="flex items-center">
-            <img 
-              src={meewanoLogo} 
-              alt="Meewano" 
-              className="h-8 md:h-12 w-auto object-contain" 
-            />
+            <img src={meewanoLogo} alt="Meewano" className="h-8 md:h-12 w-auto object-contain" />
           </Link>
-          
+
           {/* Navigation Links */}
           <nav className="hidden md:flex items-center gap-4">
-            <Link 
-              to="/search" 
+            <Link
+              to="/search"
               className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
             >
               <Building2 className="h-4 w-4" />
               {t("navProperties")}
             </Link>
-            <Link 
-              to="/discover" 
+            <Link
+              to="/discover"
               className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
             >
               <Compass className="h-4 w-4" />
               {t("navDiscover")}
             </Link>
-            <Link 
-              to="/map" 
+            <Link
+              to="/map"
               className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
             >
               <Map className="h-4 w-4" />
@@ -99,7 +105,7 @@ const Header = () => {
             </Link>
           </nav>
         </div>
-        
+
         <div className="flex items-center gap-1 md:gap-3">
           <Link to={hostCtaTo} className="hidden md:block relative">
             <Button variant="ghost" size="sm" className="rounded-full font-semibold hover:bg-accent relative">
@@ -117,33 +123,25 @@ const Header = () => {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-40">
-              <DropdownMenuItem 
-                onClick={() => setLanguage("en")}
-                className={language === "en" ? "bg-accent" : ""}
-              >
+              <DropdownMenuItem onClick={() => setLanguage("en")} className={language === "en" ? "bg-accent" : ""}>
                 English
               </DropdownMenuItem>
-              <DropdownMenuItem 
-                onClick={() => setLanguage("ar")}
-                className={language === "ar" ? "bg-accent" : ""}
-              >
+              <DropdownMenuItem onClick={() => setLanguage("ar")} className={language === "ar" ? "bg-accent" : ""}>
                 العربية
               </DropdownMenuItem>
-              <DropdownMenuItem 
-                onClick={() => setLanguage("ku")}
-                className={language === "ku" ? "bg-accent" : ""}
-              >
+              <DropdownMenuItem onClick={() => setLanguage("ku")} className={language === "ku" ? "bg-accent" : ""}>
                 کوردی
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
 
-
-          <div className="hidden md:block"><ThemeToggle /></div>
+          <div className="hidden md:block">
+            <ThemeToggle />
+          </div>
 
           {user && <NotificationBell />}
           {user ? (
-            <Link to="/guest" className="hidden md:block">
+            <Link to={isVerifiedHost ? "/host" : "/guest"} className="hidden md:block">
               <Button variant="ghost" size="sm" className="rounded-full">
                 {user.email}
               </Button>
@@ -155,72 +153,75 @@ const Header = () => {
               </Button>
             </Link>
           )}
-          
+
           <div className="hidden md:block">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="rounded-full">
-                <User className="h-5 w-5" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              {user && (
-                <>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="rounded-full">
+                  <User className="h-5 w-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                {user && (
+                  <>
+                    <DropdownMenuItem asChild>
+                      <Link to="/account-settings" className="cursor-pointer">
+                        <Settings className="h-4 w-4 mr-2" />
+                        {t("accountSettings")}
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/favorites" className="cursor-pointer">
+                        <Heart className="h-4 w-4 mr-2" />
+                        {t("favorites")}
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                  </>
+                )}
+                {isVerifiedHost ? (
                   <DropdownMenuItem asChild>
-                    <Link to="/account-settings" className="cursor-pointer">
-                      <Settings className="h-4 w-4 mr-2" />
-                      {t("accountSettings")}
+                    <Link to="/host" className="cursor-pointer">
+                      <Home className="h-4 w-4 mr-2" />
+                      {t("hostDashboard")}
                     </Link>
                   </DropdownMenuItem>
+                ) : (
                   <DropdownMenuItem asChild>
-                    <Link to="/favorites" className="cursor-pointer">
-                      <Heart className="h-4 w-4 mr-2" />
-                      {t("favorites")}
+                    <Link to="/guest" className="cursor-pointer">
+                      <User className="h-4 w-4 mr-2" />
+                      {t("guestDashboard")}
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                </>
-              )}
-              <DropdownMenuItem asChild>
-                <Link to="/guest" className="cursor-pointer">
-                  <User className="h-4 w-4 mr-2" />
-                  {t("guestDashboard")}
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link to="/host" className="cursor-pointer">
-                  <Home className="h-4 w-4 mr-2" />
-                  {t("hostDashboard")}
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link to="/messages" className="cursor-pointer">
-                  <MessageSquare className="h-4 w-4 mr-2" />
-                  {t("messages")}
-                </Link>
-              </DropdownMenuItem>
-              {isAdmin && (
-                <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link to="/admin" className="cursor-pointer">
-                      <Shield className="h-4 w-4 mr-2" />
-                      {t("adminDashboard")}
-                    </Link>
-                  </DropdownMenuItem>
-                </>
-              )}
-              {user && (
-                <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer">
-                    <LogOut className="h-4 w-4 mr-2" />
-                    {t("logOut")}
-                  </DropdownMenuItem>
-                </>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
+                )}
+                <DropdownMenuItem asChild>
+                  <Link to="/messages" className="cursor-pointer">
+                    <MessageSquare className="h-4 w-4 mr-2" />
+                    {t("messages")}
+                  </Link>
+                </DropdownMenuItem>
+                {isAdmin && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                      <Link to="/admin" className="cursor-pointer">
+                        <Shield className="h-4 w-4 mr-2" />
+                        {t("adminDashboard")}
+                      </Link>
+                    </DropdownMenuItem>
+                  </>
+                )}
+                {user && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer">
+                      <LogOut className="h-4 w-4 mr-2" />
+                      {t("logOut")}
+                    </DropdownMenuItem>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </div>

@@ -13,6 +13,8 @@ import { toast } from "sonner";
 import { createNotification } from "@/hooks/useNotifications";
 import { useMyHostVerification } from "@/hooks/useHostVerification";
 import HostPayoutCard from "@/components/HostPayoutCard";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { GuestDashboardContent } from "@/pages/GuestDashboard";
 
 interface Property {
   id: string;
@@ -166,6 +168,17 @@ const HostDashboard = () => {
     <AppLayout>
       
       <main className="container mx-auto px-4 py-8">
+        <Tabs defaultValue="hosting" className="space-y-6">
+          <TabsList className="grid w-full max-w-md grid-cols-2">
+            <TabsTrigger value="hosting">
+              <Home className="h-4 w-4 mr-2" /> Hosting
+            </TabsTrigger>
+            <TabsTrigger value="guest">
+              <Calendar className="h-4 w-4 mr-2" /> My Trips
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="hosting" className="space-y-6">
         {/* Verification banner */}
         {!vLoading && !isVerified && (
           <Alert className={`mb-6 ${verification?.status === "rejected" ? "border-destructive/40 bg-destructive/5" : "border-yellow-500/40 bg-yellow-500/5"}`}>
@@ -387,6 +400,12 @@ const HostDashboard = () => {
             </Button>
           </CardContent>
         </Card>
+          </TabsContent>
+
+          <TabsContent value="guest">
+            <GuestDashboardContent withLayout={false} />
+          </TabsContent>
+        </Tabs>
       </main>
     </AppLayout>
   );

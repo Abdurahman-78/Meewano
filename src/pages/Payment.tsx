@@ -12,12 +12,12 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { CreditCard, Lock, Loader2 } from "lucide-react";
+import { CreditCard, Lock, Loader2, Banknote, Smartphone, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import { createNotification } from "@/hooks/useNotifications";
 import { trackEvent } from "@/lib/tracking";
 
-type PaymentMethod = "card";
+type PaymentMethod = "cash" | "fastpay" | "zaincash" | "qicard";
 
 interface PendingBooking {
   property_id: string;
@@ -39,17 +39,11 @@ const Payment = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
-  const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>("card");
+  const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>("cash");
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [loading, setLoading] = useState(false);
   const [booking, setBooking] = useState<PendingBooking | null>(null);
   const [guestMessage, setGuestMessage] = useState("");
-  const [cardDetails, setCardDetails] = useState({
-    number: "",
-    expiry: "",
-    cvv: "",
-    name: "",
-  });
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -62,8 +56,12 @@ const Payment = () => {
     if (pendingBooking) {
       setBooking(JSON.parse(pendingBooking));
     } else {
-      // If no booking data, redirect back
       navigate("/");
+      return;
+    }
+    const savedMethod = sessionStorage.getItem("bookingPaymentMethod") as PaymentMethod | null;
+    if (savedMethod) {
+      setSelectedMethod(savedMethod);
     }
   }, [user, authLoading, navigate]);
 
@@ -81,12 +79,6 @@ const Payment = () => {
 
     if (!user || !booking) {
       toast.error("Missing booking information");
-      return;
-    }
-
-    // Validate card details (only payment method now)
-    if (!cardDetails.number || !cardDetails.expiry || !cardDetails.cvv || !cardDetails.name) {
-      toast.error(t("paymentFillFields"));
       return;
     }
 
@@ -111,8 +103,8 @@ const Payment = () => {
           total_price: total,
           status: "pending",
           guest_message: guestMessage || null,
-          payment_method: "card",
-          is_paid: true,
+          payment_method: selectedMethod,
+          is_paid: selectedMethod !== "cash",
         })
         .select()
         .single();
@@ -205,7 +197,14 @@ const Payment = () => {
                 tax,
                 total,
                 currency: "IQD",
-                paymentMethod: "Credit/Debit Card",
+                paymentMethod:
+                  selectedMethod === "cash"
+                    ? "Cash at check-in"
+                    : selectedMethod === "fastpay"
+                    ? "FastPay"
+                    : selectedMethod === "zaincash"
+                    ? "ZainCash"
+                    : "Qi Card",
                 welcomeMessage: propExtra?.welcome_message || "",
                 cleaningPolicy: propExtra?.cleaning_policy || "",
               },
@@ -261,7 +260,7 @@ const Payment = () => {
           nights: booking.nights,
           pricePerNight: booking.price_per_night,
           totalPrice: total,
-          paymentMethod: "card",
+          paymentMethod: selectedMethod,
         }),
       );
 
@@ -308,56 +307,64 @@ const Payment = () => {
               />
             </Card>
 
-            {/* Card Payment */}
+            {/* Payment Method Summary */}
             <Card className="p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <CreditCard className="h-5 w-5 text-primary" />
-                <h2 className="text-xl font-semibold">{t("paymentDetails")}</h2>
-              </div>
-              <div className="space-y-4">
+              <h2 className="text-xl font-semibold mb-4">Payment method</h2>
+              <div className="flex items-center gap-3 p-4 rounded-xl border-2 border-primary bg-primary/5">
+                {selectedMethod === "cash" && <Banknote className="h-6 w-6 text-primary" />}
+                {selectedMethod === "fastpay" && <Smartphone className="h-6 w-6 text-primary" />}
+                {selectedMethod === "zaincash" && <Wallet className="h-6 w-6 text-primary" />}
+                {selectedMethod === "qicard" && <CreditCard className="h-6 w-6 text-primary" />}
                 <div>
-                  <Label htmlFor="cardNumber">{t("paymentCardNumber")}</Label>
-                  <Input
-                    id="cardNumber"
-                    placeholder="1234 5678 9012 3456"
-                    value={cardDetails.number}
-                    onChange={(e) => setCardDetails({ ...cardDetails, number: e.target.value })}
-                    maxLength={19}
-                  />
+                  <p className="font-semibold">
+                    {selectedMethod === "cash" && "Cash at check-in"}
+                    {selectedMethod === "fastpay" && "FastPay"}
+                    {selectedMethod === "zaincash" && "ZainCash"}
+                    {selectedMethod === "qicard" && "Qi Card"}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedMethod === "cash"
+                      ? "Pay the host directly when you arrive."
+                      : "Follow the instructions after booking to complete payment."}
+                  </p>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="expiry">{t("paymentExpiry")}</Label>
-                    <Input
-                      id="expiry"
-                      placeholder="MM/YY"
-                      value={cardDetails.expiry}
-                      onChange={(e) => setCardDetails({ ...cardDetails, expiry: e.target.value })}
-                      maxLength={5}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="cvv">{t("paymentCVV")}</Label>
-                    <Input
-                      id="cvv"
-                      placeholder="123"
-                      type="password"
-                      value={cardDetails.cvv}
-                      onChange={(e) => setCardDetails({ ...cardDetails, cvv: e.target.value })}
-                      maxLength={4}
-                    />
-                  </div>
-                </div>
-                <div>
-                  <Label htmlFor="cardName">{t("paymentCardName")}</Label>
-                  <Input
-                    id="cardName"
-                    placeholder="John Doe"
-                    value={cardDetails.name}
-                    onChange={(e) => setCardDetails({ ...cardDetails, name: e.target.value })}
-                  />
-                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="ml-auto"
+                  onClick={() => navigate("/booking-details")}
+                >
+                  Change
+                </Button>
               </div>
+
+              {selectedMethod !== "cash" && (
+                <div className="mt-4 p-4 rounded-lg bg-muted text-sm space-y-2">
+                  <p className="font-medium">How to pay with {selectedMethod === "fastpay" ? "FastPay" : selectedMethod === "zaincash" ? "ZainCash" : "Qi Card"}:</p>
+                  {selectedMethod === "fastpay" && (
+                    <>
+                      <p>1. Open the FastPay app on your phone.</p>
+                      <p>2. Send the total amount to the host&apos;s FastPay number.</p>
+                      <p>3. Screenshot the confirmation and upload it in your booking details.</p>
+                    </>
+                  )}
+                  {selectedMethod === "zaincash" && (
+                    <>
+                      <p>1. Open the ZainCash app or dial *211#.</p>
+                      <p>2. Transfer the total amount to the host&apos;s ZainCash wallet.</p>
+                      <p>3. Screenshot the confirmation and upload it in your booking details.</p>
+                    </>
+                  )}
+                  {selectedMethod === "qicard" && (
+                    <>
+                      <p>1. Use your Qi Card at any authorized agent or ATM.</p>
+                      <p>2. Deposit the total amount to the host&apos;s Qi Card account.</p>
+                      <p>3. Keep the receipt and share the transaction ID with the host.</p>
+                    </>
+                  )}
+                </div>
+              )}
             </Card>
 
             {/* Security & Terms */}

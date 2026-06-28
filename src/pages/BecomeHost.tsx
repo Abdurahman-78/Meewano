@@ -2,8 +2,17 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  ArrowLeft, ArrowRight, BedDouble, Bath, MapPin, UserPlus,
-  Loader2, Eye, EyeOff, Phone, ShieldCheck,
+  ArrowLeft,
+  ArrowRight,
+  BedDouble,
+  Bath,
+  MapPin,
+  UserPlus,
+  Loader2,
+  Eye,
+  EyeOff,
+  Phone,
+  ShieldCheck,
 } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
@@ -22,21 +31,72 @@ const TOTAL_STEPS = 5;
 const EMAIL_OTP_LENGTH = 8;
 
 const IRAQ_CITIES = [
-  "Baghdad", "Basra", "Mosul", "Erbil", "Sulaymaniyah", "Duhok", "Halabja",
-  "Kirkuk", "Najaf", "Karbala", "Hillah", "Nasiriyah", "Amarah", "Diwaniyah",
-  "Kut", "Ramadi", "Fallujah", "Samarra", "Tikrit", "Baquba", "Zakho",
-  "Soran", "Koya", "Ranya", "Chamchamal", "Kifri", "Khanaqin", "Tuz Khurmatu",
-  "Sinjar", "Tal Afar", "Bayji", "Haditha", "Hit", "Rutba", "Anah",
-  "Al Qa'im", "Balad", "Dujail", "Mahmudiyah", "Yusufiyah", "Iskandariyah",
-  "Musayyib", "Mahawil", "Shomali", "Hashimiyah", "Abu Ghraib", "Madain",
-  "Mahmur", "Shaqlawa", "Akre", "Bardarash", "Dibis", "Hawija", "Daquq",
-  "Ankawa", "Pirmam", "Choman", "Penjwen", "Said Sadiq", "Dukan", "Qaladze",
-  "Rawanduz", "Galala", "Mergasur", "Amedi",
+  "Baghdad",
+  "Basra",
+  "Mosul",
+  "Erbil",
+  "Sulaymaniyah",
+  "Duhok",
+  "Halabja",
+  "Kirkuk",
+  "Najaf",
+  "Karbala",
+  "Hillah",
+  "Nasiriyah",
+  "Amarah",
+  "Diwaniyah",
+  "Kut",
+  "Ramadi",
+  "Fallujah",
+  "Samarra",
+  "Tikrit",
+  "Baquba",
+  "Zakho",
+  "Soran",
+  "Koya",
+  "Ranya",
+  "Chamchamal",
+  "Kifri",
+  "Khanaqin",
+  "Tuz Khurmatu",
+  "Sinjar",
+  "Tal Afar",
+  "Bayji",
+  "Haditha",
+  "Hit",
+  "Rutba",
+  "Anah",
+  "Al Qa'im",
+  "Balad",
+  "Dujail",
+  "Mahmudiyah",
+  "Yusufiyah",
+  "Iskandariyah",
+  "Musayyib",
+  "Mahawil",
+  "Shomali",
+  "Hashimiyah",
+  "Abu Ghraib",
+  "Madain",
+  "Mahmur",
+  "Shaqlawa",
+  "Akre",
+  "Bardarash",
+  "Dibis",
+  "Hawija",
+  "Daquq",
+  "Ankawa",
+  "Pirmam",
+  "Choman",
+  "Penjwen",
+  "Said Sadiq",
+  "Dukan",
+  "Qaladze",
+  "Rawanduz",
+  "Galala",
+  "Mergasur",
+  "Amedi",
 ];
-
-
-
-
 
 const STEPS = [
   { id: 1, title: "How many bedrooms?", subtitle: "Bedrooms in your property", icon: BedDouble },
@@ -47,8 +107,18 @@ const STEPS = [
 ];
 
 const NumberSelect = ({
-  value, onChange, min = 1, max = 20, unit,
-}: { value: number; onChange: (v: number) => void; min?: number; max?: number; unit: string }) => (
+  value,
+  onChange,
+  min = 1,
+  max = 20,
+  unit,
+}: {
+  value: number;
+  onChange: (v: number) => void;
+  min?: number;
+  max?: number;
+  unit: string;
+}) => (
   <Select value={String(value)} onValueChange={(v) => onChange(Number(v))}>
     <SelectTrigger className="h-14 text-lg">
       <SelectValue />
@@ -121,9 +191,10 @@ const BecomeHost = () => {
     try {
       const { password: _pw, ...safeForm } = form;
       localStorage.setItem(BECOME_HOST_DRAFT_KEY, JSON.stringify({ form: safeForm, step }));
-    } catch { /* ignore quota errors */ }
+    } catch {
+      /* ignore quota errors */
+    }
   }, [form, step]);
-
 
   // If already logged in, skip wizard — they already have an account
   useEffect(() => {
@@ -142,8 +213,13 @@ const BecomeHost = () => {
     if (step === 3) return form.city.trim().length >= 2;
     if (step === 4) {
       const { isStrong } = evaluatePassword(form.password);
-      return form.first_name.trim().length >= 2 && form.last_name.trim().length >= 2
-        && /\S+@\S+\.\S+/.test(form.email) && isStrong && phoneOk(form.phone);
+      return (
+        form.first_name.trim().length >= 2 &&
+        form.last_name.trim().length >= 2 &&
+        /\S+@\S+\.\S+/.test(form.email) &&
+        isStrong &&
+        phoneOk(form.phone)
+      );
     }
     if (step === 5) return otp.length === EMAIL_OTP_LENGTH;
     return true;
@@ -215,11 +291,17 @@ const BecomeHost = () => {
       if (error) throw error;
       toast.success("Email verified!");
       // Clear the saved wizard draft now that the account exists
-      try { localStorage.removeItem(BECOME_HOST_DRAFT_KEY); } catch { /* ignore */ }
+      try {
+        localStorage.removeItem(BECOME_HOST_DRAFT_KEY);
+      } catch {
+        /* ignore */
+      }
       // Fire welcome email + next-steps (non-blocking)
-      supabase.functions.invoke("send-host-welcome", {
-        body: { email: form.email.trim(), firstName: form.first_name.trim() },
-      }).catch((e) => console.warn("welcome email failed", e));
+      supabase.functions
+        .invoke("send-host-welcome", {
+          body: { email: form.email.trim(), firstName: form.first_name.trim() },
+        })
+        .catch((e) => console.warn("welcome email failed", e));
       navigate("/host/welcome");
     } catch (e: any) {
       toast.error(e.message || "Invalid or expired code");
@@ -270,7 +352,6 @@ const BecomeHost = () => {
           </div>
         </div>
 
-
         <div className="container mx-auto px-4 py-6 md:py-12">
           <div className="max-w-xl mx-auto">
             <AnimatePresence mode="wait">
@@ -291,11 +372,23 @@ const BecomeHost = () => {
 
                 <div className="bg-card rounded-2xl border border-border shadow-sm p-6 md:p-8 space-y-6">
                   {step === 1 && (
-                    <NumberSelect value={form.bedrooms} onChange={(v) => update({ bedrooms: v })} min={1} max={20} unit="bedroom" />
+                    <NumberSelect
+                      value={form.bedrooms}
+                      onChange={(v) => update({ bedrooms: v })}
+                      min={1}
+                      max={20}
+                      unit="bedroom"
+                    />
                   )}
 
                   {step === 2 && (
-                    <NumberSelect value={form.bathrooms} onChange={(v) => update({ bathrooms: v })} min={1} max={10} unit="bathroom" />
+                    <NumberSelect
+                      value={form.bathrooms}
+                      onChange={(v) => update({ bathrooms: v })}
+                      min={1}
+                      max={10}
+                      unit="bathroom"
+                    />
                   )}
 
                   {step === 3 && (
@@ -308,25 +401,44 @@ const BecomeHost = () => {
                           </SelectTrigger>
                           <SelectContent className="bg-popover border border-border z-50 max-h-72">
                             {IRAQ_CITIES.map((c) => (
-                              <SelectItem key={c} value={c}>{c}</SelectItem>
+                              <SelectItem key={c} value={c}>
+                                {c}
+                              </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
                       </div>
                       <div>
                         <Label htmlFor="street">Street</Label>
-                        <Input id="street" className="mt-2 h-12" placeholder="e.g. 60m Street"
-                          value={form.street} onChange={(e) => update({ street: e.target.value })} />
+                        <Input
+                          id="street"
+                          className="mt-2 h-12"
+                          placeholder="e.g. 60m Street"
+                          value={form.street}
+                          onChange={(e) => update({ street: e.target.value })}
+                        />
                       </div>
                       <div>
                         <Label htmlFor="address">Address</Label>
-                        <Input id="address" className="mt-2 h-12" placeholder="e.g. Building 15, Apartment 3"
-                          value={form.address} onChange={(e) => update({ address: e.target.value })} />
+                        <Input
+                          id="address"
+                          className="mt-2 h-12"
+                          placeholder="e.g. Building 15, Apartment 3"
+                          value={form.address}
+                          onChange={(e) => update({ address: e.target.value })}
+                        />
                       </div>
                       <div>
-                        <Label htmlFor="area">Neighborhood / area <span className="text-muted-foreground text-xs">(optional)</span></Label>
-                        <Input id="area" className="mt-2 h-12" placeholder="e.g. Ankawa"
-                          value={form.area} onChange={(e) => update({ area: e.target.value })} />
+                        <Label htmlFor="area">
+                          Neighborhood / area <span className="text-muted-foreground text-xs">(optional)</span>
+                        </Label>
+                        <Input
+                          id="area"
+                          className="mt-2 h-12"
+                          placeholder="e.g. Ankawa"
+                          value={form.area}
+                          onChange={(e) => update({ area: e.target.value })}
+                        />
                       </div>
                       <div>
                         <Label className="mb-2 block">
@@ -351,40 +463,69 @@ const BecomeHost = () => {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <Label htmlFor="first_name">First name</Label>
-                          <Input id="first_name" autoFocus className="mt-2 h-12" value={form.first_name}
-                            onChange={(e) => update({ first_name: e.target.value })} />
+                          <Input
+                            id="first_name"
+                            autoFocus
+                            className="mt-2 h-12"
+                            value={form.first_name}
+                            onChange={(e) => update({ first_name: e.target.value })}
+                          />
                         </div>
                         <div>
                           <Label htmlFor="last_name">Surname</Label>
-                          <Input id="last_name" className="mt-2 h-12" value={form.last_name}
-                            onChange={(e) => update({ last_name: e.target.value })} />
+                          <Input
+                            id="last_name"
+                            className="mt-2 h-12"
+                            value={form.last_name}
+                            onChange={(e) => update({ last_name: e.target.value })}
+                          />
                         </div>
                       </div>
                       <div>
                         <Label htmlFor="email">Email</Label>
-                        <Input id="email" type="email" autoComplete="email" className="mt-2 h-12"
+                        <Input
+                          id="email"
+                          type="email"
+                          autoComplete="email"
+                          className="mt-2 h-12"
                           placeholder="you@example.com"
-                          value={form.email} onChange={(e) => update({ email: e.target.value })} />
+                          value={form.email}
+                          onChange={(e) => update({ email: e.target.value })}
+                        />
                       </div>
                       <div>
                         <Label htmlFor="phone">Mobile number</Label>
                         <div className="relative mt-2">
                           <Phone className="h-4 w-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
-                          <Input id="phone" type="tel" autoComplete="tel" inputMode="tel"
+                          <Input
+                            id="phone"
+                            type="tel"
+                            autoComplete="tel"
+                            inputMode="tel"
                             className="h-12 pl-10"
                             placeholder="+964 7XX XXX XXXX"
-                            value={form.phone} onChange={(e) => update({ phone: e.target.value })} />
+                            value={form.phone}
+                            onChange={(e) => update({ phone: e.target.value })}
+                          />
                         </div>
                       </div>
                       <div>
                         <Label htmlFor="password">Password</Label>
                         <div className="relative mt-2">
-                          <Input id="password" type={showPassword ? "text" : "password"} autoComplete="new-password"
+                          <Input
+                            id="password"
+                            type={showPassword ? "text" : "password"}
+                            autoComplete="new-password"
                             className="h-12 pr-11"
                             placeholder="Create a strong password"
-                            value={form.password} onChange={(e) => update({ password: e.target.value })} />
-                          <button type="button" onClick={() => setShowPassword((s) => !s)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                            value={form.password}
+                            onChange={(e) => update({ password: e.target.value })}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword((s) => !s)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                          >
                             {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                           </button>
                         </div>

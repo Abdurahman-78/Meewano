@@ -1,0 +1,1 @@
+UPDATE public.profiles p SET is_host = true WHERE is_host = false AND (EXISTS (SELECT 1 FROM public.host_verifications hv WHERE hv.user_id = p.id AND hv.status = 'approved') OR EXISTS (SELECT 1 FROM public.properties pr WHERE pr.host_id = p.id));

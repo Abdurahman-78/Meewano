@@ -745,6 +745,7 @@ export type Database = {
           bathrooms: number | null
           bedrooms: number | null
           blocked_dates: string[] | null
+          cancellation_policy: string | null
           check_in_time: string | null
           check_out_time: string | null
           city: string
@@ -756,6 +757,7 @@ export type Database = {
           description_ku: string | null
           floor_plan_url: string | null
           host_id: string
+          house_rules: string | null
           id: string
           images: string[] | null
           is_active: boolean | null
@@ -775,6 +777,7 @@ export type Database = {
           review_count: number | null
           reviewed_at: string | null
           reviewed_by: string | null
+          safety_property: string | null
           title: string
           title_ar: string | null
           title_ku: string | null
@@ -789,6 +792,7 @@ export type Database = {
           bathrooms?: number | null
           bedrooms?: number | null
           blocked_dates?: string[] | null
+          cancellation_policy?: string | null
           check_in_time?: string | null
           check_out_time?: string | null
           city: string
@@ -800,6 +804,7 @@ export type Database = {
           description_ku?: string | null
           floor_plan_url?: string | null
           host_id: string
+          house_rules?: string | null
           id?: string
           images?: string[] | null
           is_active?: boolean | null
@@ -819,6 +824,7 @@ export type Database = {
           review_count?: number | null
           reviewed_at?: string | null
           reviewed_by?: string | null
+          safety_property?: string | null
           title: string
           title_ar?: string | null
           title_ku?: string | null
@@ -833,6 +839,7 @@ export type Database = {
           bathrooms?: number | null
           bedrooms?: number | null
           blocked_dates?: string[] | null
+          cancellation_policy?: string | null
           check_in_time?: string | null
           check_out_time?: string | null
           city?: string
@@ -844,6 +851,7 @@ export type Database = {
           description_ku?: string | null
           floor_plan_url?: string | null
           host_id?: string
+          house_rules?: string | null
           id?: string
           images?: string[] | null
           is_active?: boolean | null
@@ -863,6 +871,7 @@ export type Database = {
           review_count?: number | null
           reviewed_at?: string | null
           reviewed_by?: string | null
+          safety_property?: string | null
           title?: string
           title_ar?: string | null
           title_ku?: string | null

@@ -46,8 +46,25 @@ export const useAllUsers = () => {
 
       if (rolesError) throw rolesError;
 
+      const { data: verifications } = await supabase
+        .from("host_verifications")
+        .select("user_id, status");
+
+      const { data: ownedProps } = await supabase
+        .from("properties")
+        .select("host_id");
+
+      const approvedHostIds = new Set(
+        (verifications || []).filter((v) => v.status === "approved").map((v) => v.user_id)
+      );
+      const propertyHostIds = new Set((ownedProps || []).map((p) => p.host_id));
+
       const usersWithRoles: UserWithRole[] = (profiles || []).map((profile) => ({
         ...profile,
+        is_host:
+          profile.is_host ||
+          approvedHostIds.has(profile.id) ||
+          propertyHostIds.has(profile.id),
         roles: roles?.filter((r) => r.user_id === profile.id).map((r) => r.role) || [],
       }));
 

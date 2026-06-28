@@ -62,20 +62,20 @@ const PropertyCard = ({
       className="overflow-hidden transition-all duration-300 hover:shadow-lg border-border cursor-pointer"
       onClick={handleCardClick}
     >
-      <div className="relative aspect-[4/3] overflow-hidden group">
+      <div className="relative isolate aspect-[4/3] overflow-hidden group">
         <img 
           src={image || "/placeholder.svg"} 
           alt={name}
           className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
         />
         {(approvalStatus === "pending" || approvalStatus === "changes_pending") && (
-          <div className="absolute top-3 left-3 z-10 rounded-full bg-yellow-500/95 text-white text-[10px] md:text-xs font-semibold px-2.5 py-1 shadow-sm">
+          <div className="absolute top-3 left-3 z-[1] rounded-full bg-yellow-500/95 text-white text-[10px] md:text-xs font-semibold px-2.5 py-1 shadow-sm">
             Waiting for verification
           </div>
         )}
         <button
           onClick={handleFavoriteClick}
-          className="absolute top-3 right-3 p-2 rounded-full bg-white/90 hover:bg-white transition-all duration-200 hover:scale-110 z-10"
+          className="absolute top-3 right-3 z-[1] p-2 rounded-full bg-white/90 hover:bg-white transition-all duration-200 hover:scale-110"
           aria-label={favorited ? "Remove from favorites" : "Add to favorites"}
         >
           <Heart
@@ -116,9 +116,12 @@ const PropertyCard = ({
           )}
         </div>
         
-        <div className="flex items-baseline gap-1 mt-1 md:mt-0">
-          <span className="text-sm md:text-xl font-bold text-foreground">{formatPrice(price)}</span>
-          <span className="text-[10px] md:text-sm text-muted-foreground">{t("perNight")}</span>
+        <div className="mt-1 md:mt-0">
+          <div className="flex items-baseline gap-1">
+            <span className="text-sm md:text-xl font-bold text-foreground">{formatPrice(price)}</span>
+            <span className="text-[10px] md:text-sm text-muted-foreground">{t("perNight")}</span>
+          </div>
+          <p className="text-[10px] md:text-xs text-muted-foreground">Prices include all fees</p>
         </div>
       </CardContent>
     </Card>

@@ -75,12 +75,13 @@ const AddListing = () => {
     welcome_message: "",
     minimum_nights: "1",
     check_in_time: "15:00",
+    cancellation_policy: "",
+    house_rules: "",
+    safety_property: "",
     check_out_time: "11:00",
   };
 
-  const defaultCoords = intendedLat != null && intendedLng != null
-    ? { lat: intendedLat, lng: intendedLng }
-    : null;
+  const defaultCoords = intendedLat != null && intendedLng != null ? { lat: intendedLat, lng: intendedLng } : null;
 
   const reviveRange = (r?: { from?: string; to?: string }): DateRange | undefined =>
     r?.from ? { from: new Date(r.from), to: r.to ? new Date(r.to) : undefined } : undefined;
@@ -106,7 +107,9 @@ const AddListing = () => {
         if (restored.coords) setCoords(restored.coords);
         if (restored.unavailableRange) setUnavailableRange(reviveRange(restored.unavailableRange));
       }
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
     setDraftLoaded(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
@@ -123,15 +126,16 @@ const AddListing = () => {
           formData,
           coords,
           unavailableRange: serializeRange(unavailableRange),
-        })
+        }),
       );
-    } catch { /* ignore quota errors */ }
+    } catch {
+      /* ignore quota errors */
+    }
   }, [draftLoaded, user?.id, formData, coords, unavailableRange]);
-
-
 
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [ownershipFile, setOwnershipFile] = useState<File | null>(null);
   const ownershipInputRef = useRef<HTMLInputElement>(null);
   const [floorPlanFile, setFloorPlanFile] = useState<File | null>(null);
@@ -139,7 +143,10 @@ const AddListing = () => {
 
   // Normalize siteSettings to a key-value map safely
   const settingsMap: Record<string, any> = Array.isArray(siteSettings)
-    ? siteSettings.reduce((acc: Record<string, any>, s: any) => { acc[s.key] = s.value; return acc; }, {})
+    ? siteSettings.reduce((acc: Record<string, any>, s: any) => {
+        acc[s.key] = s.value;
+        return acc;
+      }, {})
     : siteSettings && typeof siteSettings === "object"
       ? (siteSettings as Record<string, any>)
       : {};
@@ -148,9 +155,7 @@ const AddListing = () => {
     return settingsMap[key] ?? defaultValue;
   };
 
-  const amenitiesList = normalizeAmenities(
-    getSetting("amenities_list", DEFAULT_AMENITIES)
-  );
+  const amenitiesList = normalizeAmenities(getSetting("amenities_list", DEFAULT_AMENITIES));
 
   const locationsList = getSetting("locations_list", [
     { name: "Erbil", region: "Kurdistan" },
@@ -162,34 +167,51 @@ const AddListing = () => {
     { name: "Shaqlawa", region: "Kurdistan" },
     { name: "Soran", region: "Kurdistan" },
     { name: "Halabja", region: "Kurdistan" },
-    { name: "Koya", region: "Kurdistan" }
+    { name: "Koya", region: "Kurdistan" },
   ]) as { name: string; region: string }[];
 
   const handleAmenityChange = (amenity: string, checked: boolean) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      amenities: checked 
-        ? [...prev.amenities, amenity]
-        : prev.amenities.filter(a => a !== amenity)
+      amenities: checked ? [...prev.amenities, amenity] : prev.amenities.filter((a) => a !== amenity),
     }));
   };
 
   const handleFilesSelected = (files: FileList | null) => {
     if (!files) return;
-    const newFiles = Array.from(files).filter(f => f.type.startsWith("image/"));
-    if (newFiles.length === 0) { toast.error("Please select image files"); return; }
-    
-    setImageFiles(prev => [...prev, ...newFiles]);
-    newFiles.forEach(file => {
+    const newFiles = Array.from(files).filter((f) => f.type.startsWith("image/"));
+    if (newFiles.length === 0) {
+      toast.error("Please select image files");
+      return;
+    }
+
+    setImageFiles((prev) => [...prev, ...newFiles]);
+    newFiles.forEach((file) => {
       const reader = new FileReader();
-      reader.onloadend = () => setImagePreviews(prev => [...prev, reader.result as string]);
+      reader.onloadend = () => setImagePreviews((prev) => [...prev, reader.result as string]);
       reader.readAsDataURL(file);
     });
   };
 
   const removeImage = (index: number) => {
-    setImageFiles(prev => prev.filter((_, i) => i !== index));
-    setImagePreviews(prev => prev.filter((_, i) => i !== index));
+    setImageFiles((prev) => prev.filter((_, i) => i !== index));
+    setImagePreviews((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const moveImage = (from: number, to: number) => {
+    if (from === to) return;
+    setImageFiles((prev) => {
+      const next = [...prev];
+      const [moved] = next.splice(from, 1);
+      next.splice(to, 0, moved);
+      return next;
+    });
+    setImagePreviews((prev) => {
+      const next = [...prev];
+      const [moved] = next.splice(from, 1);
+      next.splice(to, 0, moved);
+      return next;
+    });
   };
 
   const uploadImages = async (): Promise<string[]> => {
@@ -200,9 +222,7 @@ const AddListing = () => {
       const file = await optimizeImage(original);
       const ext = (file.name.split(".").pop() || "webp").toLowerCase();
       const path = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-      const { error } = await supabase.storage
-        .from("property-images")
-        .upload(path, file, { contentType: file.type });
+      const { error } = await supabase.storage.from("property-images").upload(path, file, { contentType: file.type });
       if (error) throw error;
       const { data: urlData } = supabase.storage.from("property-images").getPublicUrl(path);
       urls.push(urlData.publicUrl);
@@ -235,9 +255,26 @@ const AddListing = () => {
   };
 
   const handleSubmit = async (isDraft: boolean = false) => {
-    if (!user) { toast.error("Please log in to add a listing"); navigate("/auth"); return; }
-    if (verification?.status !== "approved") { toast.error("Complete account verification first"); navigate("/host/verification"); return; }
-    if (!formData.title || !formData.location || !formData.city || !formData.price_per_night || !formData.bedrooms || !formData.bathrooms || !formData.max_guests || (!isDraft && !ownershipFile)) {
+    if (!user) {
+      toast.error("Please log in to add a listing");
+      navigate("/auth");
+      return;
+    }
+    if (verification?.status !== "approved") {
+      toast.error("Complete account verification first");
+      navigate("/host/verification");
+      return;
+    }
+    if (
+      !formData.title ||
+      !formData.location ||
+      !formData.city ||
+      !formData.price_per_night ||
+      !formData.bedrooms ||
+      !formData.bathrooms ||
+      !formData.max_guests ||
+      (!isDraft && !ownershipFile)
+    ) {
       setShowErrors(true);
       toast.error("Please fill in all required fields and upload proof of ownership");
       return;
@@ -273,12 +310,19 @@ const AddListing = () => {
         minimum_nights: parseInt(formData.minimum_nights) || 1,
         check_in_time: formData.check_in_time,
         check_out_time: formData.check_out_time,
+        cancellation_policy: formData.cancellation_policy || null,
+        house_rules: formData.house_rules || null,
+        safety_property: formData.safety_property || null,
         ownership_document_url: ownershipPath,
         floor_plan_url: floorPlanUrl,
       });
 
       if (error) throw error;
-      try { localStorage.removeItem(draftKey(user?.id)); } catch { /* ignore */ }
+      try {
+        localStorage.removeItem(draftKey(user?.id));
+      } catch {
+        /* ignore */
+      }
       toast.success(isDraft ? "Property saved as draft" : "Submitted for admin review");
       navigate("/host");
     } catch (error: any) {
@@ -329,7 +373,6 @@ const AddListing = () => {
 
   return (
     <AppLayout>
-      
       <main className="container mx-auto px-4 py-8">
         <div className="max-w-3xl mx-auto">
           <div className="mb-8">
@@ -347,10 +390,12 @@ const AddListing = () => {
               {/* Basic Info */}
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="property-name" className={showErrors && !formData.title ? "text-destructive" : ""}>Property Name *</Label>
-                  <Input 
-                    id="property-name" 
-                    placeholder="e.g., Modern Mountain Villa" 
+                  <Label htmlFor="property-name" className={showErrors && !formData.title ? "text-destructive" : ""}>
+                    Property Name *
+                  </Label>
+                  <Input
+                    id="property-name"
+                    placeholder="e.g., Modern Mountain Villa"
                     className={`mt-2 ${showErrors && !formData.title ? "border-destructive ring-1 ring-destructive" : ""}`}
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
@@ -359,15 +404,16 @@ const AddListing = () => {
                     <p className="text-xs text-destructive mt-1">This field is required</p>
                   )}
                 </div>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="city" className={showErrors && !formData.city ? "text-destructive" : ""}>City *</Label>
-                    <Select 
-                      value={formData.city} 
-                      onValueChange={(value) => setFormData({ ...formData, city: value })}
-                    >
-                      <SelectTrigger className={`mt-2 ${showErrors && !formData.city ? "border-destructive ring-1 ring-destructive" : ""}`}>
+                    <Label htmlFor="city" className={showErrors && !formData.city ? "text-destructive" : ""}>
+                      City *
+                    </Label>
+                    <Select value={formData.city} onValueChange={(value) => setFormData({ ...formData, city: value })}>
+                      <SelectTrigger
+                        className={`mt-2 ${showErrors && !formData.city ? "border-destructive ring-1 ring-destructive" : ""}`}
+                      >
                         <SelectValue placeholder="Select a city" />
                       </SelectTrigger>
                       <SelectContent className="bg-popover border border-border z-50">
@@ -383,10 +429,12 @@ const AddListing = () => {
                     )}
                   </div>
                   <div>
-                    <Label htmlFor="location" className={showErrors && !formData.location ? "text-destructive" : ""}>Address/Location *</Label>
-                    <Input 
-                      id="location" 
-                      placeholder="e.g., Dream City, Street 10" 
+                    <Label htmlFor="location" className={showErrors && !formData.location ? "text-destructive" : ""}>
+                      Address/Location *
+                    </Label>
+                    <Input
+                      id="location"
+                      placeholder="e.g., Dream City, Street 10"
                       className={`mt-2 ${showErrors && !formData.location ? "border-destructive ring-1 ring-destructive" : ""}`}
                       value={formData.location}
                       onChange={(e) => setFormData({ ...formData, location: e.target.value })}
@@ -398,11 +446,13 @@ const AddListing = () => {
                 </div>
 
                 <div>
-                  <Label htmlFor="price" className={showErrors && !formData.price_per_night ? "text-destructive" : ""}>Price per Night (IQD) *</Label>
-                  <Input 
-                    id="price" 
-                    type="number" 
-                    placeholder="150" 
+                  <Label htmlFor="price" className={showErrors && !formData.price_per_night ? "text-destructive" : ""}>
+                    Price per Night (IQD) *
+                  </Label>
+                  <Input
+                    id="price"
+                    type="number"
+                    placeholder="150"
                     className={`mt-2 ${showErrors && !formData.price_per_night ? "border-destructive ring-1 ring-destructive" : ""}`}
                     value={formData.price_per_night}
                     onChange={(e) => setFormData({ ...formData, price_per_night: e.target.value })}
@@ -414,13 +464,22 @@ const AddListing = () => {
 
                 <div className="grid grid-cols-3 gap-4">
                   <div>
-                    <Label htmlFor="bedrooms" className={showErrors && !formData.bedrooms ? "text-destructive" : ""}>Bedrooms *</Label>
-                    <Input id="bedrooms" type="number" min="1" placeholder="3"
+                    <Label htmlFor="bedrooms" className={showErrors && !formData.bedrooms ? "text-destructive" : ""}>
+                      Bedrooms *
+                    </Label>
+                    <Input
+                      id="bedrooms"
+                      type="number"
+                      min="1"
+                      placeholder="3"
                       className={`mt-2 ${showErrors && !formData.bedrooms ? "border-destructive ring-1 ring-destructive" : ""}`}
                       value={formData.bedrooms}
                       onChange={(e) => {
                         const val = parseInt(e.target.value);
-                        setFormData({ ...formData, bedrooms: e.target.value === "" ? "" : String(Math.max(1, isNaN(val) ? 1 : val)) });
+                        setFormData({
+                          ...formData,
+                          bedrooms: e.target.value === "" ? "" : String(Math.max(1, isNaN(val) ? 1 : val)),
+                        });
                       }}
                     />
                     {showErrors && !formData.bedrooms && (
@@ -428,13 +487,22 @@ const AddListing = () => {
                     )}
                   </div>
                   <div>
-                    <Label htmlFor="bathrooms" className={showErrors && !formData.bathrooms ? "text-destructive" : ""}>Bathrooms *</Label>
-                    <Input id="bathrooms" type="number" min="1" placeholder="2"
+                    <Label htmlFor="bathrooms" className={showErrors && !formData.bathrooms ? "text-destructive" : ""}>
+                      Bathrooms *
+                    </Label>
+                    <Input
+                      id="bathrooms"
+                      type="number"
+                      min="1"
+                      placeholder="2"
                       className={`mt-2 ${showErrors && !formData.bathrooms ? "border-destructive ring-1 ring-destructive" : ""}`}
                       value={formData.bathrooms}
                       onChange={(e) => {
                         const val = parseInt(e.target.value);
-                        setFormData({ ...formData, bathrooms: e.target.value === "" ? "" : String(Math.max(1, isNaN(val) ? 1 : val)) });
+                        setFormData({
+                          ...formData,
+                          bathrooms: e.target.value === "" ? "" : String(Math.max(1, isNaN(val) ? 1 : val)),
+                        });
                       }}
                     />
                     {showErrors && !formData.bathrooms && (
@@ -442,13 +510,22 @@ const AddListing = () => {
                     )}
                   </div>
                   <div>
-                    <Label htmlFor="guests" className={showErrors && !formData.max_guests ? "text-destructive" : ""}>Max Guests *</Label>
-                    <Input id="guests" type="number" min="1" placeholder="4"
+                    <Label htmlFor="guests" className={showErrors && !formData.max_guests ? "text-destructive" : ""}>
+                      Max Guests *
+                    </Label>
+                    <Input
+                      id="guests"
+                      type="number"
+                      min="1"
+                      placeholder="4"
                       className={`mt-2 ${showErrors && !formData.max_guests ? "border-destructive ring-1 ring-destructive" : ""}`}
                       value={formData.max_guests}
                       onChange={(e) => {
                         const val = parseInt(e.target.value);
-                        setFormData({ ...formData, max_guests: e.target.value === "" ? "" : String(Math.max(1, isNaN(val) ? 1 : val)) });
+                        setFormData({
+                          ...formData,
+                          max_guests: e.target.value === "" ? "" : String(Math.max(1, isNaN(val) ? 1 : val)),
+                        });
                       }}
                     />
                     {showErrors && !formData.max_guests && (
@@ -459,8 +536,8 @@ const AddListing = () => {
 
                 <div>
                   <Label htmlFor="description">Description</Label>
-                  <Textarea 
-                    id="description" 
+                  <Textarea
+                    id="description"
                     placeholder="Describe your property, its features, and what makes it special..."
                     className="mt-2 min-h-[120px]"
                     value={formData.description}
@@ -471,21 +548,34 @@ const AddListing = () => {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <Label htmlFor="min-nights">Minimum nights</Label>
-                    <Input id="min-nights" type="number" min="1" className="mt-2"
+                    <Input
+                      id="min-nights"
+                      type="number"
+                      min="1"
+                      className="mt-2"
                       value={formData.minimum_nights}
-                      onChange={(e) => setFormData({ ...formData, minimum_nights: e.target.value })} />
+                      onChange={(e) => setFormData({ ...formData, minimum_nights: e.target.value })}
+                    />
                   </div>
                   <div>
                     <Label htmlFor="checkin">Check-in time</Label>
-                    <Input id="checkin" type="time" className="mt-2"
+                    <Input
+                      id="checkin"
+                      type="time"
+                      className="mt-2"
                       value={formData.check_in_time}
-                      onChange={(e) => setFormData({ ...formData, check_in_time: e.target.value })} />
+                      onChange={(e) => setFormData({ ...formData, check_in_time: e.target.value })}
+                    />
                   </div>
                   <div>
                     <Label htmlFor="checkout">Check-out time</Label>
-                    <Input id="checkout" type="time" className="mt-2"
+                    <Input
+                      id="checkout"
+                      type="time"
+                      className="mt-2"
                       value={formData.check_out_time}
-                      onChange={(e) => setFormData({ ...formData, check_out_time: e.target.value })} />
+                      onChange={(e) => setFormData({ ...formData, check_out_time: e.target.value })}
+                    />
                   </div>
                 </div>
 
@@ -516,20 +606,57 @@ const AddListing = () => {
 
                 <div>
                   <Label htmlFor="cleaning">Cleaning policy</Label>
-                  <Textarea id="cleaning"
+                  <Textarea
+                    id="cleaning"
                     placeholder="e.g. Professional cleaning between every stay. Guests are asked to leave dishes in the sink and bag any trash."
                     className="mt-2 min-h-[90px]"
                     value={formData.cleaning_policy}
-                    onChange={(e) => setFormData({ ...formData, cleaning_policy: e.target.value })} />
+                    onChange={(e) => setFormData({ ...formData, cleaning_policy: e.target.value })}
+                  />
                 </div>
 
                 <div>
                   <Label htmlFor="welcome">Welcome message to guests</Label>
-                  <Textarea id="welcome"
+                  <Textarea
+                    id="welcome"
                     placeholder="Sent automatically when a booking is confirmed. Include WiFi tips, check-in instructions, local recommendations…"
                     className="mt-2 min-h-[90px]"
                     value={formData.welcome_message}
-                    onChange={(e) => setFormData({ ...formData, welcome_message: e.target.value })} />
+                    onChange={(e) => setFormData({ ...formData, welcome_message: e.target.value })}
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="cancellation_policy">Cancellation policy</Label>
+                  <Textarea
+                    id="cancellation_policy"
+                    placeholder="e.g. Free cancellation up to 7 days before check-in. 50% refund within 7 days."
+                    className="mt-2 min-h-[90px]"
+                    value={formData.cancellation_policy}
+                    onChange={(e) => setFormData({ ...formData, cancellation_policy: e.target.value })}
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="house_rules">House rules</Label>
+                  <Textarea
+                    id="house_rules"
+                    placeholder="e.g. No smoking, no parties, quiet hours after 10pm, pets allowed on request."
+                    className="mt-2 min-h-[90px]"
+                    value={formData.house_rules}
+                    onChange={(e) => setFormData({ ...formData, house_rules: e.target.value })}
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="safety_property">Safety & property</Label>
+                  <Textarea
+                    id="safety_property"
+                    placeholder="e.g. Smoke alarm, carbon monoxide alarm, security cameras on exterior, pool with no fence."
+                    className="mt-2 min-h-[90px]"
+                    value={formData.safety_property}
+                    onChange={(e) => setFormData({ ...formData, safety_property: e.target.value })}
+                  />
                 </div>
               </div>
 
@@ -539,11 +666,7 @@ const AddListing = () => {
                 <p className="text-sm text-muted-foreground mb-4">
                   Set the exact spot where guests will find your property.
                 </p>
-                <LocationPicker
-                  value={coords}
-                  onChange={setCoords}
-                  height="420px"
-                />
+                <LocationPicker value={coords} onChange={setCoords} height="420px" />
               </div>
 
               {/* Amenities */}
@@ -552,7 +675,10 @@ const AddListing = () => {
                 <p className="text-sm text-muted-foreground mb-4">Select the amenities available at your property</p>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                   {amenitiesList.map((amenity) => (
-                    <div key={amenity.name} className="flex items-center gap-2 p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+                    <div
+                      key={amenity.name}
+                      className="flex items-center gap-2 p-3 border rounded-lg hover:bg-muted/50 transition-colors"
+                    >
                       <Checkbox
                         id={amenity.name}
                         checked={formData.amenities.includes(amenity.name)}
@@ -580,16 +706,17 @@ const AddListing = () => {
                   className="hidden"
                   onChange={(e) => handleFilesSelected(e.target.files)}
                 />
-                <div 
+                <div
                   className="border-2 border-dashed border-border rounded-xl p-8 text-center hover:border-primary transition-colors cursor-pointer"
                   onClick={() => fileInputRef.current?.click()}
                   onDragOver={(e) => e.preventDefault()}
-                  onDrop={(e) => { e.preventDefault(); handleFilesSelected(e.dataTransfer.files); }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    handleFilesSelected(e.dataTransfer.files);
+                  }}
                 >
                   <Upload className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                  <p className="text-sm text-muted-foreground mb-2">
-                    Drag and drop images here, or click to browse
-                  </p>
+                  <p className="text-sm text-muted-foreground mb-2">Drag and drop images here, or click to browse</p>
                   <p className="text-xs text-muted-foreground">
                     Required: minimum 1200 x 800 px · JPG or PNG · max 10 MB each
                   </p>
@@ -601,12 +728,43 @@ const AddListing = () => {
                 {imagePreviews.length > 0 && (
                   <div className="grid grid-cols-3 md:grid-cols-4 gap-3 mt-4">
                     {imagePreviews.map((preview, index) => (
-                      <div key={index} className="relative group rounded-lg overflow-hidden aspect-video">
+                      <div
+                        key={preview}
+                        draggable
+                        onDragStart={(e) => {
+                          e.dataTransfer.setData("text/plain", String(index));
+                          e.dataTransfer.effectAllowed = "move";
+                        }}
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          e.dataTransfer.dropEffect = "move";
+                          setDragOverIndex(index);
+                        }}
+                        onDragLeave={() => setDragOverIndex(null)}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          const from = parseInt(e.dataTransfer.getData("text/plain"), 10);
+                          moveImage(from, index);
+                          setDragOverIndex(null);
+                        }}
+                        onDragEnd={() => setDragOverIndex(null)}
+                        className={`relative group rounded-lg overflow-hidden aspect-video cursor-move transition-all ring-2 ${
+                          dragOverIndex === index ? "ring-primary scale-105 z-10" : "ring-transparent"
+                        }`}
+                      >
+                        {index === 0 && (
+                          <span className="absolute top-1 left-1 bg-primary text-primary-foreground text-[10px] font-bold px-1.5 py-0.5 rounded z-10">
+                            Cover
+                          </span>
+                        )}
                         <img src={preview} alt={`Preview ${index + 1}`} className="w-full h-full object-cover" />
                         <button
                           type="button"
-                          onClick={() => removeImage(index)}
-                          className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeImage(index);
+                          }}
+                          className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity z-10"
                         >
                           <X className="h-3 w-3" />
                         </button>
@@ -618,7 +776,9 @@ const AddListing = () => {
 
               {/* Ownership document */}
               <div>
-                <Label className={`mb-1 block ${showErrors && !ownershipFile ? "text-destructive" : ""}`}>Proof of property ownership *</Label>
+                <Label className={`mb-1 block ${showErrors && !ownershipFile ? "text-destructive" : ""}`}>
+                  Proof of property ownership *
+                </Label>
                 <p className="text-xs text-muted-foreground mb-3">
                   Title deed, rental agreement, or utility bill in your name. Required for admin approval.
                 </p>
@@ -638,7 +798,11 @@ const AddListing = () => {
                 <div
                   onClick={() => ownershipInputRef.current?.click()}
                   className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-colors ${
-                    ownershipFile ? "border-green-500/40 bg-green-500/5" : showErrors ? "border-destructive bg-destructive/5" : "border-border hover:border-primary"
+                    ownershipFile
+                      ? "border-green-500/40 bg-green-500/5"
+                      : showErrors
+                        ? "border-destructive bg-destructive/5"
+                        : "border-border hover:border-primary"
                   }`}
                 >
                   {ownershipFile ? (
@@ -649,8 +813,12 @@ const AddListing = () => {
                     </>
                   ) : (
                     <>
-                      <FileCheck2 className={`h-8 w-8 mx-auto mb-2 ${showErrors ? "text-destructive" : "text-muted-foreground"}`} />
-                      <p className={`text-sm ${showErrors ? "text-destructive" : "text-muted-foreground"}`}>Click to upload ownership document</p>
+                      <FileCheck2
+                        className={`h-8 w-8 mx-auto mb-2 ${showErrors ? "text-destructive" : "text-muted-foreground"}`}
+                      />
+                      <p className={`text-sm ${showErrors ? "text-destructive" : "text-muted-foreground"}`}>
+                        Click to upload ownership document
+                      </p>
                       <p className="text-xs text-muted-foreground mt-1">JPG, PNG or PDF · max 10MB</p>
                     </>
                   )}
@@ -659,9 +827,12 @@ const AddListing = () => {
 
               {/* Floor plan (optional) */}
               <div>
-                <Label className="mb-1 block">Floor plan <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                <Label className="mb-1 block">
+                  Floor plan <span className="text-muted-foreground font-normal">(optional)</span>
+                </Label>
                 <p className="text-xs text-muted-foreground mb-3">
-                  Upload a floor plan image so guests can preview the layout. Recommended 1200×900px, JPG or PNG, max 5MB.
+                  Upload a floor plan image so guests can preview the layout. Recommended 1200×900px, JPG or PNG, max
+                  5MB.
                 </p>
                 <input
                   ref={floorPlanInputRef}
@@ -671,7 +842,10 @@ const AddListing = () => {
                   onChange={(e) => {
                     const f = e.target.files?.[0];
                     if (!f) return;
-                    if (f.size > 5 * 1024 * 1024) { toast.error("Floor plan must be under 5MB"); return; }
+                    if (f.size > 5 * 1024 * 1024) {
+                      toast.error("Floor plan must be under 5MB");
+                      return;
+                    }
                     setFloorPlanFile(f);
                   }}
                 />
@@ -687,7 +861,10 @@ const AddListing = () => {
                       <p className="text-sm font-medium">{floorPlanFile.name}</p>
                       <button
                         type="button"
-                        onClick={(e) => { e.stopPropagation(); setFloorPlanFile(null); }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setFloorPlanFile(null);
+                        }}
                         className="text-xs text-destructive mt-1 underline"
                       >
                         Remove
@@ -703,25 +880,18 @@ const AddListing = () => {
                 </div>
               </div>
 
-
-
               {/* Submit */}
               <div className="flex gap-3 pt-4">
-                <Button 
-                  variant="outline" 
-                  className="flex-1 h-12"
-                  onClick={() => handleSubmit(true)}
-                  disabled={loading}
-                >
+                <Button variant="outline" className="flex-1 h-12" onClick={() => handleSubmit(true)} disabled={loading}>
                   {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                   Save as Draft
                 </Button>
-                <Button 
+                <Button
                   className="flex-1 bg-primary hover:bg-primary/90 h-12"
                   onClick={() => handleSubmit(false)}
                   disabled={loading}
                 >
-                  {(loading || uploading) ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                  {loading || uploading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                   {uploading ? "Uploading images..." : "Submit for Review"}
                 </Button>
               </div>

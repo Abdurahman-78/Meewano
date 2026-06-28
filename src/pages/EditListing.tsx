@@ -45,6 +45,9 @@ const EditListing = () => {
     description: "",
     amenities: [] as string[],
     is_active: true,
+    cancellation_policy: "",
+    house_rules: "",
+    safety_property: "",
   });
 
   const [existingImages, setExistingImages] = useState<string[]>([]);
@@ -92,6 +95,9 @@ const EditListing = () => {
         bedrooms: data.bedrooms?.toString() || "", bathrooms: data.bathrooms?.toString() || "",
         max_guests: data.max_guests?.toString() || "", description: data.description || "",
         amenities: data.amenities || [], is_active: data.is_active ?? true,
+        cancellation_policy: (data as any).cancellation_policy || "",
+        house_rules: (data as any).house_rules || "",
+        safety_property: (data as any).safety_property || "",
       });
       setExistingImages(data.images || []);
       setExistingFloorPlan((data as any).floor_plan_url || null);
@@ -193,6 +199,9 @@ const EditListing = () => {
         latitude: coords?.lat ?? null,
         longitude: coords?.lng ?? null,
         floor_plan_url: floorPlanUrl,
+        cancellation_policy: formData.cancellation_policy || null,
+        house_rules: formData.house_rules || null,
+        safety_property: formData.safety_property || null,
       }).eq("id", id).eq("host_id", user.id);
 
       if (error) throw error;
@@ -357,6 +366,24 @@ const EditListing = () => {
                     <Label htmlFor="description">Description</Label>
                     <Textarea id="description" placeholder="Describe your property..." className="mt-2 min-h-[120px]"
                       value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="cancellation_policy">Cancellation policy</Label>
+                    <Textarea id="cancellation_policy" placeholder="e.g. Free cancellation up to 7 days before check-in." className="mt-2 min-h-[90px]"
+                      value={formData.cancellation_policy} onChange={(e) => setFormData({ ...formData, cancellation_policy: e.target.value })} />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="house_rules">House rules</Label>
+                    <Textarea id="house_rules" placeholder="e.g. No smoking, no parties, quiet hours after 10pm." className="mt-2 min-h-[90px]"
+                      value={formData.house_rules} onChange={(e) => setFormData({ ...formData, house_rules: e.target.value })} />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="safety_property">Safety & property</Label>
+                    <Textarea id="safety_property" placeholder="e.g. Smoke alarm, security cameras on exterior." className="mt-2 min-h-[90px]"
+                      value={formData.safety_property} onChange={(e) => setFormData({ ...formData, safety_property: e.target.value })} />
                   </div>
                 </div>
 

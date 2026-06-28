@@ -38,8 +38,8 @@ export default function HostStepIndicator({ currentStep }: HostStepIndicatorProp
                   isActive
                     ? "border-primary bg-primary text-primary-foreground"
                     : isCompleted
-                    ? "border-primary bg-primary/10 text-primary"
-                    : "border-muted bg-muted text-muted-foreground"
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-muted bg-muted text-muted-foreground"
                 }`}
               >
                 {isCompleted ? <CheckCircle className="h-4 w-4 md:h-5 md:w-5" /> : step.number}

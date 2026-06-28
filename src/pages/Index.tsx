@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
-import SearchBar from "@/components/SearchBar";
+import CollapsibleSearch from "@/components/CollapsibleSearch";
 import PropertyCard from "@/components/PropertyCard";
 import RegionCard from "@/components/RegionCard";
 import { useProperties } from "@/hooks/useProperties";
@@ -41,20 +41,14 @@ const Index = () => {
 
   // Public listings: only approved & active. Excludes any rejected/pending
   // properties belonging to the current host so they never appear in public sections.
-  const publicProperties = (properties || []).filter(
-    (p: any) => p.is_active && p.approval_status === "approved"
-  );
+  const publicProperties = (properties || []).filter((p: any) => p.is_active && p.approval_status === "approved");
 
   // Current host's own properties (all statuses) — used for the host-only "My Properties" section.
-  const myProperties = user
-    ? (properties || []).filter((p: any) => p.host_id === user.id)
-    : [];
+  const myProperties = user ? (properties || []).filter((p: any) => p.host_id === user.id) : [];
 
   // Get properties by city (public approved only)
   const getPropertiesByCity = (city: string) => {
-    return publicProperties.filter((p) =>
-      p.city.toLowerCase().includes(city.toLowerCase())
-    );
+    return publicProperties.filter((p) => p.city.toLowerCase().includes(city.toLowerCase()));
   };
 
   // Recently reviewed (public approved only)
@@ -77,29 +71,19 @@ const Index = () => {
   const ranyaProperties = getPropertiesByCity("Ranya");
   const hajiProperties = getPropertiesByCity("Haji Omran");
   const isVerifiedHost = !!user && hostVerification?.status === "approved";
-  const hostCtaPath = !user
-    ? "/become-host"
-    : isVerifiedHost
-      ? "/host/add-listing"
-      : "/host/verification";
+  const hostCtaPath = !user ? "/become-host" : isVerifiedHost ? "/host/add-listing" : "/host/verification";
 
   return (
     <AppLayout>
-      
       {/* Hero Section */}
       <section className="relative h-[360px] md:h-[500px] overflow-hidden">
-        <div 
-          className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url(${heroBanner})` }}
-        >
+        <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${heroBanner})` }}>
           <div className="absolute inset-0 bg-black/30" />
         </div>
         <div className="relative z-10 container mx-auto px-4 h-full flex flex-col items-center justify-center">
-          <h2 className="text-2xl md:text-5xl font-bold text-white text-center mb-4 md:mb-8">
-            {t("heroTitle")}
-          </h2>
+          <h2 className="text-2xl md:text-5xl font-bold text-white text-center mb-4 md:mb-8">{t("heroTitle")}</h2>
           <div className="w-full max-w-4xl px-2 md:px-0">
-            <SearchBar />
+            <CollapsibleSearch />
           </div>
         </div>
       </section>
@@ -131,12 +115,28 @@ const Index = () => {
                 const s = p.approval_status;
                 const badge =
                   s === "approved"
-                    ? { label: "Live", icon: CheckCircle2, cls: "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/30" }
+                    ? {
+                        label: "Live",
+                        icon: CheckCircle2,
+                        cls: "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/30",
+                      }
                     : s === "rejected"
-                    ? { label: "Rejected", icon: XCircle, cls: "bg-destructive/10 text-destructive border-destructive/30" }
-                    : s === "changes_pending"
-                    ? { label: "Edits pending", icon: RefreshCw, cls: "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/30" }
-                    : { label: "Pending review", icon: Clock, cls: "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/30" };
+                      ? {
+                          label: "Rejected",
+                          icon: XCircle,
+                          cls: "bg-destructive/10 text-destructive border-destructive/30",
+                        }
+                      : s === "changes_pending"
+                        ? {
+                            label: "Edits pending",
+                            icon: RefreshCw,
+                            cls: "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/30",
+                          }
+                        : {
+                            label: "Pending review",
+                            icon: Clock,
+                            cls: "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/30",
+                          };
                 const Icon = badge.icon;
                 const canView = s === "approved";
                 return (
@@ -162,9 +162,7 @@ const Index = () => {
                         {formatPrice(p.price_per_night)}/night
                       </p>
                       {s === "rejected" && p.rejection_reason && (
-                        <p className="text-[11px] text-destructive mt-1 line-clamp-2">
-                          Reason: {p.rejection_reason}
-                        </p>
+                        <p className="text-[11px] text-destructive mt-1 line-clamp-2">Reason: {p.rejection_reason}</p>
                       )}
                     </div>
                     {canView && (
@@ -183,11 +181,7 @@ const Index = () => {
               })}
             </div>
 
-            <Button
-              variant="default"
-              className="w-full mt-4 h-11"
-              onClick={() => navigate(hostCtaPath)}
-            >
+            <Button variant="default" className="w-full mt-4 h-11" onClick={() => navigate(hostCtaPath)}>
               <Plus className="h-4 w-4 mr-2" />
               {isVerifiedHost ? "Add new property" : "Become host"}
             </Button>
@@ -195,13 +189,69 @@ const Index = () => {
         </section>
       )}
 
-
       {isLoading ? (
         <div className="flex items-center justify-center py-20">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       ) : publicProperties.length > 0 ? (
         <>
+          {/* Featured Properties */}
+          {featuredProperties.length > 0 && (
+            <section className="container mx-auto px-4 pt-6 md:pt-10">
+              <div className="flex items-center gap-2 mb-4 md:mb-6">
+                <Star className="h-5 w-5 md:h-6 md:w-6 text-primary fill-primary" />
+                <h2 className="text-xl md:text-3xl font-bold">{t("featuredProperties")}</h2>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-6">
+                {featuredProperties.slice(0, 6).map((property) => (
+                  <PropertyCard
+                    key={property.id}
+                    id={property.id}
+                    image={property.images?.[0] || "/placeholder.svg"}
+                    name={property.title}
+                    location={property.location}
+                    bedrooms={property.bedrooms}
+                    bathrooms={property.bathrooms}
+                    price={property.price_per_night}
+                    rating={property.rating || 0}
+                    reviews={property.review_count}
+                    approvalStatus={(property as any).approval_status}
+                  />
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* All Properties */}
+          <section className="container mx-auto px-4 py-8 md:py-12">
+            <div className="flex items-center justify-between gap-3 mb-4 md:mb-6">
+              <h2 className="text-xl md:text-3xl font-bold">{t("allProperties")}</h2>
+              <Button
+                variant="ghost"
+                className="shrink-0 text-primary hover:text-primary"
+                onClick={() => navigate("/search")}
+              >
+                {t("browseProperties")}
+              </Button>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-6">
+              {publicProperties.slice(0, 8).map((property) => (
+                <PropertyCard
+                  key={property.id}
+                  id={property.id}
+                  image={property.images?.[0] || "/placeholder.svg"}
+                  name={property.title}
+                  location={property.location}
+                  bedrooms={property.bedrooms}
+                  bathrooms={property.bathrooms}
+                  price={property.price_per_night}
+                  rating={property.rating || 0}
+                  reviews={property.review_count}
+                  approvalStatus={(property as any).approval_status}
+                />
+              ))}
+            </div>
+          </section>
 
           {/* Popular in Ranya */}
           {ranyaProperties.length > 0 && (
@@ -304,9 +354,7 @@ const Index = () => {
           <div className="text-center max-w-md mx-auto">
             <Home className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
             <h2 className="text-2xl font-bold mb-2">{t("noPropertiesYet")}</h2>
-            <p className="text-muted-foreground mb-6">
-              {t("noPropertiesDesc")}
-            </p>
+            <p className="text-muted-foreground mb-6">{t("noPropertiesDesc")}</p>
             <Button onClick={() => navigate(hostCtaPath)} size="lg">
               {isVerifiedHost ? t("addYourProperty") : "Become host"}
             </Button>
@@ -315,9 +363,7 @@ const Index = () => {
           {/* Still show region cards */}
           <div className="mt-16">
             <h2 className="text-3xl font-bold mb-2 text-center">{t("discoverKurdistan")}</h2>
-            <p className="text-muted-foreground text-center mb-8">
-              {t("exploreRegions")}
-            </p>
+            <p className="text-muted-foreground text-center mb-8">{t("exploreRegions")}</p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
               {regions.map((region) => (
                 <RegionCard
@@ -333,7 +379,6 @@ const Index = () => {
           </div>
         </section>
       )}
-
     </AppLayout>
   );
 };

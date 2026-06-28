@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useAuth } from "@/contexts/AuthContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, ArrowRight, MapPin } from "lucide-react";
+import { Loader2, ArrowRight, MapPin, Banknote, CreditCard, Smartphone, Wallet } from "lucide-react";
 import { toast } from "sonner";
 
 interface PendingBooking {
@@ -36,6 +36,13 @@ const COUNTRIES = [
 
 const TITLES = ["Mr", "Mrs", "Ms", "Mx", "Dr"];
 
+const PAYMENT_METHODS = [
+  { id: "cash", label: "Cash at check-in", icon: Banknote },
+  { id: "fastpay", label: "FastPay", icon: Smartphone },
+  { id: "zaincash", label: "ZainCash", icon: Wallet },
+  { id: "qicard", label: "Qi Card", icon: CreditCard },
+];
+
 const BookingDetails = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
@@ -53,6 +60,7 @@ const BookingDetails = () => {
   const [phone, setPhone] = useState("");
   const [country, setCountry] = useState("Iraq");
   const [address, setAddress] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("cash");
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -77,7 +85,7 @@ const BookingDetails = () => {
         .eq("id", user.id)
         .maybeSingle();
 
-      const fullName = (profile?.full_name || "").trim();
+      const fullName = (profile?.full_name || (user as any)?.user_metadata?.full_name || "").trim();
       const [first, ...rest] = fullName.split(/\s+/);
       setFirstName((prev) => prev || first || "");
       setLastName((prev) => prev || rest.join(" ") || "");
@@ -98,6 +106,7 @@ const BookingDetails = () => {
           if (g.phone) setPhone(g.phone);
           if (g.country) setCountry(g.country);
           if (g.address) setAddress(g.address);
+          if (g.paymentMethod) setPaymentMethod(g.paymentMethod);
         } catch { /* ignore */ }
       }
 
@@ -141,8 +150,10 @@ const BookingDetails = () => {
       phone: phone.trim(),
       country,
       address: address.trim(),
+      paymentMethod,
     };
     sessionStorage.setItem("bookingGuestDetails", JSON.stringify(details));
+    sessionStorage.setItem("bookingPaymentMethod", paymentMethod);
     navigate("/payment");
   };
 
@@ -281,6 +292,47 @@ const BookingDetails = () => {
                   </div>
                 </div>
               </div>
+            </Card>
+
+            {/* Payment Method */}
+            <Card className="p-6">
+              <h2 className="text-lg font-semibold mb-4">Payment method</h2>
+              <div className="grid sm:grid-cols-2 gap-3">
+                {PAYMENT_METHODS.map((method) => {
+                  const Icon = method.icon;
+                  const selected = paymentMethod === method.id;
+                  return (
+                    <button
+                      key={method.id}
+                      type="button"
+                      onClick={() => setPaymentMethod(method.id)}
+                      className={`flex items-center gap-3 p-4 rounded-xl border-2 text-left transition-all ${
+                        selected
+                          ? "border-primary bg-primary/5"
+                          : "border-border hover:border-muted-foreground/30"
+                      }`}
+                    >
+                      <div className={`p-2 rounded-lg ${selected ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
+                        <Icon className="h-5 w-5" />
+                      </div>
+                      <span className="font-medium text-sm">{method.label}</span>
+                      {selected && (
+                        <div className="ml-auto w-2 h-2 rounded-full bg-primary" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+              {paymentMethod === "cash" && (
+                <p className="text-xs text-muted-foreground mt-3">
+                  You will pay the host in cash when you arrive at the property.
+                </p>
+              )}
+              {(paymentMethod === "fastpay" || paymentMethod === "zaincash" || paymentMethod === "qicard") && (
+                <p className="text-xs text-muted-foreground mt-3">
+                  Payment instructions will be shown on the next step.
+                </p>
+              )}
             </Card>
 
             <div className="flex flex-col sm:flex-row gap-3">
