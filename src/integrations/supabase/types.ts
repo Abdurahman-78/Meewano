@@ -270,6 +270,9 @@ export type Database = {
       }
       bookings: {
         Row: {
+          cancellation_category: string | null
+          cancellation_reason: string | null
+          cancelled_at: string | null
           check_in: string
           check_out: string
           created_at: string
@@ -283,11 +286,15 @@ export type Database = {
           is_paid: boolean | null
           payment_method: string | null
           property_id: string
+          refund_amount: number | null
           status: string | null
           total_price: number
           updated_at: string
         }
         Insert: {
+          cancellation_category?: string | null
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
           check_in: string
           check_out: string
           created_at?: string
@@ -301,11 +308,15 @@ export type Database = {
           is_paid?: boolean | null
           payment_method?: string | null
           property_id: string
+          refund_amount?: number | null
           status?: string | null
           total_price: number
           updated_at?: string
         }
         Update: {
+          cancellation_category?: string | null
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
           check_in?: string
           check_out?: string
           created_at?: string
@@ -319,6 +330,7 @@ export type Database = {
           is_paid?: boolean | null
           payment_method?: string | null
           property_id?: string
+          refund_amount?: number | null
           status?: string | null
           total_price?: number
           updated_at?: string
@@ -907,6 +919,71 @@ export type Database = {
         }
         Relationships: []
       }
+      refund_requests: {
+        Row: {
+          admin_decision: string | null
+          admin_refund_pct: number | null
+          booking_id: string
+          created_at: string
+          details: string
+          evidence_urls: string[]
+          guest_id: string
+          host_decision_reason: string | null
+          host_id: string
+          id: string
+          property_id: string
+          reason: string
+          refund_amount: number | null
+          status: string
+          total_price: number
+          updated_at: string
+        }
+        Insert: {
+          admin_decision?: string | null
+          admin_refund_pct?: number | null
+          booking_id: string
+          created_at?: string
+          details: string
+          evidence_urls?: string[]
+          guest_id: string
+          host_decision_reason?: string | null
+          host_id: string
+          id?: string
+          property_id: string
+          reason: string
+          refund_amount?: number | null
+          status?: string
+          total_price?: number
+          updated_at?: string
+        }
+        Update: {
+          admin_decision?: string | null
+          admin_refund_pct?: number | null
+          booking_id?: string
+          created_at?: string
+          details?: string
+          evidence_urls?: string[]
+          guest_id?: string
+          host_decision_reason?: string | null
+          host_id?: string
+          id?: string
+          property_id?: string
+          reason?: string
+          refund_amount?: number | null
+          status?: string
+          total_price?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "refund_requests_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reviews: {
         Row: {
           booking_id: string
@@ -1040,6 +1117,7 @@ export type Database = {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
       }
+      email_queue_dispatch: { Args: never; Returns: undefined }
       enqueue_email: {
         Args: { payload: Json; queue_name: string }
         Returns: number

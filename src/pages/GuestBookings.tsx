@@ -159,35 +159,12 @@ const GuestBookings = () => {
             </Link>
           </Button>
           {!isPast && (b.status === "pending" || b.status === "confirmed") && (
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="destructive" className="flex-1 min-w-[120px]">
-                  <X className="h-4 w-4 mr-2" />
-                  Cancel
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Cancel Booking?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This action cannot be undone. Refund depends on the{" "}
-                    <Link to="/cancellation" className="text-primary underline">
-                      cancellation policy
-                    </Link>
-                    .
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Keep Booking</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={() => cancel(b)}
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                  >
-                    Cancel Booking
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+            <Link to={`/cancel-booking/${b.id}`} className="flex-1 min-w-[120px]">
+              <Button variant="destructive" className="w-full">
+                <X className="h-4 w-4 mr-2" />
+                Cancel
+              </Button>
+            </Link>
           )}
           {isPast && b.status !== "cancelled" && b.status !== "rejected" && !b.has_review && (
             <Button className="flex-1 min-w-[120px]" onClick={() => setReviewing(b)}>

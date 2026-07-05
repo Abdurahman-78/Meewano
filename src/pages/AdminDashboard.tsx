@@ -471,6 +471,9 @@ const AdminDashboard = () => {
               <TrendingUp className="h-4 w-4 mr-2" />
               Insights
             </TabsTrigger>
+            <TabsTrigger value="refunds" onClick={() => navigate("/admin/refund-requests")}>
+              Refund Requests
+            </TabsTrigger>
             <TabsTrigger value="settings">
               <Settings className="h-4 w-4 mr-2" />
               Site Settings

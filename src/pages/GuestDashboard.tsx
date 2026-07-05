@@ -15,6 +15,10 @@ import { useProperties } from "@/hooks/useProperties";
 import { createNotification } from "@/hooks/useNotifications";
 import ReviewDialog from "@/components/ReviewDialog";
 import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { useMyHostVerification } from "@/hooks/useHostVerification";
 
 interface Booking {
@@ -248,18 +252,19 @@ export const GuestDashboardContent = ({ withLayout = true }: { withLayout?: bool
                           <p><strong>Status:</strong> <span className="capitalize">{booking.status}</span></p>
                           <p className="text-lg font-bold text-primary">{formatPrice(booking.total_price)}</p>
                         </div>
-                        <div className="flex gap-2">
-                          <Link to={`/property/${booking.property_id}`} className="flex-1">
+                        <div className="flex gap-2 flex-wrap">
+                          <Link to={`/property/${booking.property_id}`} className="flex-1 min-w-[120px]">
                             <Button variant="outline" className="w-full">View Details</Button>
                           </Link>
-                          {booking.status === "pending" && (
-                            <Button 
-                              variant="outline" 
-                              className="flex-1"
-                              onClick={() => handleCancelBooking(booking)}
-                            >
-                              Cancel
-                            </Button>
+                          {booking.status !== "cancelled" && booking.status !== "rejected" && (
+                            <>
+                              <Link to={`/property/${booking.property_id}?modify=${booking.id}`} className="flex-1 min-w-[120px]">
+                                <Button variant="outline" className="w-full">Modify booking</Button>
+                              </Link>
+                              <Link to={`/cancel-booking/${booking.id}`} className="flex-1 min-w-[120px]">
+                                <Button variant="destructive" className="w-full">Cancel booking</Button>
+                              </Link>
+                            </>
                           )}
                         </div>
                       </CardContent>

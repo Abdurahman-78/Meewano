@@ -174,6 +174,7 @@ const BecomeHost = () => {
   const [submitted, setSubmitted] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [otp, setOtp] = useState("");
+  const [agreedTerms, setAgreedTerms] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [resending, setResending] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
@@ -218,7 +219,8 @@ const BecomeHost = () => {
         form.last_name.trim().length >= 2 &&
         /\S+@\S+\.\S+/.test(form.email) &&
         isStrong &&
-        phoneOk(form.phone)
+        phoneOk(form.phone) &&
+        agreedTerms
       );
     }
     if (step === 5) return otp.length === EMAIL_OTP_LENGTH;
@@ -228,7 +230,10 @@ const BecomeHost = () => {
   const next = async () => {
     if (!canAdvance()) {
       if (step === 3) toast.error("Please enter the city your property is in");
-      else if (step === 4) toast.error("Please enter your name, a valid email, mobile number and a stronger password");
+      else if (step === 4) {
+        if (!agreedTerms) toast.error("Please agree to the host terms & conditions to continue");
+        else toast.error("Please enter your name, a valid email, mobile number and a stronger password");
+      }
       return;
     }
     // When advancing from step 4 (Account) to step 5 (Verify), auto-create the account
@@ -531,6 +536,23 @@ const BecomeHost = () => {
                         </div>
                         <PasswordStrengthMeter password={form.password} />
                       </div>
+
+                      <label className="flex items-start gap-3 rounded-lg border border-border bg-muted/30 p-3 cursor-pointer hover:bg-muted/50 transition-colors">
+                        <input
+                          type="checkbox"
+                          checked={agreedTerms}
+                          onChange={(e) => setAgreedTerms(e.target.checked)}
+                          className="mt-1 h-4 w-4 accent-primary shrink-0"
+                        />
+                        <span className="text-sm text-foreground leading-relaxed">
+                          I agree to the host{" "}
+                          <a href="/terms" target="_blank" rel="noreferrer" className="text-primary underline">
+                            Terms & Conditions
+                          </a>
+                          . I confirm I will provide accurate payment details, abide by all applicable
+                          local laws, be truthful in my listing information, and honor confirmed bookings.
+                        </span>
+                      </label>
                     </div>
                   )}
 

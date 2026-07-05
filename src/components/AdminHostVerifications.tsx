@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Loader2, CheckCircle2, XCircle, FileText, Camera, FileCheck2, ExternalLink, Clock, Pencil, Trash2 } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle, FileText, Camera, FileCheck2, ExternalLink, Clock, Pencil, Trash2, Flag } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -67,6 +67,28 @@ const AdminHostVerifications = () => {
   });
   const [reason, setReason] = useState("");
   const [deleteFor, setDeleteFor] = useState<{ id: string; name: string } | null>(null);
+  const [flagFor, setFlagFor] = useState<{ email: string; name: string } | null>(null);
+  const [flagReason, setFlagReason] = useState("");
+  const [flagging, setFlagging] = useState(false);
+
+  const handleFlagEmail = async () => {
+    if (!flagFor?.email) return;
+    setFlagging(true);
+    try {
+      const { error } = await supabase.from("blocked_identities").insert({
+        email: flagFor.email.toLowerCase(),
+        reason: flagReason.trim() || "Flagged by admin",
+      });
+      if (error && !/duplicate|unique/i.test(error.message)) throw error;
+      toast.success("Email flagged — blocked from new signups");
+      setFlagFor(null);
+      setFlagReason("");
+    } catch (e: any) {
+      toast.error(e.message || "Failed to flag email");
+    } finally {
+      setFlagging(false);
+    }
+  };
 
   const resetRejectDialog = () => {
     setRejectFor(null);
@@ -151,16 +173,22 @@ const AdminHostVerifications = () => {
             </div>
           </div>
           {r.status === "pending" ? (
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               <Button size="sm" variant="outline" onClick={() => setRejectFor({ id: r.id, user_id: r.user_id, name: r.profiles?.full_name || r.profiles?.email })}>
                 <XCircle className="h-4 w-4 mr-1" /> Reject
               </Button>
               <Button size="sm" onClick={() => handleApprove(r.id)} disabled={review.isPending}>
                 <CheckCircle2 className="h-4 w-4 mr-1" /> Approve
               </Button>
+              <Button size="sm" variant="outline" onClick={() => setFlagFor({ email: r.profiles?.email, name: r.profiles?.full_name || r.profiles?.email })} disabled={!r.profiles?.email}>
+                <Flag className="h-4 w-4 mr-1" /> Flag email
+              </Button>
+              <Button size="sm" variant="destructive" onClick={() => setDeleteFor({ id: r.id, name: r.profiles?.full_name || r.profiles?.email || "this verification" })}>
+                <Trash2 className="h-4 w-4 mr-1" /> Delete
+              </Button>
             </div>
           ) : (
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               {r.status === "rejected" ? (
                 <Button size="sm" variant="outline" onClick={() => handleApprove(r.id)} disabled={review.isPending}>
                   <CheckCircle2 className="h-4 w-4 mr-1" /> Approve
@@ -170,6 +198,9 @@ const AdminHostVerifications = () => {
                   <Pencil className="h-4 w-4 mr-1" /> Change to Reject
                 </Button>
               )}
+              <Button size="sm" variant="outline" onClick={() => setFlagFor({ email: r.profiles?.email, name: r.profiles?.full_name || r.profiles?.email })} disabled={!r.profiles?.email}>
+                <Flag className="h-4 w-4 mr-1" /> Flag email
+              </Button>
               <Button size="sm" variant="destructive" onClick={() => setDeleteFor({ id: r.id, name: r.profiles?.full_name || r.profiles?.email || "this verification" })}>
                 <Trash2 className="h-4 w-4 mr-1" /> Delete
               </Button>
@@ -298,6 +329,27 @@ const AdminHostVerifications = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={!!flagFor} onOpenChange={(o) => { if (!o) { setFlagFor(null); setFlagReason(""); } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Flag {flagFor?.email}</DialogTitle>
+            <DialogDescription>
+              This email will be blocked from creating new accounts. Existing account is not removed.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="flag-reason">Reason (optional)</Label>
+            <Textarea id="flag-reason" value={flagReason} onChange={(e) => setFlagReason(e.target.value)} placeholder="Why is this email being flagged?" rows={3} />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setFlagFor(null); setFlagReason(""); }}>Cancel</Button>
+            <Button variant="destructive" onClick={handleFlagEmail} disabled={flagging}>
+              {flagging && <Loader2 className="h-4 w-4 mr-1 animate-spin" />} Flag email
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -239,6 +239,12 @@ const HostDashboard = () => {
               Pricing Tools
             </Button>
             <Button
+              variant="outline"
+              onClick={() => navigate("/host/refund-requests")}
+            >
+              Refund Requests
+            </Button>
+            <Button
               className="bg-primary hover:bg-primary/90 text-primary-foreground h-12 px-6"
               disabled={!isVerified}
               onClick={() => isVerified ? navigate("/host/add-listing") : toast.error("Complete verification first")}

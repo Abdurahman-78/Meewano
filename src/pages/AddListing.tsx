@@ -21,6 +21,7 @@ import { useSiteSettings } from "@/hooks/useAdminData";
 import LocationPicker from "@/components/LocationPicker";
 import { optimizeImage } from "@/lib/imageOptimizer";
 import { normalizeAmenities, DEFAULT_AMENITIES } from "@/lib/amenities";
+import { CANCELLATION_POLICIES, formatCancellationPolicy, detectPolicyKey } from "@/lib/cancellationPolicies";
 import { useMyHostVerification } from "@/hooks/useHostVerification";
 
 const formatDateRange = (range?: DateRange) => {
@@ -628,13 +629,31 @@ const AddListing = () => {
 
                 <div>
                   <Label htmlFor="cancellation_policy">Cancellation policy</Label>
-                  <Textarea
-                    id="cancellation_policy"
-                    placeholder="e.g. Free cancellation up to 7 days before check-in. 50% refund within 7 days."
-                    className="mt-2 min-h-[90px]"
-                    value={formData.cancellation_policy}
-                    onChange={(e) => setFormData({ ...formData, cancellation_policy: e.target.value })}
-                  />
+                  <Select
+                    value={detectPolicyKey(formData.cancellation_policy) || undefined}
+                    onValueChange={(v) =>
+                      setFormData({
+                        ...formData,
+                        cancellation_policy: formatCancellationPolicy(v as any),
+                      })
+                    }
+                  >
+                    <SelectTrigger id="cancellation_policy" className="mt-2">
+                      <SelectValue placeholder="Choose a cancellation policy" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover z-50">
+                      {CANCELLATION_POLICIES.map((p) => (
+                        <SelectItem key={p.key} value={p.key}>
+                          {p.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {formData.cancellation_policy && (
+                    <div className="mt-2 rounded-md border border-border bg-muted/30 p-3 text-sm whitespace-pre-wrap text-muted-foreground">
+                      {formData.cancellation_policy}
+                    </div>
+                  )}
                 </div>
 
                 <div>

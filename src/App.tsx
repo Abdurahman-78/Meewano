@@ -28,6 +28,7 @@ import EditListing from "./pages/EditListing";
 import HostProfile from "./pages/HostProfile";
 import Payment from "./pages/Payment";
 import BookingDetails from "./pages/BookingDetails";
+import CancelBooking from "./pages/CancelBooking";
 import NotFound from "./pages/NotFound";
 import AccountSettings from "./pages/AccountSettings";
 import HostVerification from "./pages/HostVerification";
@@ -54,6 +55,8 @@ import NewMessageEmail from "./pages/emails/NewMessageEmail";
 import Blog from "./pages/Blog";
 import BlogPost from "./pages/BlogPost";
 import Unsubscribe from "./pages/Unsubscribe";
+import HostRefundRequests from "./pages/HostRefundRequests";
+import AdminRefundRequests from "./pages/AdminRefundRequests";
 
 const queryClient = new QueryClient();
 
@@ -86,15 +89,18 @@ const AnimatedRoutes = () => {
         <Route path="/host/bookings" element={<PageTransition><HostBookings /></PageTransition>} />
         <Route path="/host/analytics" element={<PageTransition><HostAnalytics /></PageTransition>} />
         <Route path="/host/pricing" element={<PageTransition><PricingTools /></PageTransition>} />
+        <Route path="/host/refund-requests" element={<PageTransition><HostRefundRequests /></PageTransition>} />
         <Route path="/host/:id" element={<PageTransition><HostProfile /></PageTransition>} />
         
         {/* Admin Routes */}
         <Route path="/admin/login" element={<PageTransition><AdminLogin /></PageTransition>} />
         <Route path="/admin" element={<PageTransition><AdminDashboard /></PageTransition>} />
+        <Route path="/admin/refund-requests" element={<PageTransition><AdminRefundRequests /></PageTransition>} />
         
         {/* Booking & Payment Routes */}
         <Route path="/booking-confirmation" element={<PageTransition><BookingConfirmation /></PageTransition>} />
         <Route path="/booking-details" element={<PageTransition><BookingDetails /></PageTransition>} />
+        <Route path="/cancel-booking/:bookingId" element={<PageTransition><CancelBooking /></PageTransition>} />
         <Route path="/payment" element={<PageTransition><Payment /></PageTransition>} />
         <Route path="/payment-success" element={<PageTransition><PaymentSuccess /></PageTransition>} />
         <Route path="/payment-failure" element={<PageTransition><PaymentFailure /></PageTransition>} />
