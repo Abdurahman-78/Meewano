@@ -13,7 +13,6 @@ const corsHeaders = {
 }
 
 const SITE_NAME = 'Meewano'
-const SENDER_DOMAIN = 'pro.meewano.com'
 const FROM_DOMAIN = 'meewano.com'
 const SITE_URL = 'https://meewano.com'
 const LOGO_URL =
@@ -131,28 +130,63 @@ Deno.serve(async (req) => {
     const text = await renderAsync(React.createElement(HostEmail, booking) as any, { plainText: true })
 
     const messageId = crypto.randomUUID()
+    const idempotencyKey = `host-booking-notification-${booking.confirmationNumber}`
     await supabase.from('email_send_log').insert({
       message_id: messageId, template_name: 'host_booking_notification', recipient_email: email, status: 'pending',
     })
 
-    const { error } = await supabase.rpc('enqueue_email', {
-      queue_name: 'transactional_emails',
-      payload: {
+    const resendApiKey = Deno.env.get('RESEND_API_KEY')
+    if (!resendApiKey) {
+      await supabase.from('email_send_log').insert({
         message_id: messageId,
-        to: email,
-        from: `${SITE_NAME} <noreply@${FROM_DOMAIN}>`,
-        sender_domain: SENDER_DOMAIN,
-        subject: `New booking request — ${booking.propertyName} (${booking.confirmationNumber})`,
-        html, text,
-        purpose: 'transactional',
-        label: 'host_booking_notification',
-        idempotency_key: `host-booking-notification-${booking.confirmationNumber}`,
-        queued_at: new Date().toISOString(),
-      },
-    })
-    if (error) throw error
+        template_name: 'host_booking_notification',
+        recipient_email: email,
+        status: 'failed',
+        error_message: 'RESEND_API_KEY not configured',
+      })
+      return new Response(JSON.stringify({ error: 'Email provider not configured' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
 
-    return new Response(JSON.stringify({ ok: true }),
+    const resendResponse = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${resendApiKey}`,
+        'Idempotency-Key': idempotencyKey,
+      },
+      body: JSON.stringify({
+        from: `${SITE_NAME} <noreply@${FROM_DOMAIN}>`,
+        to: [email],
+        subject: `New booking request — ${booking.propertyName} (${booking.confirmationNumber})`,
+        html,
+        text,
+        tags: [{ name: 'template', value: 'host_booking_notification' }],
+      }),
+    })
+
+    const resendBody = await resendResponse.json().catch(() => ({}))
+
+    if (!resendResponse.ok) {
+      await supabase.from('email_send_log').insert({
+        message_id: messageId,
+        template_name: 'host_booking_notification',
+        recipient_email: email,
+        status: 'failed',
+        error_message: `Resend ${resendResponse.status}: ${JSON.stringify(resendBody)}`.slice(0, 500),
+      })
+      return new Response(JSON.stringify({ error: 'Failed to send host email', details: resendBody }),
+        { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+
+    await supabase.from('email_send_log').insert({
+      message_id: messageId,
+      template_name: 'host_booking_notification',
+      recipient_email: email,
+      status: 'sent',
+    })
+
+    return new Response(JSON.stringify({ ok: true, id: resendBody?.id }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
   } catch (e: any) {
     console.error('send-host-booking-notification error', e)
