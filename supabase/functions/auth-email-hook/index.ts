@@ -37,7 +37,7 @@ const EMAIL_TEMPLATES: Record<string, React.ComponentType<any>> = {
 
 // Configuration
 const SITE_NAME = "Meewano"
-const SENDER_DOMAIN = "pro.meewano.com"
+const SENDER_DOMAIN = "pro1.meewano.com"
 const ROOT_DOMAIN = "meewano.com"
 const FROM_DOMAIN = "meewano.com"
 

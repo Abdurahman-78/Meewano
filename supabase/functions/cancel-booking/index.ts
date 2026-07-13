@@ -162,15 +162,19 @@ Deno.serve(async (req) => {
     if (uErr) throw uErr
 
     // Notifications (in-app)
-    await admin.from('notifications').insert([
-      {
-        user_id: booking.host_id,
-        title: 'Booking cancelled',
-        message: `Guest cancelled reservation #${shortId(bookingId)}. Dates are open again.`,
-        type: 'booking',
-        link: '/host/bookings',
-      },
-    ]).catch(() => {})
+    try {
+      await admin.from('notifications').insert([
+        {
+          user_id: booking.host_id,
+          title: 'Booking cancelled',
+          message: `Guest cancelled reservation #${shortId(bookingId)}. Dates are open again.`,
+          type: 'booking',
+          link: '/host/bookings',
+        },
+      ])
+    } catch (e) {
+      console.warn('notification insert failed', e)
+    }
 
     // Fetch email addresses
     const { data: guestProfile } = await admin

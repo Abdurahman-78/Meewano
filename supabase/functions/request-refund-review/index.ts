@@ -77,13 +77,15 @@ Deno.serve(async (req) => {
       cancelled_at: new Date().toISOString(),
     }).eq('id', bookingId)
 
-    await admin.from('notifications').insert({
-      user_id: booking.host_id,
-      title: 'Refund request needs review',
-      message: `Guest has requested a refund for booking #${shortId(bookingId)} under exceptional circumstances. Please review within 24 hours.`,
-      type: 'booking',
-      link: '/host/refund-requests',
-    }).catch(() => {})
+    try {
+      await admin.from('notifications').insert({
+        user_id: booking.host_id,
+        title: 'Refund request needs review',
+        message: `Guest has requested a refund for booking #${shortId(bookingId)} under exceptional circumstances. Please review within 24 hours.`,
+        type: 'booking',
+        link: '/host/refund-requests',
+      })
+    } catch (e) { console.warn('notification insert failed', e) }
 
     const { data: guestProfile } = await admin.from('profiles').select('email, full_name').eq('id', booking.guest_id).maybeSingle()
     const { data: hostProfile } = await admin.from('profiles').select('email, full_name').eq('id', booking.host_id).maybeSingle()
