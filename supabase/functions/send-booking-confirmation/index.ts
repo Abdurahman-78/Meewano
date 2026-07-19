@@ -14,7 +14,6 @@ const corsHeaders = {
 }
 
 const SITE_NAME = 'Meewano'
-const SENDER_DOMAIN = 'pro1.meewano.com'
 const FROM_DOMAIN = 'meewano.com'
 const SITE_URL = 'https://meewano.com'
 const LOGO_URL =
@@ -167,22 +166,42 @@ Deno.serve(async (req) => {
       message_id: messageId, template_name: 'booking_confirmation', recipient_email: email, status: 'pending',
     })
 
-    const { error } = await supabase.rpc('enqueue_email', {
-      queue_name: 'transactional_emails',
-      payload: {
-        message_id: messageId,
-        to: email,
+    const resendApiKey = Deno.env.get('RESEND_API_KEY')
+    if (!resendApiKey) {
+      await supabase.from('email_send_log').insert({
+        message_id: messageId, template_name: 'booking_confirmation', recipient_email: email, status: 'failed',
+        error_message: 'RESEND_API_KEY not configured',
+      })
+      return new Response(JSON.stringify({ error: 'Email provider not configured' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+    const resendResponse = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${resendApiKey}`,
+        'Idempotency-Key': `booking-confirmation-${booking.confirmationNumber}`,
+      },
+      body: JSON.stringify({
         from: `${SITE_NAME} <noreply@${FROM_DOMAIN}>`,
-        sender_domain: SENDER_DOMAIN,
+        to: [email],
         subject: `Your ${SITE_NAME} booking is confirmed — ${booking.confirmationNumber}`,
         html, text,
-        purpose: 'transactional',
-        label: 'booking_confirmation',
-        idempotency_key: `booking-confirmation-${booking.confirmationNumber}`,
-        queued_at: new Date().toISOString(),
-      },
+        tags: [{ name: 'template', value: 'booking_confirmation' }],
+      }),
     })
-    if (error) throw error
+    const resendBody = await resendResponse.json().catch(() => ({}))
+    if (!resendResponse.ok) {
+      await supabase.from('email_send_log').insert({
+        message_id: messageId, template_name: 'booking_confirmation', recipient_email: email, status: 'failed',
+        error_message: `Resend ${resendResponse.status}: ${JSON.stringify(resendBody)}`.slice(0, 500),
+      })
+      return new Response(JSON.stringify({ error: 'Failed to send email', details: resendBody }),
+        { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+    await supabase.from('email_send_log').insert({
+      message_id: messageId, template_name: 'booking_confirmation', recipient_email: email, status: 'sent',
+    })
 
     return new Response(JSON.stringify({ ok: true, isFirstBooking }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })

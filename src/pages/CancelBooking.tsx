@@ -50,7 +50,7 @@ const CancelBooking = () => {
   const [booking, setBooking] = useState<any>(null);
 
   // Eligible-path state (automatic refund)
-  const [category, setCategory] = useState<"general" | "exceptional" | "">("");
+  const [category, setCategory] = useState<"general" | "exceptional">("general");
   const [reason, setReason] = useState("");
   const [otherText, setOtherText] = useState("");
   const [ack, setAck] = useState(false);
@@ -382,22 +382,6 @@ const CancelBooking = () => {
                 ))}
               </RadioGroup>
             </div>
-            <Separator />
-            <div>
-              <Label className="text-sm font-semibold mb-3 block">Exceptional circumstances</Label>
-              <RadioGroup
-                value={category === "exceptional" ? reason : ""}
-                onValueChange={(v) => { setCategory("exceptional"); setReason(v); setOtherText(""); }}
-                className="space-y-2"
-              >
-                {EXCEPTIONAL_REASONS.map((r) => (
-                  <label key={r} className="flex items-start gap-3 p-2 rounded hover:bg-muted/40 cursor-pointer">
-                    <RadioGroupItem value={r} className="mt-0.5" />
-                    <span className="text-sm">{r}</span>
-                  </label>
-                ))}
-              </RadioGroup>
-            </div>
             {isOther && (
               <div>
                 <Label htmlFor="other-text" className="text-sm font-medium">Please specify</Label>
@@ -408,6 +392,12 @@ const CancelBooking = () => {
               <Checkbox checked={ack} onCheckedChange={(v) => setAck(v === true)} className="mt-0.5" />
               <span className="text-sm">I understand this action cannot be undone.</span>
             </label>
+            <div className="rounded-md bg-muted/40 border border-border p-3 text-xs text-muted-foreground">
+              Cancelling due to exceptional circumstances (illness, safety, bereavement, etc.)?{" "}
+              <button type="button" className="text-primary hover:underline font-medium" onClick={() => setMode("request_review")}>
+                Request a refund review instead
+              </button>
+            </div>
           </CardContent>
         </Card>
 
