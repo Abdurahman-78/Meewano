@@ -1,0 +1,1 @@
+sed -i 's/<span className="text-xl font-bold text-primary">Meewano<\/span>/<img src="\/favicon.png" alt="Meewano" className="h-8 w-auto md:h-10" \/>\n            <span className="text-xl font-bold text-primary hidden sm:inline-block ml-2">Meewano<\/span>/' src/components/Header.tsx

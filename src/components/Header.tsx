@@ -88,11 +88,11 @@ const Header = () => {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-card shadow-sm">
-      <div className="w-full px-0 py-2 md:py-4 flex items-center justify-between">
+      <div className="container mx-auto px-4 py-2 md:py-4 flex items-center justify-between">
         <div className="flex items-center gap-2 md:gap-6">
           <MobileMenu />
           <Link to="/" className="flex items-center">
-            <span className="text-xl font-bold text-primary">Meewano</span>
+            <img src="/favicon.png" alt="Meewano" className="h-8 w-auto md:h-10" />
           </Link>
 
           {/* Navigation Links */}
