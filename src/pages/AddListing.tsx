@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { format } from "date-fns";
-import { Calendar as CalendarIcon, Upload, Loader2, X, FileCheck2, CheckCircle2, ShieldCheck } from "lucide-react";
+import { Calendar as CalendarIcon, Upload, Loader2, X, FileCheck2, CheckCircle2, ShieldCheck, Info } from "lucide-react";
 import ListingStepIndicator from "@/components/ListingStepIndicator";
 import { useNavigate } from "react-router-dom";
 import type { DateRange } from "react-day-picker";
@@ -14,6 +14,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -67,6 +69,10 @@ const AddListing = () => {
     location: intendedArea,
     city: intendedCity,
     price_per_night: "",
+    weekend_price: "",
+    weekly_discount_pct: "",
+    monthly_discount_pct: "",
+    instant_booking: true,
     bedrooms: intendedBedrooms,
     bathrooms: intendedBathrooms,
     max_guests: "",
@@ -296,6 +302,10 @@ const AddListing = () => {
         location: formData.location,
         city: formData.city,
         price_per_night: parseFloat(formData.price_per_night),
+        weekend_price: formData.weekend_price ? parseFloat(formData.weekend_price) : null,
+        weekly_discount_pct: formData.weekly_discount_pct ? parseInt(formData.weekly_discount_pct) : null,
+        monthly_discount_pct: formData.monthly_discount_pct ? parseInt(formData.monthly_discount_pct) : null,
+        instant_booking: formData.instant_booking,
         bedrooms: parseInt(formData.bedrooms) || 1,
         bathrooms: parseInt(formData.bathrooms) || 1,
         max_guests: parseInt(formData.max_guests) || 2,
@@ -446,21 +456,104 @@ const AddListing = () => {
                   </div>
                 </div>
 
-                <div>
-                  <Label htmlFor="price" className={showErrors && !formData.price_per_night ? "text-destructive" : ""}>
-                    Price per Night (IQD) *
-                  </Label>
-                  <Input
-                    id="price"
-                    type="number"
-                    placeholder="150"
-                    className={`mt-2 ${showErrors && !formData.price_per_night ? "border-destructive ring-1 ring-destructive" : ""}`}
-                    value={formData.price_per_night}
-                    onChange={(e) => setFormData({ ...formData, price_per_night: e.target.value })}
-                  />
-                  {showErrors && !formData.price_per_night && (
-                    <p className="text-xs text-destructive mt-1">This field is required</p>
-                  )}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="price" className={showErrors && !formData.price_per_night ? "text-destructive" : ""}>
+                      Price per Night (IQD) *
+                    </Label>
+                    <Input
+                      id="price"
+                      type="number"
+                      placeholder="150000"
+                      className={`mt-2 ${showErrors && !formData.price_per_night ? "border-destructive ring-1 ring-destructive" : ""}`}
+                      value={formData.price_per_night}
+                      onChange={(e) => setFormData({ ...formData, price_per_night: e.target.value })}
+                    />
+                    {showErrors && !formData.price_per_night && (
+                      <p className="text-xs text-destructive mt-1">This field is required</p>
+                    )}
+                  </div>
+                  <div>
+                    <Label htmlFor="weekend_price">
+                      Weekend Price (IQD)
+                    </Label>
+                    <Input
+                      id="weekend_price"
+                      type="number"
+                      placeholder="Optional"
+                      className="mt-2"
+                      value={formData.weekend_price}
+                      onChange={(e) => setFormData({ ...formData, weekend_price: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="weekly_discount_pct">
+                      Weekly Discount (%)
+                    </Label>
+                    <Input
+                      id="weekly_discount_pct"
+                      type="number"
+                      placeholder="e.g. 10"
+                      min="0"
+                      max="100"
+                      className="mt-2"
+                      value={formData.weekly_discount_pct}
+                      onChange={(e) => setFormData({ ...formData, weekly_discount_pct: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="monthly_discount_pct">
+                      Monthly Discount (%)
+                    </Label>
+                    <Input
+                      id="monthly_discount_pct"
+                      type="number"
+                      placeholder="e.g. 20"
+                      min="0"
+                      max="100"
+                      className="mt-2"
+                      value={formData.monthly_discount_pct}
+                      onChange={(e) => setFormData({ ...formData, monthly_discount_pct: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <Label>Booking Approval Type *</Label>
+                  <RadioGroup
+                    value={formData.instant_booking ? "instant" : "request"}
+                    onValueChange={(val) => setFormData({ ...formData, instant_booking: val === "instant" })}
+                    className="flex flex-col space-y-1 sm:flex-row sm:space-x-4 sm:space-y-0 mt-2"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="instant" id="type-instant" />
+                      <Label htmlFor="type-instant" className="flex items-center cursor-pointer">
+                        Instant Booking
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Info className="h-4 w-4 ml-1.5 text-muted-foreground hover:text-foreground transition-colors" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="max-w-[200px] text-xs">Guest can book available property immediately</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="request" id="type-request" />
+                      <Label htmlFor="type-request" className="flex items-center cursor-pointer">
+                        Request to Book
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Info className="h-4 w-4 ml-1.5 text-muted-foreground hover:text-foreground transition-colors" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="max-w-[200px] text-xs">You will review and approve each booking request before it is confirmed</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </Label>
+                    </div>
+                  </RadioGroup>
                 </div>
 
                 <div className="grid grid-cols-3 gap-4">

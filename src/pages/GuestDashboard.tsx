@@ -191,8 +191,9 @@ export const GuestDashboardContent = ({ withLayout = true }: { withLayout?: bool
 
   const body = (
     <>
-
-      
+      <div className="bg-blue-100 border-b border-blue-200 text-blue-700 px-4 py-3 text-sm font-medium flex items-center justify-center dark:bg-blue-900/30 dark:border-blue-900/50 dark:text-blue-400">
+        <User className="h-4 w-4 mr-2" /> You are in Guest Mode
+      </div>
       <main className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-4xl font-bold mb-2">My Dashboard</h1>
@@ -446,14 +447,6 @@ export const GuestDashboardContent = ({ withLayout = true }: { withLayout?: bool
 };
 
 const GuestDashboard = () => {
-  const { user } = useAuth();
-  const { data: verification } = useMyHostVerification();
-  const navigate = useNavigate();
-  useEffect(() => {
-    if (user && verification?.status === "approved") {
-      navigate("/host", { replace: true });
-    }
-  }, [user, verification?.status, navigate]);
   return <GuestDashboardContent />;
 };
 

@@ -80,7 +80,7 @@ const HostVerification = () => {
           toast.error("Multiple faces detected. Please upload a selfie with only you in the frame.");
           return;
         }
-        if (confidence < 0.5) {
+        if (confidence < 0.95) {
           toast.error("Face is unclear. Please retake in better lighting.");
           return;
         }
@@ -109,9 +109,13 @@ const HostVerification = () => {
     try {
       if (file.type.startsWith("image/")) {
         try {
-          const { faceCount } = await detectFacesInFile(file);
+          const { faceCount, confidence } = await detectFacesInFile(file);
           if (faceCount === 0) {
             toast.error("No face found on the ID. Please upload a clear photo of your ID showing your face.");
+            return;
+          }
+          if (confidence < 0.90) {
+            toast.error("Face on ID is unclear. Please retake the photo.");
             return;
           }
         } catch (err) {

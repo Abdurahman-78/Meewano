@@ -333,12 +333,71 @@ const PropertyDetail = () => {
     setCheckOut(format(ci, "yyyy-MM-dd"));
   };
 
-  const calculateTotal = () => {
-    if (!checkIn || !checkOut || !property) return 0;
+  const calculatePricingDetails = () => {
+    if (!checkIn || !checkOut || !property) return { total: 0, nights: 0, baseTotal: 0, discountAmount: 0, breakdown: [] };
+    
     const start = new Date(checkIn);
     const end = new Date(checkOut);
     const nights = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-    return nights > 0 ? nights * property.price_per_night : 0;
+    
+    if (nights <= 0) return { total: 0, nights: 0, baseTotal: 0, discountAmount: 0, breakdown: [] };
+
+    let total = 0;
+    let baseTotal = 0;
+    const breakdown = [];
+
+    // Calculate price per night factoring in weekends
+    const weekendPrice = property.weekend_price ?? property.price_per_night;
+    
+    let weekendNights = 0;
+    let weekdayNights = 0;
+
+    for (let i = 0; i < nights; i++) {
+      const current = new Date(start);
+      current.setDate(current.getDate() + i);
+      const day = current.getDay();
+      // Friday (5) and Saturday (6) are typically considered weekends in the region, 
+      // but let's use standard Sat (6) / Sun (0) or Thu/Fri. Usually Fri/Sat.
+      if (day === 5 || day === 6) {
+        total += weekendPrice;
+        weekendNights++;
+      } else {
+        total += property.price_per_night;
+        weekdayNights++;
+      }
+    }
+    
+    baseTotal = total;
+
+    if (weekdayNights > 0) {
+      breakdown.push({ label: `${weekdayNights} weekday nights × ${property.price_per_night}`, amount: weekdayNights * property.price_per_night });
+    }
+    if (weekendNights > 0) {
+      breakdown.push({ label: `${weekendNights} weekend nights × ${weekendPrice}`, amount: weekendNights * weekendPrice });
+    }
+
+    let discountAmount = 0;
+    let discountLabel = "";
+
+    if (nights >= 28 && property.monthly_discount_pct) {
+      discountAmount = Math.round(total * (property.monthly_discount_pct / 100));
+      discountLabel = `${property.monthly_discount_pct}% monthly discount`;
+      total -= discountAmount;
+    } else if (nights >= 7 && property.weekly_discount_pct) {
+      discountAmount = Math.round(total * (property.weekly_discount_pct / 100));
+      discountLabel = `${property.weekly_discount_pct}% weekly discount`;
+      total -= discountAmount;
+    }
+
+    if (discountAmount > 0) {
+      breakdown.push({ label: discountLabel, amount: -discountAmount });
+    }
+
+    return { total, nights, baseTotal, discountAmount, breakdown };
+  };
+
+  const calculateTotal = () => {
+    return calculatePricingDetails().total;
   };
 
   const handleSendContact = async () => {
@@ -455,6 +514,7 @@ const PropertyDetail = () => {
         price_per_night: property.price_per_night,
         total_price: calculateTotal(),
         host_id: property.host_id,
+        instant_booking: property.instant_booking ?? true,
       };
 
       sessionStorage.setItem("pendingBooking", JSON.stringify(bookingData));
@@ -907,6 +967,33 @@ const PropertyDetail = () => {
               </p>
             </div>
 
+            {/* Pricing & Discounts */}
+            {(property.weekend_price || property.weekly_discount_pct || property.monthly_discount_pct) && (
+              <div>
+                <h2 className="text-lg md:text-2xl font-bold mb-2 md:mb-4">Pricing & Discounts</h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {property.weekend_price && (
+                    <div className="flex flex-col p-4 border rounded-xl bg-muted/20">
+                      <span className="font-semibold text-foreground">Weekend Price</span>
+                      <span className="text-sm text-muted-foreground">{formatPrice(property.weekend_price)} per night</span>
+                    </div>
+                  )}
+                  {property.weekly_discount_pct && (
+                    <div className="flex flex-col p-4 border rounded-xl bg-muted/20">
+                      <span className="font-semibold text-foreground">Weekly Discount</span>
+                      <span className="text-sm text-muted-foreground">{property.weekly_discount_pct}% off for 7+ nights</span>
+                    </div>
+                  )}
+                  {property.monthly_discount_pct && (
+                    <div className="flex flex-col p-4 border rounded-xl bg-muted/20">
+                      <span className="font-semibold text-foreground">Monthly Discount</span>
+                      <span className="text-sm text-muted-foreground">{property.monthly_discount_pct}% off for 28+ nights</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Welcome message from host */}
             {(property as any).welcome_message && (
               <div>
@@ -1284,24 +1371,26 @@ const PropertyDetail = () => {
                   </div>
                 </div>
 
-                {calculateTotal() > 0 && (
-                  <div className="border-t pt-4 mb-4">
-                    <div className="flex justify-between mb-2">
-                      <span>
-                        {formatPrice(property.price_per_night)} ×{" "}
-                        {Math.ceil(
-                          (new Date(checkOut).getTime() - new Date(checkIn).getTime()) / (1000 * 60 * 60 * 24),
-                        )}{" "}
-                        {t("nights")}
-                      </span>
-                      <span>{formatPrice(calculateTotal())}</span>
+                {calculateTotal() > 0 && (() => {
+                  const pricing = calculatePricingDetails();
+                  return (
+                    <div className="border-t pt-4 mb-4">
+                      {pricing.breakdown.map((item, idx) => (
+                        <div key={idx} className={`flex justify-between mb-2 ${item.amount < 0 ? "text-green-600 font-medium" : "text-muted-foreground"}`}>
+                          <span>{item.label}</span>
+                          <span>
+                            {item.amount < 0 ? "-" : ""}
+                            {formatPrice(Math.abs(item.amount))}
+                          </span>
+                        </div>
+                      ))}
+                      <div className="flex justify-between font-bold text-lg mt-4 pt-4 border-t">
+                        <span>{t("total")}</span>
+                        <span>{formatPrice(pricing.total)}</span>
+                      </div>
                     </div>
-                    <div className="flex justify-between font-bold text-lg">
-                      <span>{t("total")}</span>
-                      <span>{formatPrice(calculateTotal())}</span>
-                    </div>
-                  </div>
-                )}
+                  );
+                })()}
 
                 <Button className="w-full" size="lg" onClick={handleReserve} disabled={loading}>
                   {loading ? (

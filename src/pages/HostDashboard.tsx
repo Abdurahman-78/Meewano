@@ -166,19 +166,10 @@ const HostDashboard = () => {
 
   return (
     <AppLayout>
-      
-      <main className="container mx-auto px-4 py-8">
-        <Tabs defaultValue="hosting" className="space-y-6">
-          <TabsList className="grid w-full max-w-md grid-cols-2">
-            <TabsTrigger value="hosting">
-              <Home className="h-4 w-4 mr-2" /> Hosting
-            </TabsTrigger>
-            <TabsTrigger value="guest">
-              <Calendar className="h-4 w-4 mr-2" /> My Trips
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="hosting" className="space-y-6">
+      <div className="bg-emerald-100 border-b border-emerald-200 text-emerald-800 px-4 py-3 text-sm font-medium flex items-center justify-center dark:bg-emerald-900/30 dark:border-emerald-900/50 dark:text-emerald-400">
+        <Home className="h-4 w-4 mr-2" /> You are in Host Mode
+      </div>
+      <main className="container mx-auto px-4 py-8 space-y-6">
         {/* Verification banner */}
         {!vLoading && !isVerified && (
           <Alert className={`mb-6 ${verification?.status === "rejected" ? "border-destructive/40 bg-destructive/5" : "border-yellow-500/40 bg-yellow-500/5"}`}>
@@ -406,12 +397,6 @@ const HostDashboard = () => {
             </Button>
           </CardContent>
         </Card>
-          </TabsContent>
-
-          <TabsContent value="guest">
-            <GuestDashboardContent withLayout={false} />
-          </TabsContent>
-        </Tabs>
       </main>
     </AppLayout>
   );

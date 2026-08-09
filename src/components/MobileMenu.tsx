@@ -53,8 +53,25 @@ const MobileMenu = () => {
 
           <Separator className="my-2" />
 
-          {isVerifiedHost ? (
-            <NavItem to="/host" icon={Home} label={t("hostDashboard")} />
+          {user ? (
+            <>
+              <NavItem to="/guest" icon={User} label={t("guestDashboard")} />
+              {isVerifiedHost ? (
+                <NavItem to="/host" icon={Home} label={t("hostDashboard")} />
+              ) : (
+                <Link
+                  to="/become-host"
+                  onClick={close}
+                  className="flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <Home className="h-5 w-5" />
+                    {t("hostDashboard")}
+                  </div>
+                  <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full ml-2 whitespace-nowrap">Become Host</span>
+                </Link>
+              )}
+            </>
           ) : (
             <NavItem to="/guest" icon={User} label={t("guestDashboard")} />
           )}

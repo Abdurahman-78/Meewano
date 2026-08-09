@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Upload, Loader2, X, RefreshCw, Clock, XCircle } from "lucide-react";
+import { Upload, Loader2, X, RefreshCw, Clock, XCircle, Info } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import ListingStepIndicator from "@/components/ListingStepIndicator";
 import { useNavigate, useParams } from "react-router-dom";
@@ -11,6 +11,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Calendar } from "@/components/ui/calendar";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -40,6 +42,10 @@ const EditListing = () => {
     location: "",
     city: "",
     price_per_night: "",
+    weekend_price: "",
+    weekly_discount_pct: "",
+    monthly_discount_pct: "",
+    instant_booking: true,
     bedrooms: "",
     bathrooms: "",
     max_guests: "",
@@ -93,6 +99,10 @@ const EditListing = () => {
       setFormData({
         title: data.title || "", location: data.location || "", city: data.city || "",
         price_per_night: data.price_per_night?.toString() || "",
+        weekend_price: data.weekend_price?.toString() || "",
+        weekly_discount_pct: data.weekly_discount_pct?.toString() || "",
+        monthly_discount_pct: data.monthly_discount_pct?.toString() || "",
+        instant_booking: data.instant_booking ?? true,
         bedrooms: data.bedrooms?.toString() || "", bathrooms: data.bathrooms?.toString() || "",
         max_guests: data.max_guests?.toString() || "", description: data.description || "",
         amenities: data.amenities || [], is_active: data.is_active ?? true,
@@ -192,6 +202,10 @@ const EditListing = () => {
       const { error } = await supabase.from("properties").update({
         title: formData.title, location: formData.location, city: formData.city,
         price_per_night: parseFloat(formData.price_per_night),
+        weekend_price: formData.weekend_price ? parseFloat(formData.weekend_price) : null,
+        weekly_discount_pct: formData.weekly_discount_pct ? parseInt(formData.weekly_discount_pct) : null,
+        monthly_discount_pct: formData.monthly_discount_pct ? parseInt(formData.monthly_discount_pct) : null,
+        instant_booking: formData.instant_booking,
         bedrooms: parseInt(formData.bedrooms) || 1, bathrooms: parseInt(formData.bathrooms) || 1,
         max_guests: parseInt(formData.max_guests) || 2, description: formData.description,
         amenities: formData.amenities, is_active: formData.is_active,
@@ -308,14 +322,72 @@ const EditListing = () => {
                     </div>
                   </div>
 
-                  <div>
-                    <Label htmlFor="price" className={showErrors && !formData.price_per_night ? "text-destructive" : ""}>Price per Night (USD) *</Label>
-                    <Input id="price" type="number" placeholder="150"
-                      className={`mt-2 ${showErrors && !formData.price_per_night ? "border-destructive ring-1 ring-destructive" : ""}`}
-                      value={formData.price_per_night} onChange={(e) => setFormData({ ...formData, price_per_night: e.target.value })} />
-                    {showErrors && !formData.price_per_night && (
-                      <p className="text-xs text-destructive mt-1">This field is required</p>
-                    )}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="price" className={showErrors && !formData.price_per_night ? "text-destructive" : ""}>Price per Night (IQD) *</Label>
+                      <Input id="price" type="number" placeholder="150000"
+                        className={`mt-2 ${showErrors && !formData.price_per_night ? "border-destructive ring-1 ring-destructive" : ""}`}
+                        value={formData.price_per_night} onChange={(e) => setFormData({ ...formData, price_per_night: e.target.value })} />
+                      {showErrors && !formData.price_per_night && (
+                        <p className="text-xs text-destructive mt-1">This field is required</p>
+                      )}
+                    </div>
+                    <div>
+                      <Label htmlFor="weekend_price">Weekend Price (IQD)</Label>
+                      <Input id="weekend_price" type="number" placeholder="Optional"
+                        className="mt-2"
+                        value={formData.weekend_price} onChange={(e) => setFormData({ ...formData, weekend_price: e.target.value })} />
+                    </div>
+                    <div>
+                      <Label htmlFor="weekly_discount_pct">Weekly Discount (%)</Label>
+                      <Input id="weekly_discount_pct" type="number" placeholder="e.g. 10" min="0" max="100"
+                        className="mt-2"
+                        value={formData.weekly_discount_pct} onChange={(e) => setFormData({ ...formData, weekly_discount_pct: e.target.value })} />
+                    </div>
+                    <div>
+                      <Label htmlFor="monthly_discount_pct">Monthly Discount (%)</Label>
+                      <Input id="monthly_discount_pct" type="number" placeholder="e.g. 20" min="0" max="100"
+                        className="mt-2"
+                        value={formData.monthly_discount_pct} onChange={(e) => setFormData({ ...formData, monthly_discount_pct: e.target.value })} />
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <Label>Booking Approval Type *</Label>
+                    <RadioGroup
+                      value={formData.instant_booking ? "instant" : "request"}
+                      onValueChange={(val) => setFormData({ ...formData, instant_booking: val === "instant" })}
+                      className="flex flex-col space-y-1 sm:flex-row sm:space-x-4 sm:space-y-0 mt-2"
+                    >
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="instant" id="type-instant" />
+                        <Label htmlFor="type-instant" className="flex items-center cursor-pointer">
+                          Instant Booking
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Info className="h-4 w-4 ml-1.5 text-muted-foreground hover:text-foreground transition-colors" />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p className="max-w-[200px] text-xs">Guest can book available property immediately</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="request" id="type-request" />
+                        <Label htmlFor="type-request" className="flex items-center cursor-pointer">
+                          Request to Book
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Info className="h-4 w-4 ml-1.5 text-muted-foreground hover:text-foreground transition-colors" />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p className="max-w-[200px] text-xs">You will review and approve each booking request before it is confirmed</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </Label>
+                      </div>
+                    </RadioGroup>
                   </div>
 
                   <div className="grid grid-cols-3 gap-4">

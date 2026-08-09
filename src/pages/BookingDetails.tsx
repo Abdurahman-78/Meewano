@@ -25,6 +25,7 @@ interface PendingBooking {
   price_per_night: number;
   total_price: number;
   host_id: string;
+  instant_booking?: boolean;
 }
 
 const COUNTRIES = [
@@ -338,7 +339,7 @@ const BookingDetails = () => {
             <div className="flex flex-col sm:flex-row gap-3">
               <Button type="submit" size="lg" className="flex-1" disabled={loading}>
                 {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                Continue to payment
+                {paymentMethod === "cash" ? "Continue to reserve" : "Continue to payment"}
                 <ArrowRight className="h-4 w-4 ml-2" />
               </Button>
               <Button

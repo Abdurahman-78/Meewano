@@ -774,6 +774,7 @@ export type Database = {
           images: string[] | null
           is_active: boolean | null
           is_featured: boolean | null
+          instant_booking: boolean | null
           latitude: number | null
           location: string
           location_ar: string | null
@@ -784,6 +785,9 @@ export type Database = {
           ownership_document_url: string | null
           pending_changes: Json | null
           price_per_night: number
+          weekend_price: number | null
+          weekly_discount_pct: number | null
+          monthly_discount_pct: number | null
           rating: number | null
           rejection_reason: string | null
           review_count: number | null
@@ -821,6 +825,7 @@ export type Database = {
           images?: string[] | null
           is_active?: boolean | null
           is_featured?: boolean | null
+          instant_booking?: boolean | null
           latitude?: number | null
           location: string
           location_ar?: string | null
@@ -831,6 +836,9 @@ export type Database = {
           ownership_document_url?: string | null
           pending_changes?: Json | null
           price_per_night: number
+          weekend_price: number | null
+          weekly_discount_pct: number | null
+          monthly_discount_pct: number | null
           rating?: number | null
           rejection_reason?: string | null
           review_count?: number | null
@@ -868,6 +876,7 @@ export type Database = {
           images?: string[] | null
           is_active?: boolean | null
           is_featured?: boolean | null
+          instant_booking?: boolean | null
           latitude?: number | null
           location?: string
           location_ar?: string | null
@@ -878,6 +887,9 @@ export type Database = {
           ownership_document_url?: string | null
           pending_changes?: Json | null
           price_per_night?: number
+          weekend_price?: number | null
+          weekly_discount_pct?: number | null
+          monthly_discount_pct?: number | null
           rating?: number | null
           rejection_reason?: string | null
           review_count?: number | null

@@ -15,11 +15,12 @@ import {
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import meewanoLogo from "@/assets/meewano-logo.png";
+
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -58,6 +59,20 @@ const Header = () => {
       return count ?? 0;
     },
   });
+  const { data: profile } = useQuery({
+    queryKey: ["profile", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("full_name, email")
+        .eq("id", user!.id)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const showListingDot = isVerifiedHost && hostPropertiesCount === 0;
 
   const handleSignOut = async () => {
@@ -77,7 +92,7 @@ const Header = () => {
         <div className="flex items-center gap-2 md:gap-6">
           <MobileMenu />
           <Link to="/" className="flex items-center">
-            <img src={meewanoLogo} alt="Meewano" className="h-8 md:h-12 w-auto object-contain" />
+            <span className="text-xl font-bold text-primary">Meewano</span>
           </Link>
 
           {/* Navigation Links */}
@@ -143,7 +158,7 @@ const Header = () => {
           {user ? (
             <Link to={isVerifiedHost ? "/host" : "/guest"} className="hidden md:block">
               <Button variant="ghost" size="sm" className="rounded-full">
-                {user.email}
+                {profile?.full_name || "User"}
               </Button>
             </Link>
           ) : (
@@ -164,6 +179,15 @@ const Header = () => {
               <DropdownMenuContent align="end" className="w-48">
                 {user && (
                   <>
+                    <DropdownMenuLabel className="font-normal">
+                      <div className="flex flex-col space-y-1">
+                        <p className="text-sm font-medium leading-none">{profile?.full_name || "User"}</p>
+                        <p className="text-xs leading-none text-muted-foreground">
+                          {user.email}
+                        </p>
+                      </div>
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
                       <Link to="/account-settings" className="cursor-pointer">
                         <Settings className="h-4 w-4 mr-2" />
@@ -179,20 +203,33 @@ const Header = () => {
                     <DropdownMenuSeparator />
                   </>
                 )}
-                {isVerifiedHost ? (
-                  <DropdownMenuItem asChild>
-                    <Link to="/host" className="cursor-pointer">
-                      <Home className="h-4 w-4 mr-2" />
-                      {t("hostDashboard")}
-                    </Link>
-                  </DropdownMenuItem>
-                ) : (
+                {user && (
                   <DropdownMenuItem asChild>
                     <Link to="/guest" className="cursor-pointer">
                       <User className="h-4 w-4 mr-2" />
                       {t("guestDashboard")}
                     </Link>
                   </DropdownMenuItem>
+                )}
+                {user && (
+                  isVerifiedHost ? (
+                    <DropdownMenuItem asChild>
+                      <Link to="/host" className="cursor-pointer">
+                        <Home className="h-4 w-4 mr-2" />
+                        {t("hostDashboard")}
+                      </Link>
+                    </DropdownMenuItem>
+                  ) : (
+                    <DropdownMenuItem asChild>
+                      <Link to="/become-host" className="cursor-pointer flex justify-between items-center w-full group">
+                        <div className="flex items-center text-muted-foreground group-hover:text-foreground">
+                          <Home className="h-4 w-4 mr-2" />
+                          {t("hostDashboard")}
+                        </div>
+                        <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full ml-2 whitespace-nowrap">Become Host</span>
+                      </Link>
+                    </DropdownMenuItem>
+                  )
                 )}
                 <DropdownMenuItem asChild>
                   <Link to="/messages" className="cursor-pointer">

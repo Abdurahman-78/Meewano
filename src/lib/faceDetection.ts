@@ -15,6 +15,7 @@ const getDetector = () => {
           delegate: "GPU",
         },
         runningMode: "IMAGE",
+        minDetectionConfidence: 0.95,
       });
     })().catch((err) => {
       detectorPromise = null;

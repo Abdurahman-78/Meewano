@@ -31,6 +31,7 @@ interface PendingBooking {
   price_per_night: number;
   total_price: number;
   host_id: string;
+  instant_booking?: boolean;
 }
 
 const Payment = () => {
@@ -101,7 +102,7 @@ const Payment = () => {
           check_out: booking.check_out,
           guests: booking.guests,
           total_price: total,
-          status: "pending",
+          status: booking.instant_booking ? "confirmed" : "pending",
           guest_message: guestMessage || null,
           payment_method: selectedMethod,
           is_paid: selectedMethod !== "cash",
@@ -291,7 +292,9 @@ const Payment = () => {
     <AppLayout>
       <main className="flex-1 container mx-auto px-4 py-8">
         <BookingStepIndicator currentStep={2} />
-        <h1 className="text-3xl font-bold mb-8">{t("paymentTitle")}</h1>
+        <h1 className="text-3xl font-bold mb-8">
+          {selectedMethod === "cash" ? "Complete Your Reservation" : t("paymentTitle")}
+        </h1>
 
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Left Column: Payment Details */}
@@ -397,7 +400,7 @@ const Payment = () => {
             <div className="flex flex-col sm:flex-row gap-4">
               <Button onClick={handlePayment} className="flex-1" size="lg" disabled={loading}>
                 {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                {t("paymentPayNow")} • {formatPrice(total)}
+                {selectedMethod === "cash" ? "Reserve Now" : t("paymentPayNow")} • {formatPrice(total)}
               </Button>
               <Button variant="outline" onClick={() => navigate(-1)} className="flex-1 sm:flex-initial" size="lg">
                 {t("paymentCancel")}

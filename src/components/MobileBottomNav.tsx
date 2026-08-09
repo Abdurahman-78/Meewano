@@ -2,17 +2,19 @@ import { Home, Search, Map, Heart, User } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useAuth } from "@/contexts/AuthContext";
 
 const MobileBottomNav = () => {
   const location = useLocation();
   const { t } = useTranslation();
+  const { user } = useAuth();
 
   const navItems = [
     { icon: Home, label: "Home", path: "/" },
     { icon: Search, label: t("navProperties"), path: "/search" },
     { icon: Map, label: t("navMap"), path: "/map" },
     { icon: Heart, label: t("favorites"), path: "/favorites" },
-    { icon: User, label: "Profile", path: "/auth" },
+    { icon: User, label: "Profile", path: user ? "/guest" : "/auth" },
   ];
 
   return (
