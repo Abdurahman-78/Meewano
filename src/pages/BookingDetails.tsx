@@ -86,10 +86,14 @@ const BookingDetails = () => {
         .eq("id", user.id)
         .maybeSingle();
 
-      const fullName = (profile?.full_name || (user as any)?.user_metadata?.full_name || "").trim();
-      const [first, ...rest] = fullName.split(/\s+/);
-      setFirstName((prev) => prev || first || "");
-      setLastName((prev) => prev || rest.join(" ") || "");
+      const meta = (user as any)?.user_metadata || {};
+      const fullName = (profile?.full_name || meta.full_name || meta.name || "").trim();
+      const parts = fullName.split(/\s+/);
+      const first = meta.given_name || meta.first_name || parts[0] || "";
+      const last = meta.family_name || meta.last_name || parts.slice(1).join(" ") || "";
+      
+      setFirstName((prev) => prev || first);
+      setLastName((prev) => prev || last);
       const e = profile?.email || user.email || "";
       setEmail((prev) => prev || e);
       setConfirmEmail((prev) => prev || e);

@@ -156,15 +156,6 @@ const HostDashboard = () => {
 
   if (authLoading || loading) {
     return (
-      <HostLayout>
-        <div className="container mx-auto px-4 py-16 flex items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin" />
-        </div>
-      </HostLayout>
-    );
-  }
-
-  return (
     <HostLayout>
       <main className="container mx-auto px-4 py-8 space-y-6 max-w-6xl">
         {/* Verification banner */}
@@ -259,7 +250,7 @@ const HostDashboard = () => {
               const Icon = badge.icon;
               return (
                 <div key={property.id} className="group flex flex-col bg-card rounded-2xl border overflow-hidden hover:shadow-lg transition-all duration-300">
-                  <div className="relative aspect-[4/3] bg-muted overflow-hidden cursor-pointer" onClick={() => navigate(`/property/${property.id}`)}>
+                  <div className="relative aspect-[4/3] bg-muted overflow-hidden">
                     {property.images && property.images[0] ? (
                       <img src={property.images[0]} alt={property.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                     ) : (
@@ -272,7 +263,7 @@ const HostDashboard = () => {
                     </div>
                   </div>
                   <div className="p-5 flex-1 flex flex-col">
-                    <h3 className="font-semibold text-lg line-clamp-1 mb-1 cursor-pointer" onClick={() => navigate(`/property/${property.id}`)}>{property.title}</h3>
+                    <h3 className="font-semibold text-lg line-clamp-1 mb-1">{property.title}</h3>
                     <p className="text-sm text-muted-foreground mb-4 line-clamp-1 flex-1">{property.location}</p>
                     <div className="flex items-center justify-between pt-4 border-t">
                       <div className="font-semibold">
@@ -360,5 +351,4 @@ const HostDashboard = () => {
     </HostLayout>
   );
 };
-
 export default HostDashboard;

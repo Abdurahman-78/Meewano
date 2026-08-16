@@ -54,6 +54,7 @@ const CancelBooking = () => {
   const [reason, setReason] = useState("");
   const [otherText, setOtherText] = useState("");
   const [ack, setAck] = useState(false);
+  const [ackNotEligible, setAckNotEligible] = useState(false);
 
   // Not-eligible / request-review state
   const [mode, setMode] = useState<Mode>("eligible");
@@ -112,6 +113,22 @@ const CancelBooking = () => {
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
       toast.success("Booking cancelled — refund is being processed");
+      navigate("/guest");
+    } catch (e: any) {
+      toast.error(e.message || "Failed to cancel booking");
+    } finally { setSubmitting(false); }
+  };
+
+  const handleCancelNotEligible = async () => {
+    if (!ackNotEligible || !booking) return;
+    setSubmitting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("cancel-booking", {
+        body: { bookingId: booking.id, category: "general", reason: "Cancelled outside refund period" },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success("Booking cancelled");
       navigate("/guest");
     } catch (e: any) {
       toast.error(e.message || "Failed to cancel booking");
@@ -218,16 +235,31 @@ const CancelBooking = () => {
             <CardContent className="space-y-3 text-sm">
               <p>You are outside this property's automatic refund period.</p>
               <p>According to the cancellation policy, you are not entitled to an automatic refund.</p>
-              <p className="text-muted-foreground">You may request a refund review if there are exceptional circumstances.</p>
+              <p className="text-muted-foreground">
+                If you are cancelling your booking due to exceptional circumstances, you may{" "}
+                <button type="button" className="text-primary hover:underline font-medium" onClick={() => setMode("request_review")}>
+                  request a refund review
+                </button>.
+              </p>
             </CardContent>
           </Card>
 
+          <div className="mb-6 flex items-start gap-3">
+            <Checkbox id="ack-not-eligible" checked={ackNotEligible} onCheckedChange={(v) => setAckNotEligible(!!v)} />
+            <div className="grid gap-1.5 leading-none">
+              <label htmlFor="ack-not-eligible" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer">
+                I understand this action cannot be undone
+              </label>
+            </div>
+          </div>
+
           <div className="flex flex-col sm:flex-row gap-3">
-            <Button variant="outline" className="flex-1 h-12" onClick={() => navigate("/guest")}>
+            <Button variant="outline" className="flex-1 h-12" onClick={() => navigate("/guest")} disabled={submitting}>
               Keep booking
             </Button>
-            <Button className="flex-1 h-12" onClick={() => setMode("request_review")}>
-              Request refund review
+            <Button variant="destructive" className="flex-1 h-12" onClick={handleCancelNotEligible} disabled={!ackNotEligible || submitting}>
+              {submitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Cancel Booking
             </Button>
           </div>
         </main>
@@ -272,8 +304,16 @@ const CancelBooking = () => {
                 onChange={(e) => setDetails(e.target.value)}
                 placeholder="Describe the circumstance in detail (minimum 20 characters)…"
                 maxLength={4000}
+                className={details.trim().length > 0 && details.trim().length < 20 ? "border-destructive focus-visible:ring-destructive" : ""}
               />
-              <p className="text-xs text-muted-foreground">{details.length}/4000</p>
+              <div className="flex justify-between items-start">
+                {details.trim().length > 0 && details.trim().length < 20 ? (
+                  <p className="text-xs text-destructive font-medium">Minimum 20 characters required.</p>
+                ) : (
+                  <div />
+                )}
+                <p className="text-xs text-muted-foreground">{details.length}/4000</p>
+              </div>
             </CardContent>
           </Card>
 
@@ -308,13 +348,9 @@ const CancelBooking = () => {
               <label className="flex items-start gap-3 cursor-pointer">
                 <Checkbox checked={reviewAck} onCheckedChange={(v) => setReviewAck(v === true)} className="mt-0.5" />
                 <span className="text-sm">
-                  By ticking this box I understand that I am not automatically eligible for a refund. I am requesting the host to review my exceptional circumstances for a refund. The host will review your request and can decide to agree to a full or partial refund, no refund or agree to re-schedule your booking.
+                  By ticking this box I understand that I am not automatically eligible for a refund. I am requesting the host to review my exceptional circumstances for a refund. The host will review my request and can decide to agree to a full or partial refund, no refund or agree to re-schedule my booking.
                 </span>
               </label>
-              <div className="rounded-md bg-muted/40 border border-border p-3 text-xs flex gap-2">
-                <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5 text-primary" />
-                <span>You are cancelling due to exceptional circumstances — the host will review your request to see if you are eligible for a full or partial refund.</span>
-              </div>
             </CardContent>
           </Card>
 

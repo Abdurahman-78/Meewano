@@ -17,6 +17,7 @@ import Login from "./pages/Login";
 import Auth from "./pages/Auth";
 import Favorites from "./pages/Favorites";
 import HostDashboard from "./pages/HostDashboard";
+import HostCalendar from "./pages/HostCalendar";
 import GuestDashboard from "./pages/GuestDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminLogin from "./pages/AdminLogin";
@@ -84,6 +85,8 @@ const AnimatedRoutes = () => {
         
         {/* Host Routes */}
         <Route path="/host" element={<PageTransition><HostDashboard /></PageTransition>} />
+        <Route path="/host/calendar" element={<PageTransition><HostCalendar /></PageTransition>} />
+        <Route path="/host/messages" element={<PageTransition><Messages /></PageTransition>} />
         <Route path="/host/add-listing" element={<PageTransition><AddListing /></PageTransition>} />
         <Route path="/become-host" element={<PageTransition><BecomeHost /></PageTransition>} />
         <Route path="/host/edit-listing/:id" element={<PageTransition><EditListing /></PageTransition>} />

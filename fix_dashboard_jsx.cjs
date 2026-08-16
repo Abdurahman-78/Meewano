@@ -1,175 +1,13 @@
-import { useState, useEffect } from "react";
-import { BarChart3, Home, Calendar, DollarSign, Plus, TrendingUp, Loader2, Eye, Edit, Trash2, ShieldCheck, Clock, XCircle, RefreshCw, CheckCircle2 } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
-import HostLayout from "@/components/HostLayout";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { useCurrency } from "@/contexts/CurrencyContext";
-import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import { createNotification } from "@/hooks/useNotifications";
-import { useMyHostVerification } from "@/hooks/useHostVerification";
-import HostPayoutCard from "@/components/HostPayoutCard";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { GuestDashboardContent } from "@/pages/GuestDashboard";
+const fs = require('fs');
 
-interface Property {
-  id: string;
-  title: string;
-  location: string;
-  price_per_night: number;
-  is_active: boolean;
-  images: string[];
-  approval_status?: string;
-  rejection_reason?: string | null;
-  pending_changes?: any;
-}
+let content = fs.readFileSync('src/pages/HostDashboard.tsx', 'utf8');
 
-interface Booking {
-  id: string;
-  check_in: string;
-  check_out: string;
-  total_price: number;
-  status: string;
-  guests: number;
-  guest_id: string;
-  property: {
-    title: string;
-  } | null;
-}
-
-const HostDashboard = () => {
-  const { formatPrice } = useCurrency();
-  const { user, loading: authLoading } = useAuth();
-  const navigate = useNavigate();
-  const { data: verification, isLoading: vLoading } = useMyHostVerification();
-
-  const [properties, setProperties] = useState<Property[]>([]);
-  const [bookings, setBookings] = useState<Booking[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const isVerified = verification?.status === "approved";
-
-  useEffect(() => {
-    if (!authLoading && !user) {
-      navigate("/auth");
-      return;
-    }
-    if (user) {
-      fetchData();
-    }
-  }, [user, authLoading, navigate]);
-
-  const fetchData = async () => {
-    if (!user) return;
-    
-    try {
-      // Fetch host's properties
-      const { data: propertiesData, error: propertiesError } = await supabase
-        .from("properties")
-        .select("*")
-        .eq("host_id", user.id);
-
-      if (propertiesError) throw propertiesError;
-      setProperties(propertiesData || []);
-
-      // Fetch bookings for host's properties
-      const { data: bookingsData, error: bookingsError } = await supabase
-        .from("bookings")
-        .select(`
-          *,
-          property:properties(title)
-        `)
-        .eq("host_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(10);
-
-      if (bookingsError) throw bookingsError;
-      setBookings((bookingsData || []) as Booking[]);
-    } catch (error: any) {
-      console.error("Error fetching data:", error);
-      toast.error("Failed to load data");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDeleteProperty = async (propertyId: string) => {
-    if (!confirm("Are you sure you want to delete this property?")) return;
-
-    try {
-      const { error } = await supabase
-        .from("properties")
-        .delete()
-        .eq("id", propertyId)
-        .eq("host_id", user?.id);
-
-      if (error) throw error;
-      toast.success("Property deleted successfully");
-      fetchData();
-    } catch (error: any) {
-      toast.error("Failed to delete property");
-    }
-  };
-
-  const handleBookingAction = async (booking: Booking, action: "confirmed" | "rejected") => {
-    try {
-      const { error } = await supabase
-        .from("bookings")
-        .update({ status: action })
-        .eq("id", booking.id)
-        .eq("host_id", user?.id);
-
-      if (error) throw error;
-
-      await createNotification({
-        user_id: booking.guest_id,
-        title: action === "confirmed" ? "Booking approved 🎉" : "Booking declined",
-        message:
-          action === "confirmed"
-            ? `Your stay at "${booking.property?.title || "the property"}" was approved. Complete payment to confirm.`
-            : `Your booking request for "${booking.property?.title || "the property"}" was declined.`,
-        type: "booking",
-        link: action === "confirmed" ? `/payment?bookingId=${booking.id}` : "/guest/bookings",
-      });
-
-      toast.success(`Booking ${action === "confirmed" ? "approved" : "rejected"}`);
-      fetchData();
-    } catch (error: any) {
-      toast.error(`Failed to ${action} booking`);
-    }
-  };
-
-  const totalRevenue = bookings
-    .filter(b => b.status === "confirmed" || b.status === "completed")
-    .reduce((sum, b) => sum + b.total_price, 0);
-
-  const stats = [
-    { title: "Total Properties", value: properties.length.toString(), icon: Home, color: "text-blue-600" },
-    { title: "Total Bookings", value: bookings.length.toString(), icon: Calendar, color: "text-green-600" },
-    { title: "Total Revenue", value: totalRevenue, icon: DollarSign, color: "text-primary", isPrice: true },
-    { title: "Pending Requests", value: bookings.filter(b => b.status === "pending").length.toString(), icon: BarChart3, color: "text-purple-600" },
-  ];
-
-  if (authLoading || loading) {
-    return (
-      <HostLayout>
-        <div className="container mx-auto px-4 py-16 flex items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin" />
-        </div>
-      </HostLayout>
-    );
-  }
-
-  return (
+const newJsx = `  return (
     <HostLayout>
       <main className="container mx-auto px-4 py-8 space-y-6 max-w-6xl">
         {/* Verification banner */}
         {!vLoading && !isVerified && (
-          <Alert className={`mb-6 ${verification?.status === "rejected" ? "border-destructive/40 bg-destructive/5" : "border-yellow-500/40 bg-yellow-500/5"}`}>
+          <Alert className={\`mb-6 \${verification?.status === "rejected" ? "border-destructive/40 bg-destructive/5" : "border-yellow-500/40 bg-yellow-500/5"}\`}>
             {verification?.status === "rejected" ? <XCircle className="h-4 w-4 text-destructive" /> : <ShieldCheck className="h-4 w-4 text-yellow-600" />}
             <AlertTitle>
               {verification?.status === "rejected" ? "Verification rejected" :
@@ -259,27 +97,27 @@ const HostDashboard = () => {
               const Icon = badge.icon;
               return (
                 <div key={property.id} className="group flex flex-col bg-card rounded-2xl border overflow-hidden hover:shadow-lg transition-all duration-300">
-                  <div className="relative aspect-[4/3] bg-muted overflow-hidden cursor-pointer" onClick={() => navigate(`/property/${property.id}`)}>
+                  <div className="relative aspect-[4/3] bg-muted overflow-hidden">
                     {property.images && property.images[0] ? (
                       <img src={property.images[0]} alt={property.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center bg-accent/50 text-muted-foreground">No image</div>
                     )}
                     <div className="absolute top-3 left-3">
-                       <Badge variant="outline" className={`backdrop-blur-md bg-background/80 shadow-sm border ${badge.cls}`}>
+                       <Badge variant="outline" className={\`backdrop-blur-md bg-background/80 shadow-sm border \${badge.cls}\`}>
                          <Icon className="h-3 w-3 mr-1.5" />{badge.label}
                        </Badge>
                     </div>
                   </div>
                   <div className="p-5 flex-1 flex flex-col">
-                    <h3 className="font-semibold text-lg line-clamp-1 mb-1 cursor-pointer" onClick={() => navigate(`/property/${property.id}`)}>{property.title}</h3>
+                    <h3 className="font-semibold text-lg line-clamp-1 mb-1">{property.title}</h3>
                     <p className="text-sm text-muted-foreground mb-4 line-clamp-1 flex-1">{property.location}</p>
                     <div className="flex items-center justify-between pt-4 border-t">
                       <div className="font-semibold">
                         {formatPrice(property.price_per_night)} <span className="text-sm font-normal text-muted-foreground">/ night</span>
                       </div>
                       <div className="flex gap-2">
-                        <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full hover:bg-accent" onClick={() => navigate(`/host/edit-listing/${property.id}`)}>
+                        <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full hover:bg-accent" onClick={() => navigate(\`/host/edit-listing/\${property.id}\`)}>
                           <Edit className="h-4 w-4" />
                         </Button>
                         <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full hover:bg-destructive/10 hover:text-destructive" onClick={() => handleDeleteProperty(property.id)}>
@@ -360,5 +198,13 @@ const HostDashboard = () => {
     </HostLayout>
   );
 };
-
 export default HostDashboard;
+`;
+
+const match = content.match(/  return \([\s\S]*\n\};\n\nexport default HostDashboard;/);
+if (match) {
+  content = content.replace(match[0], newJsx);
+  fs.writeFileSync('src/pages/HostDashboard.tsx', content);
+} else {
+  console.log("Could not find return statement to replace");
+}

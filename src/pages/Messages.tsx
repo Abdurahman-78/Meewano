@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from "react";
 import { Send, Search, Paperclip, Check, CheckCheck, Loader2, UserPlus, X } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
+import HostLayout from "@/components/HostLayout";
+import { useLocation } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -38,6 +40,9 @@ interface SearchedUser {
 const Messages = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const isHostMode = location.pathname.startsWith("/host");
+  const Layout = isHostMode ? HostLayout : AppLayout;
   const [searchParams] = useSearchParams();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -338,16 +343,16 @@ const Messages = () => {
 
   if (authLoading || loading) {
     return (
-      <AppLayout>
+      <Layout>
         <div className="container mx-auto px-4 py-16 flex items-center justify-center">
           <Loader2 className="h-8 w-8 animate-spin" />
         </div>
-      </AppLayout>
+      </Layout>
     );
   }
 
   return (
-    <AppLayout>
+    <Layout>
       
       <main className="container mx-auto px-4 py-8">
         <h1 className="text-4xl font-bold mb-8">Messages</h1>
@@ -604,7 +609,7 @@ const Messages = () => {
           </CardContent>
         </Card>
       </main>
-    </AppLayout>
+    </Layout>
   );
 };
 

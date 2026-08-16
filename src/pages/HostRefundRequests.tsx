@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Loader2, ArrowLeft, FileText, Check, X, Calendar } from "lucide-react";
-import AppLayout from "@/components/AppLayout";
+import HostLayout from "@/components/HostLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -108,7 +108,7 @@ const HostRefundRequests = () => {
   };
 
   if (authLoading || loading) {
-    return <AppLayout><div className="container mx-auto px-4 py-16 flex justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div></AppLayout>;
+    return <HostLayout><div className="container mx-auto px-4 py-16 flex justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div></HostLayout>;
   }
 
   const pending = requests.filter((r) => r.status === "pending_host");
@@ -173,7 +173,7 @@ const HostRefundRequests = () => {
   );
 
   return (
-    <AppLayout>
+    <HostLayout>
       <main className="container mx-auto px-4 py-6 md:py-10 max-w-4xl">
         <Link to="/host" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4">
           <ArrowLeft className="h-4 w-4" /> Back to host dashboard
@@ -227,7 +227,7 @@ const HostRefundRequests = () => {
           </DialogContent>
         </Dialog>
       </main>
-    </AppLayout>
+    </HostLayout>
   );
 };
 

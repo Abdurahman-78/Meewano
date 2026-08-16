@@ -166,7 +166,8 @@ const HostDashboard = () => {
 
   return (
     <HostLayout>
-      <main className="container mx-auto px-4 py-8 space-y-6 max-w-6xl">
+      
+      <main className="container mx-auto px-4 py-8 space-y-6">
         {/* Verification banner */}
         {!vLoading && !isVerified && (
           <Alert className={`mb-6 ${verification?.status === "rejected" ? "border-destructive/40 bg-destructive/5" : "border-yellow-500/40 bg-yellow-500/5"}`}>
@@ -206,6 +207,7 @@ const HostDashboard = () => {
         )}
 
         {/* Header */}
+        
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
           <div>
             <h1 className="text-3xl font-semibold mb-1">Your listings</h1>
@@ -231,102 +233,56 @@ const HostDashboard = () => {
           </div>
         </div>
 
-        {/* Properties Grid */}
-        {properties.length === 0 ? (
-          <div className="text-center py-24 bg-accent/20 rounded-2xl border border-dashed border-border/60">
-             <div className="mx-auto w-16 h-16 bg-background rounded-full flex items-center justify-center shadow-sm border mb-4">
-               <Home className="h-6 w-6 text-muted-foreground" />
-             </div>
-             <h3 className="text-xl font-semibold mb-2">No active listings</h3>
-             <p className="text-muted-foreground mb-6">Create your first listing to start hosting guests.</p>
-             <Button
-                className="bg-primary hover:bg-primary/90 text-primary-foreground h-10 rounded-full px-6 font-semibold"
-                disabled={!isVerified}
-                onClick={() => isVerified ? navigate("/host/add-listing") : toast.error("Complete verification first")}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Create listing
-              </Button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-            {properties.map((property) => {
-              const s = property.approval_status;
-              const badge = s === "approved" ? { label: "Live", icon: CheckCircle2, cls: "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/30" }
-                : s === "rejected" ? { label: "Rejected", icon: XCircle, cls: "bg-destructive/10 text-destructive border-destructive/30" }
-                : s === "changes_pending" ? { label: "Edits pending", icon: RefreshCw, cls: "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/30" }
-                : { label: "Pending review", icon: Clock, cls: "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/30" };
-              const Icon = badge.icon;
-              return (
-                <div key={property.id} className="group flex flex-col bg-card rounded-2xl border overflow-hidden hover:shadow-lg transition-all duration-300">
-                  <div className="relative aspect-[4/3] bg-muted overflow-hidden cursor-pointer" onClick={() => navigate(`/property/${property.id}`)}>
-                    {property.images && property.images[0] ? (
-                      <img src={property.images[0]} alt={property.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-accent/50 text-muted-foreground">No image</div>
-                    )}
-                    <div className="absolute top-3 left-3">
-                       <Badge variant="outline" className={`backdrop-blur-md bg-background/80 shadow-sm border ${badge.cls}`}>
-                         <Icon className="h-3 w-3 mr-1.5" />{badge.label}
-                       </Badge>
-                    </div>
+
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {stats.map((stat) => (
+            <Card key={stat.title}>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">{stat.title}</p>
+                    <p className="text-3xl font-bold">{stat.isPrice ? formatPrice(stat.value as number) : stat.value}</p>
                   </div>
-                  <div className="p-5 flex-1 flex flex-col">
-                    <h3 className="font-semibold text-lg line-clamp-1 mb-1 cursor-pointer" onClick={() => navigate(`/property/${property.id}`)}>{property.title}</h3>
-                    <p className="text-sm text-muted-foreground mb-4 line-clamp-1 flex-1">{property.location}</p>
-                    <div className="flex items-center justify-between pt-4 border-t">
-                      <div className="font-semibold">
-                        {formatPrice(property.price_per_night)} <span className="text-sm font-normal text-muted-foreground">/ night</span>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full hover:bg-accent" onClick={() => navigate(`/host/edit-listing/${property.id}`)}>
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full hover:bg-destructive/10 hover:text-destructive" onClick={() => handleDeleteProperty(property.id)}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                    {s === "rejected" && property.rejection_reason && (
-                      <p className="text-xs text-destructive mt-3 bg-destructive/10 p-2 rounded">Reason: {property.rejection_reason}</p>
-                    )}
+                  <div className={`p-3 rounded-full bg-accent ${stat.color}`}>
+                    <stat.icon className="h-6 w-6" />
                   </div>
                 </div>
-              );
-            })}
-          </div>
-        )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
 
-        {/* Bottom Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <Card className="rounded-2xl border-border/50 shadow-sm">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Recent Bookings */}
+          <Card className="lg:col-span-2">
             <CardHeader>
-              <CardTitle className="text-xl">Recent Booking Requests</CardTitle>
+              <CardTitle>Recent Booking Requests</CardTitle>
             </CardHeader>
             <CardContent>
               {bookings.length === 0 ? (
-                <p className="text-center text-muted-foreground py-10">No pending requests</p>
+                <p className="text-center text-muted-foreground py-8">No bookings yet</p>
               ) : (
                 <div className="space-y-4">
                   {bookings.slice(0, 5).map((booking) => (
                     <div 
                       key={booking.id} 
-                      className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border border-border/50 hover:bg-accent/30 transition-colors"
+                      className="flex items-center justify-between p-4 rounded-lg border border-border hover:bg-accent transition-colors"
                     >
-                      <div className="mb-3 sm:mb-0">
+                      <div>
                         <p className="font-semibold">{booking.property?.title || "Property"}</p>
-                        <p className="text-sm text-muted-foreground mt-0.5">
+                        <p className="text-sm text-muted-foreground">
                           {booking.check_in} → {booking.check_out}
                         </p>
                         <p className="text-sm text-muted-foreground">{booking.guests} guests</p>
                       </div>
-                      <div className="sm:text-right flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-start">
-                        <p className="font-semibold">{formatPrice(booking.total_price)}</p>
-                        {booking.status === "pending" ? (
-                          <div className="flex gap-2 mt-2">
+                      <div className="text-right">
+                        <p className="font-bold text-lg">{formatPrice(booking.total_price)}</p>
+                        <p className="text-sm capitalize text-muted-foreground mb-2">{booking.status}</p>
+                        {booking.status === "pending" && (
+                          <div className="flex gap-2">
                             <Button 
                               size="sm" 
-                              className="h-8 rounded-full px-4 text-xs bg-black text-white hover:bg-black/80 dark:bg-white dark:text-black dark:hover:bg-white/80"
                               onClick={() => handleBookingAction(booking, "confirmed")}
                             >
                               Approve
@@ -334,14 +290,11 @@ const HostDashboard = () => {
                             <Button 
                               size="sm" 
                               variant="outline"
-                              className="h-8 rounded-full px-4 text-xs"
                               onClick={() => handleBookingAction(booking, "rejected")}
                             >
-                              Decline
+                              Reject
                             </Button>
                           </div>
-                        ) : (
-                          <Badge variant="outline" className="mt-1 capitalize">{booking.status}</Badge>
                         )}
                       </div>
                     </div>
@@ -350,12 +303,88 @@ const HostDashboard = () => {
               )}
             </CardContent>
           </Card>
-          
-          <div className="space-y-6">
-            <HostPayoutCard />
-          </div>
+
+          {/* My Properties */}
+          <Card>
+            <CardHeader>
+              <CardTitle>My Properties</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {properties.length === 0 ? (
+                <p className="text-center text-muted-foreground py-4">No properties yet</p>
+              ) : (
+                properties.slice(0, 5).map((property) => {
+                  const s = property.approval_status;
+                  const badge = s === "approved" ? { label: "Live", icon: CheckCircle2, cls: "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/30" }
+                    : s === "rejected" ? { label: "Rejected", icon: XCircle, cls: "bg-destructive/10 text-destructive border-destructive/30" }
+                    : s === "changes_pending" ? { label: "Edits pending", icon: RefreshCw, cls: "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/30" }
+                    : { label: "Pending review", icon: Clock, cls: "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/30" };
+                  const Icon = badge.icon;
+                  return (
+                    <div
+                      key={property.id}
+                      className="flex items-center justify-between p-3 rounded-lg border border-border cursor-pointer hover:bg-accent transition-colors"
+                      onClick={() => navigate(`/property/${property.id}`)}
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="font-medium text-sm truncate">{property.title}</p>
+                          <Badge variant="outline" className={`text-[10px] ${badge.cls}`}>
+                            <Icon className="h-3 w-3 mr-1" />{badge.label}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground">{property.location}</p>
+                        <p className="text-xs text-primary font-semibold">{formatPrice(property.price_per_night)}/night</p>
+                        {s === "rejected" && property.rejection_reason && (
+                          <p className="text-[11px] text-destructive mt-1">Reason: {property.rejection_reason}</p>
+                        )}
+                      </div>
+                      <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
+                        <Button size="icon" variant="ghost" onClick={() => navigate(`/host/edit-listing/${property.id}`)}>
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button size="icon" variant="ghost" onClick={() => handleDeleteProperty(property.id)}>
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+              <Button
+                variant="outline"
+                className="w-full justify-start h-12 mt-4"
+                disabled={!isVerified}
+                onClick={() => isVerified ? navigate("/host/add-listing") : toast.error("Complete verification first")}
+              >
+                <Plus className="h-5 w-5 mr-3" />
+                Add New Property
+              </Button>
+            </CardContent>
+          </Card>
         </div>
 
+        <div className="mt-6">
+          <HostPayoutCard />
+        </div>
+
+        <Card className="mt-6 border-destructive/40">
+          <CardHeader>
+            <CardTitle className="text-base text-destructive">Danger zone</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground mb-3">
+              Permanently delete your host account and all properties, bookings and messages tied to it.
+            </p>
+            <Button
+              variant="destructive"
+              className="h-11"
+              onClick={() => navigate("/account-settings")}
+            >
+              Delete account
+            </Button>
+          </CardContent>
+        </Card>
       </main>
     </HostLayout>
   );

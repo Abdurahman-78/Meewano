@@ -88,7 +88,7 @@ const Header = () => {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-card shadow-sm">
-      <div className="container mx-auto px-4 py-2 md:py-4 flex items-center justify-between">
+      <div className="w-full px-4 md:px-8 py-2 md:py-4 flex items-center justify-between">
         <div className="flex items-center gap-2 md:gap-6">
           <MobileMenu />
           <Link to="/" className="flex items-center">
@@ -176,13 +176,13 @@ const Header = () => {
                   <User className="h-5 w-5" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuContent align="end" className="w-72">
                 {user && (
                   <>
                     <DropdownMenuLabel className="font-normal">
                       <div className="flex flex-col space-y-1">
-                        <p className="text-sm font-medium leading-none">{profile?.full_name || "User"}</p>
-                        <p className="text-xs leading-none text-muted-foreground">
+                        <p className="text-sm font-medium leading-none truncate">{profile?.full_name || "User"}</p>
+                        <p className="text-xs leading-none text-muted-foreground truncate">
                           {user.email}
                         </p>
                       </div>

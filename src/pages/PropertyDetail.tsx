@@ -130,7 +130,9 @@ const PropertyDetail = () => {
         document.execCommand("copy");
         toast.success("Link copied to clipboard");
       } catch {
-        toast.error("Couldn't copy automatically — long-press the link to copy");
+        toast.error(
+          "Couldn't copy automatically — long-press the link to copy",
+        );
       }
       document.body.removeChild(ta);
     }
@@ -177,7 +179,10 @@ const PropertyDetail = () => {
         .limit(20);
       if (error) throw error;
       const guestIds = Array.from(new Set((data || []).map((r) => r.guest_id)));
-      let profileMap: Record<string, { full_name: string | null; avatar_url: string | null }> = {};
+      let profileMap: Record<
+        string,
+        { full_name: string | null; avatar_url: string | null }
+      > = {};
       if (guestIds.length > 0) {
         const { data: profiles } = await supabase
           .from("profiles")
@@ -185,7 +190,10 @@ const PropertyDetail = () => {
           .in("id", guestIds);
         profileMap = Object.fromEntries((profiles || []).map((p) => [p.id, p]));
       }
-      return (data || []).map((r) => ({ ...r, profile: profileMap[r.guest_id] }));
+      return (data || []).map((r) => ({
+        ...r,
+        profile: profileMap[r.guest_id],
+      }));
     },
     enabled: !!id,
   });
@@ -222,8 +230,13 @@ const PropertyDetail = () => {
         .order("check_out", { ascending: false });
       if (!bks || bks.length === 0) return null;
       const ids = bks.map((b) => b.id);
-      const { data: existingReviews } = await supabase.from("reviews").select("booking_id").in("booking_id", ids);
-      const reviewed = new Set((existingReviews || []).map((r) => r.booking_id));
+      const { data: existingReviews } = await supabase
+        .from("reviews")
+        .select("booking_id")
+        .in("booking_id", ids);
+      const reviewed = new Set(
+        (existingReviews || []).map((r) => r.booking_id),
+      );
       return bks.find((b) => !reviewed.has(b.id)) || null;
     },
     enabled: !!user && !!id,
@@ -249,8 +262,12 @@ const PropertyDetail = () => {
   };
 
   const isDateOutsideAvailability = (date: Date) => {
-    const availableFrom = (property as any)?.available_from ? new Date((property as any).available_from) : null;
-    const availableTo = (property as any)?.available_to ? new Date((property as any).available_to) : null;
+    const availableFrom = (property as any)?.available_from
+      ? new Date((property as any).available_from)
+      : null;
+    const availableTo = (property as any)?.available_to
+      ? new Date((property as any).available_to)
+      : null;
     const day = new Date(date).setHours(0, 0, 0, 0);
     return !!(
       (availableFrom && day < availableFrom.setHours(0, 0, 0, 0)) ||
@@ -316,7 +333,13 @@ const PropertyDetail = () => {
 
   const currentNights =
     checkIn && checkOut
-      ? Math.max(1, Math.ceil((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / (1000 * 60 * 60 * 24)))
+      ? Math.max(
+          1,
+          Math.ceil(
+            (new Date(checkOut).getTime() - new Date(checkIn).getTime()) /
+              (1000 * 60 * 60 * 24),
+          ),
+        )
       : 1;
 
   const hasDateChanges = checkIn !== savedCheckIn || checkOut !== savedCheckOut;
@@ -334,13 +357,29 @@ const PropertyDetail = () => {
   };
 
   const calculatePricingDetails = () => {
-    if (!checkIn || !checkOut || !property) return { total: 0, nights: 0, baseTotal: 0, discountAmount: 0, breakdown: [] };
-    
+    if (!checkIn || !checkOut || !property)
+      return {
+        total: 0,
+        nights: 0,
+        baseTotal: 0,
+        discountAmount: 0,
+        breakdown: [],
+      };
+
     const start = new Date(checkIn);
     const end = new Date(checkOut);
-    const nights = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-    
-    if (nights <= 0) return { total: 0, nights: 0, baseTotal: 0, discountAmount: 0, breakdown: [] };
+    const nights = Math.ceil(
+      (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24),
+    );
+
+    if (nights <= 0)
+      return {
+        total: 0,
+        nights: 0,
+        baseTotal: 0,
+        discountAmount: 0,
+        breakdown: [],
+      };
 
     let total = 0;
     let baseTotal = 0;
@@ -348,7 +387,7 @@ const PropertyDetail = () => {
 
     // Calculate price per night factoring in weekends
     const weekendPrice = property.weekend_price ?? property.price_per_night;
-    
+
     let weekendNights = 0;
     let weekdayNights = 0;
 
@@ -356,7 +395,7 @@ const PropertyDetail = () => {
       const current = new Date(start);
       current.setDate(current.getDate() + i);
       const day = current.getDay();
-      // Friday (5) and Saturday (6) are typically considered weekends in the region, 
+      // Friday (5) and Saturday (6) are typically considered weekends in the region,
       // but let's use standard Sat (6) / Sun (0) or Thu/Fri. Usually Fri/Sat.
       if (day === 5 || day === 6) {
         total += weekendPrice;
@@ -366,21 +405,29 @@ const PropertyDetail = () => {
         weekdayNights++;
       }
     }
-    
+
     baseTotal = total;
 
     if (weekdayNights > 0) {
-      breakdown.push({ label: `${weekdayNights} weekday nights × ${property.price_per_night}`, amount: weekdayNights * property.price_per_night });
+      breakdown.push({
+        label: `${weekdayNights} weekday nights × ${property.price_per_night}`,
+        amount: weekdayNights * property.price_per_night,
+      });
     }
     if (weekendNights > 0) {
-      breakdown.push({ label: `${weekendNights} weekend nights × ${weekendPrice}`, amount: weekendNights * weekendPrice });
+      breakdown.push({
+        label: `${weekendNights} weekend nights × ${weekendPrice}`,
+        amount: weekendNights * weekendPrice,
+      });
     }
 
     let discountAmount = 0;
     let discountLabel = "";
 
     if (nights >= 28 && property.monthly_discount_pct) {
-      discountAmount = Math.round(total * (property.monthly_discount_pct / 100));
+      discountAmount = Math.round(
+        total * (property.monthly_discount_pct / 100),
+      );
       discountLabel = `${property.monthly_discount_pct}% monthly discount`;
       total -= discountAmount;
     } else if (nights >= 7 && property.weekly_discount_pct) {
@@ -435,7 +482,8 @@ const PropertyDetail = () => {
       });
 
       toast.success("Message sent to the host", {
-        description: "They'll get back to you soon. You can continue the chat from Messages.",
+        description:
+          "They'll get back to you soon. You can continue the chat from Messages.",
       });
       setContactMessage("");
       setContactOpen(false);
@@ -467,7 +515,9 @@ const PropertyDetail = () => {
 
     const start = new Date(checkIn);
     const end = new Date(checkOut);
-    const nights = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+    const nights = Math.ceil(
+      (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24),
+    );
 
     if (nights <= 0) {
       toast.error(t("checkOutAfterCheckIn"));
@@ -531,7 +581,8 @@ const PropertyDetail = () => {
     }
   };
 
-  const similarListings = allProperties?.filter((p) => p.id !== id).slice(0, 3) || [];
+  const similarListings =
+    allProperties?.filter((p) => p.id !== id).slice(0, 3) || [];
 
   const amenityIcons: Record<string, any> = {
     WiFi: Wifi,
@@ -562,7 +613,9 @@ const PropertyDetail = () => {
 
   const prevImage = () => {
     if (property?.images) {
-      setCurrentImageIndex((prev) => (prev - 1 + property.images.length) % property.images.length);
+      setCurrentImageIndex(
+        (prev) => (prev - 1 + property.images.length) % property.images.length,
+      );
     }
   };
 
@@ -582,21 +635,31 @@ const PropertyDetail = () => {
         <div className="container mx-auto px-4 py-20 text-center">
           <Home className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
           <h1 className="text-2xl font-bold mb-2">{t("propertyNotFound")}</h1>
-          <p className="text-muted-foreground mb-6">{t("propertyNotFoundDesc")}</p>
-          <Button onClick={() => navigate("/search")}>{t("browseProperties")}</Button>
+          <p className="text-muted-foreground mb-6">
+            {t("propertyNotFoundDesc")}
+          </p>
+          <Button onClick={() => navigate("/search")}>
+            {t("browseProperties")}
+          </Button>
         </div>
       </AppLayout>
     );
   }
 
-  const images = property.images?.length ? property.images : ["/placeholder.svg"];
+  const images = property.images?.length
+    ? property.images
+    : ["/placeholder.svg"];
 
   return (
     <AppLayout>
       {/* Mobile: Full-bleed image gallery */}
       <div className="md:hidden relative">
         <div className="relative h-[300px] w-full overflow-hidden">
-          <img src={images[currentImageIndex]} alt={property.title} className="w-full h-full object-cover" />
+          <img
+            src={images[currentImageIndex]}
+            alt={property.title}
+            className="w-full h-full object-cover"
+          />
           {/* Top overlay buttons */}
           <div className="absolute top-3 left-3 right-3 flex justify-between items-center z-10">
             <Button
@@ -631,9 +694,13 @@ const PropertyDetail = () => {
                 size="icon"
                 className="rounded-full bg-card/80 backdrop-blur-sm h-9 w-9"
                 onClick={handleToggleFavorite}
-                aria-label={favorited ? "Remove from favorites" : "Save to favorites"}
+                aria-label={
+                  favorited ? "Remove from favorites" : "Save to favorites"
+                }
               >
-                <Heart className={`h-4 w-4 ${favorited ? "fill-primary text-primary" : ""}`} />
+                <Heart
+                  className={`h-4 w-4 ${favorited ? "fill-primary text-primary" : ""}`}
+                />
               </Button>
             </div>
           </div>
@@ -684,7 +751,9 @@ const PropertyDetail = () => {
                 key={i}
                 onClick={() => setCurrentImageIndex(i)}
                 className={`flex-shrink-0 w-16 h-12 rounded-lg overflow-hidden border-2 transition-all ${
-                  i === currentImageIndex ? "border-primary" : "border-transparent opacity-60"
+                  i === currentImageIndex
+                    ? "border-primary"
+                    : "border-transparent opacity-60"
                 }`}
               >
                 <img src={img} alt="" className="w-full h-full object-cover" />
@@ -692,51 +761,6 @@ const PropertyDetail = () => {
             ))}
           </div>
         )}
-      </div>
-
-      {/* Desktop: Container image gallery */}
-      <div className="hidden md:block container mx-auto px-4 pt-8">
-        <div className="rounded-2xl overflow-hidden mb-8 h-[500px] relative group">
-          <img src={images[currentImageIndex]} alt={property.title} className="w-full h-full object-cover" />
-          <Button
-            variant="outline"
-            size="sm"
-            className="absolute top-4 right-4 bg-card/90 backdrop-blur-sm"
-            onClick={() => setFullscreenOpen(true)}
-          >
-            <Maximize2 className="h-4 w-4 mr-2" />
-            Fullscreen
-          </Button>
-          {images.length > 1 && (
-            <>
-              <Button
-                variant="outline"
-                size="icon"
-                className="absolute left-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-card/90"
-                onClick={prevImage}
-              >
-                <ChevronLeft className="h-6 w-6" />
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                className="absolute right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-card/90"
-                onClick={nextImage}
-              >
-                <ChevronRight className="h-6 w-6" />
-              </Button>
-              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
-                {images.map((_, i) => (
-                  <div
-                    key={i}
-                    className={`w-2 h-2 rounded-full cursor-pointer ${i === currentImageIndex ? "bg-primary" : "bg-primary-foreground/50"}`}
-                    onClick={() => setCurrentImageIndex(i)}
-                  />
-                ))}
-              </div>
-            </>
-          )}
-        </div>
       </div>
 
       {/* Fullscreen image viewer */}
@@ -788,22 +812,77 @@ const PropertyDetail = () => {
         </div>
       )}
 
-      <main className="container mx-auto px-4 pb-8 md:py-0">
+      <main className="container mx-auto px-4 pb-8 md:py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
           {/* Left Column - Property Details */}
           <div className="lg:col-span-2 space-y-5 md:space-y-6">
+            {/* Desktop: Image gallery */}
+            <div className="hidden md:block rounded-2xl overflow-hidden h-[400px] lg:h-[500px] relative group">
+              <img
+                src={images[currentImageIndex]}
+                alt={property.title}
+                className="w-full h-full object-cover"
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                className="absolute top-4 right-4 bg-card/90 backdrop-blur-sm"
+                onClick={() => setFullscreenOpen(true)}
+              >
+                <Maximize2 className="h-4 w-4 mr-2" />
+                Fullscreen
+              </Button>
+              {images.length > 1 && (
+                <>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="absolute left-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-card/90"
+                    onClick={prevImage}
+                  >
+                    <ChevronLeft className="h-6 w-6" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-card/90"
+                    onClick={nextImage}
+                  >
+                    <ChevronRight className="h-6 w-6" />
+                  </Button>
+                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+                    {images.map((_, i) => (
+                      <div
+                        key={i}
+                        className={`w-2 h-2 rounded-full cursor-pointer ${i === currentImageIndex ? "bg-primary" : "bg-primary-foreground/50"}`}
+                        onClick={() => setCurrentImageIndex(i)}
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+
             {/* Title & location */}
             <div className="pt-3 md:pt-0">
               <div className="flex items-start justify-between gap-3">
-                <h1 className="text-2xl md:text-4xl font-bold mb-1.5 md:mb-2 flex-1">{property.title}</h1>
+                <h1 className="text-2xl md:text-4xl font-bold mb-1.5 md:mb-2 flex-1">
+                  {property.title}
+                </h1>
                 {/* Desktop: Save + Share actions */}
                 <div className="hidden md:flex gap-2 shrink-0">
                   <Button variant="outline" size="sm" onClick={handleShare}>
                     <Share2 className="h-4 w-4 mr-2" />
                     Share
                   </Button>
-                  <Button variant={favorited ? "default" : "outline"} size="sm" onClick={handleToggleFavorite}>
-                    <Heart className={`h-4 w-4 mr-2 ${favorited ? "fill-current" : ""}`} />
+                  <Button
+                    variant={favorited ? "default" : "outline"}
+                    size="sm"
+                    onClick={handleToggleFavorite}
+                  >
+                    <Heart
+                      className={`h-4 w-4 mr-2 ${favorited ? "fill-current" : ""}`}
+                    />
                     {favorited ? "Saved" : "Save"}
                   </Button>
                 </div>
@@ -811,7 +890,9 @@ const PropertyDetail = () => {
               <div className="flex flex-wrap items-center gap-2 md:gap-4 text-sm md:text-base text-muted-foreground">
                 <div className="flex items-center gap-1">
                   <Star className="h-4 w-4 md:h-5 md:w-5 fill-yellow-500 text-yellow-500" />
-                  <span className="font-semibold text-foreground">{property.rating || 0}</span>
+                  <span className="font-semibold text-foreground">
+                    {property.rating || 0}
+                  </span>
                   <span>
                     ({property.review_count || 0} {t("reviews")})
                   </span>
@@ -832,8 +913,12 @@ const PropertyDetail = () => {
                     <Home className="h-5 w-5 text-accent-foreground" />
                   </div>
                   <div>
-                    <p className="font-bold text-base md:text-lg">{property.bedrooms}</p>
-                    <p className="text-xs md:text-sm text-muted-foreground">{t("bedrooms")}</p>
+                    <p className="font-bold text-base md:text-lg">
+                      {property.bedrooms}
+                    </p>
+                    <p className="text-xs md:text-sm text-muted-foreground">
+                      {t("bedrooms")}
+                    </p>
                   </div>
                 </CardContent>
               </Card>
@@ -843,8 +928,12 @@ const PropertyDetail = () => {
                     <Bath className="h-5 w-5 text-accent-foreground" />
                   </div>
                   <div>
-                    <p className="font-bold text-base md:text-lg">{property.bathrooms}</p>
-                    <p className="text-xs md:text-sm text-muted-foreground">{t("bathrooms")}</p>
+                    <p className="font-bold text-base md:text-lg">
+                      {property.bathrooms}
+                    </p>
+                    <p className="text-xs md:text-sm text-muted-foreground">
+                      {t("bathrooms")}
+                    </p>
                   </div>
                 </CardContent>
               </Card>
@@ -854,8 +943,12 @@ const PropertyDetail = () => {
                     <Users className="h-5 w-5 text-accent-foreground" />
                   </div>
                   <div>
-                    <p className="font-bold text-base md:text-lg">{property.max_guests}</p>
-                    <p className="text-xs md:text-sm text-muted-foreground">{t("maxGuests")}</p>
+                    <p className="font-bold text-base md:text-lg">
+                      {property.max_guests}
+                    </p>
+                    <p className="text-xs md:text-sm text-muted-foreground">
+                      {t("maxGuests")}
+                    </p>
                   </div>
                 </CardContent>
               </Card>
@@ -864,7 +957,9 @@ const PropertyDetail = () => {
             {/* Mobile inline date picker */}
             <div className="lg:hidden">
               <label className="text-sm font-medium mb-2 block flex items-center gap-2">
-                {t("checkIn")} <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" /> {t("checkOut")}
+                {t("checkIn")}{" "}
+                <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />{" "}
+                {t("checkOut")}
               </label>
               <div className="rounded-lg border border-border bg-background overflow-hidden">
                 <Calendar
@@ -875,7 +970,8 @@ const PropertyDetail = () => {
                     to: checkOut ? new Date(checkOut) : undefined,
                   }}
                   onSelect={(range) => {
-                    if (range?.from) setCheckIn(format(range.from, "yyyy-MM-dd"));
+                    if (range?.from)
+                      setCheckIn(format(range.from, "yyyy-MM-dd"));
                     else setCheckIn("");
                     if (range?.to) setCheckOut(format(range.to, "yyyy-MM-dd"));
                     else setCheckOut("");
@@ -888,7 +984,8 @@ const PropertyDetail = () => {
                   }
                   modifiers={{ booked: bookedDates }}
                   modifiersClassNames={{
-                    booked: "line-through text-destructive bg-destructive/10 rounded-md",
+                    booked:
+                      "line-through text-destructive bg-destructive/10 rounded-md",
                   }}
                   className="p-3 pointer-events-auto"
                 />
@@ -940,19 +1037,31 @@ const PropertyDetail = () => {
                 <div className="flex items-center gap-3 md:gap-4">
                   <Avatar className="h-12 w-12 md:h-16 md:w-16">
                     {hostProfile?.avatar_url && (
-                      <AvatarImage src={hostProfile.avatar_url} alt={hostProfile?.full_name || "Host"} />
+                      <AvatarImage
+                        src={hostProfile.avatar_url}
+                        alt={hostProfile?.full_name || "Host"}
+                      />
                     )}
                     <AvatarFallback className="bg-primary text-primary-foreground text-lg md:text-xl">
                       {(hostProfile?.full_name || "H").charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1">
-                    <h3 className="text-base md:text-xl font-bold">{hostProfile?.full_name || t("propertyHost")}</h3>
+                    <h3 className="text-base md:text-xl font-bold">
+                      {hostProfile?.full_name || t("propertyHost")}
+                    </h3>
                     <p className="text-xs md:text-sm text-muted-foreground">
-                      {hostProfile?.is_verified ? t("verifiedHost") : t("propertyHost")}
+                      {hostProfile?.is_verified
+                        ? t("verifiedHost")
+                        : t("propertyHost")}
                     </p>
                   </div>
-                  <Button variant="outline" size="sm" className="md:flex" onClick={() => setContactOpen(true)}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="md:flex"
+                    onClick={() => setContactOpen(true)}
+                  >
                     Contact
                   </Button>
                 </div>
@@ -961,33 +1070,51 @@ const PropertyDetail = () => {
 
             {/* Description */}
             <div>
-              <h2 className="text-lg md:text-2xl font-bold mb-2 md:mb-4">{t("aboutThisPlace")}</h2>
+              <h2 className="text-lg md:text-2xl font-bold mb-2 md:mb-4">
+                {t("aboutThisPlace")}
+              </h2>
               <p className="text-sm md:text-base text-muted-foreground leading-relaxed">
                 {property.description || t("noDescription")}
               </p>
             </div>
 
             {/* Pricing & Discounts */}
-            {(property.weekend_price || property.weekly_discount_pct || property.monthly_discount_pct) && (
+            {(property.weekend_price ||
+              property.weekly_discount_pct ||
+              property.monthly_discount_pct) && (
               <div>
-                <h2 className="text-lg md:text-2xl font-bold mb-2 md:mb-4">Pricing & Discounts</h2>
+                <h2 className="text-lg md:text-2xl font-bold mb-2 md:mb-4">
+                  Pricing & Discounts
+                </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {property.weekend_price && (
                     <div className="flex flex-col p-4 border rounded-xl bg-muted/20">
-                      <span className="font-semibold text-foreground">Weekend Price</span>
-                      <span className="text-sm text-muted-foreground">{formatPrice(property.weekend_price)} per night</span>
+                      <span className="font-semibold text-foreground">
+                        Weekend Price
+                      </span>
+                      <span className="text-sm text-muted-foreground">
+                        {formatPrice(property.weekend_price)} per night
+                      </span>
                     </div>
                   )}
                   {property.weekly_discount_pct && (
                     <div className="flex flex-col p-4 border rounded-xl bg-muted/20">
-                      <span className="font-semibold text-foreground">Weekly Discount</span>
-                      <span className="text-sm text-muted-foreground">{property.weekly_discount_pct}% off for 7+ nights</span>
+                      <span className="font-semibold text-foreground">
+                        Weekly Discount
+                      </span>
+                      <span className="text-sm text-muted-foreground">
+                        {property.weekly_discount_pct}% off for 7+ nights
+                      </span>
                     </div>
                   )}
                   {property.monthly_discount_pct && (
                     <div className="flex flex-col p-4 border rounded-xl bg-muted/20">
-                      <span className="font-semibold text-foreground">Monthly Discount</span>
-                      <span className="text-sm text-muted-foreground">{property.monthly_discount_pct}% off for 28+ nights</span>
+                      <span className="font-semibold text-foreground">
+                        Monthly Discount
+                      </span>
+                      <span className="text-sm text-muted-foreground">
+                        {property.monthly_discount_pct}% off for 28+ nights
+                      </span>
                     </div>
                   )}
                 </div>
@@ -997,7 +1124,9 @@ const PropertyDetail = () => {
             {/* Welcome message from host */}
             {(property as any).welcome_message && (
               <div>
-                <h2 className="text-lg md:text-2xl font-bold mb-2 md:mb-4">Welcome message from host</h2>
+                <h2 className="text-lg md:text-2xl font-bold mb-2 md:mb-4">
+                  Welcome message from host
+                </h2>
                 <MarkdownLite text={(property as any).welcome_message} />
               </div>
             )}
@@ -1007,7 +1136,9 @@ const PropertyDetail = () => {
               (property as any).check_out_time ||
               (property as any).minimum_nights) && (
               <div>
-                <h2 className="text-lg md:text-2xl font-bold mb-2 md:mb-4">Stay details</h2>
+                <h2 className="text-lg md:text-2xl font-bold mb-2 md:mb-4">
+                  Stay details
+                </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   {(property as any).check_in_time && (
                     <div className="p-3 rounded-xl border border-border">
@@ -1027,7 +1158,9 @@ const PropertyDetail = () => {
                   )}
                   {(property as any).minimum_nights && (
                     <div className="p-3 rounded-xl border border-border">
-                      <p className="text-xs text-muted-foreground">Minimum nights</p>
+                      <p className="text-xs text-muted-foreground">
+                        Minimum nights
+                      </p>
                       <p className="text-sm md:text-base font-medium">
                         {(property as any).minimum_nights}
                       </p>
@@ -1040,106 +1173,177 @@ const PropertyDetail = () => {
             {/* Cleaning Policy */}
             {(property as any).cleaning_policy && (
               <div>
-                <h2 className="text-lg md:text-2xl font-bold mb-2 md:mb-4">Cleaning policy</h2>
+                <h2 className="text-lg md:text-2xl font-bold mb-2 md:mb-4">
+                  Cleaning policy
+                </h2>
                 <MarkdownLite text={(property as any).cleaning_policy} />
               </div>
             )}
 
             {/* Amenities */}
-            {property.amenities && property.amenities.length > 0 && (() => {
-              const categoryMap: Record<string, string> = {
-                // Bathroom
-                "Shampoo": "Bathroom", "Conditioner": "Bathroom", "Body soap": "Bathroom",
-                "Hot water": "Bathroom", "Shower gel": "Bathroom", "Hair dryer": "Bathroom",
-                "Bathtub": "Bathroom", "Bidet": "Bathroom", "Towels": "Bathroom",
-                // Bedroom & Laundry
-                "Washer": "Bedroom & Laundry", "Dryer": "Bedroom & Laundry",
-                "Essentials": "Bedroom & Laundry", "Hangers": "Bedroom & Laundry",
-                "Bed linens": "Bedroom & Laundry", "Extra pillows and blankets": "Bedroom & Laundry",
-                "Iron": "Bedroom & Laundry", "Clothing storage": "Bedroom & Laundry",
-                "Room-darkening shades": "Bedroom & Laundry",
-                // Entertainment
-                "TV": "Entertainment", "Cable TV": "Entertainment", "Sound system": "Entertainment",
-                "Game console": "Entertainment", "Books": "Entertainment",
-                // Heating & Cooling
-                "Air Conditioning": "Heating & Cooling", "Air conditioning": "Heating & Cooling",
-                "Heating": "Heating & Cooling", "Ceiling fan": "Heating & Cooling",
-                "Portable fans": "Heating & Cooling",
-                // Internet & Office
-                "WiFi": "Internet & Office", "Wifi": "Internet & Office",
-                "Dedicated workspace": "Internet & Office", "Ethernet connection": "Internet & Office",
-                // Kitchen & Dining
-                "Kitchen": "Kitchen & Dining", "Refrigerator": "Kitchen & Dining",
-                "Microwave": "Kitchen & Dining", "Cooking basics": "Kitchen & Dining",
-                "Dishes and silverware": "Kitchen & Dining", "Freezer": "Kitchen & Dining",
-                "Dishwasher": "Kitchen & Dining", "Stove": "Kitchen & Dining",
-                "Oven": "Kitchen & Dining", "Coffee maker": "Kitchen & Dining",
-                "Wine glasses": "Kitchen & Dining", "Toaster": "Kitchen & Dining",
-                "Dining table": "Kitchen & Dining", "Hot Tub": "Kitchen & Dining",
-                // Outdoor
-                "Garden": "Outdoor", "Patio or balcony": "Outdoor", "Backyard": "Outdoor",
-                "BBQ grill": "Outdoor", "Outdoor furniture": "Outdoor",
-                "Outdoor dining area": "Outdoor",
-                // Parking & Facilities
-                "Free Parking": "Parking & Facilities", "Parking": "Parking & Facilities",
-                "Free parking on premises": "Parking & Facilities", "Pool": "Parking & Facilities",
-                "Gym": "Parking & Facilities", "Elevator": "Parking & Facilities",
-                "EV charger": "Parking & Facilities",
-                // Safety
-                "Smoke alarm": "Safety", "Carbon monoxide alarm": "Safety",
-                "Fire extinguisher": "Safety", "First aid kit": "Safety",
-                "Security cameras": "Safety",
-              };
-              const grouped: Record<string, string[]> = {};
-              property.amenities.forEach((a: string) => {
-                const cat = amenityCategoryMap[a] || categoryMap[a] || "Other";
-                (grouped[cat] ||= []).push(a);
-              });
-              const settingsArr = Array.isArray(siteSettings) ? siteSettings : [];
-              const catEntry = settingsArr.find((s: any) => s.key === "amenity_categories");
-              const adminOrder: string[] = Array.isArray(catEntry?.value)
-                ? catEntry!.value.filter((c: any) => typeof c === "string")
-                : [];
-              const fallbackOrder = ["Bathroom","Bedroom & Laundry","Entertainment","Heating & Cooling","Internet & Office","Kitchen & Dining","Outdoor","Parking & Facilities","Safety"];
-              const baseOrder = adminOrder.length ? adminOrder : fallbackOrder;
-              const extras = Object.keys(grouped).filter((c) => !baseOrder.includes(c) && c !== "Other");
-              const order = [...baseOrder, ...extras, "Other"];
-              return (
-                <div>
-                  <h2 className="text-lg md:text-2xl font-bold mb-3 md:mb-4">{t("whatThisPlaceOffers")}</h2>
-                  <div className="space-y-5 md:space-y-6">
-                    {order.filter((c) => grouped[c]?.length).map((cat) => (
-                      <div key={cat}>
-                        <h3 className="text-sm md:text-base font-semibold text-muted-foreground mb-2 md:mb-3 uppercase tracking-wide">{cat}</h3>
-                        <div className="grid grid-cols-2 gap-2 md:gap-4">
-                          {grouped[cat].map((amenity) => {
-                            const customIcon = amenityIconMap[amenity];
-                            const Icon = amenityIcons[amenity] || Home;
-                            return (
-                              <div key={amenity} className="flex items-center gap-2.5 p-2.5 md:p-3 rounded-xl border border-border">
-                                <div className="h-8 w-8 rounded-full bg-accent flex items-center justify-center flex-shrink-0 overflow-hidden">
-                                  {customIcon ? (
-                                    <img src={customIcon} alt="" className="h-6 w-6 object-contain" />
-                                  ) : (
-                                    <Icon className="h-4 w-4 text-accent-foreground" />
-                                  )}
-                                </div>
-                                <span className="text-sm md:text-base">{amenity}</span>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    ))}
+            {property.amenities &&
+              property.amenities.length > 0 &&
+              (() => {
+                const categoryMap: Record<string, string> = {
+                  // Bathroom
+                  Shampoo: "Bathroom",
+                  Conditioner: "Bathroom",
+                  "Body soap": "Bathroom",
+                  "Hot water": "Bathroom",
+                  "Shower gel": "Bathroom",
+                  "Hair dryer": "Bathroom",
+                  Bathtub: "Bathroom",
+                  Bidet: "Bathroom",
+                  Towels: "Bathroom",
+                  // Bedroom & Laundry
+                  Washer: "Bedroom & Laundry",
+                  Dryer: "Bedroom & Laundry",
+                  Essentials: "Bedroom & Laundry",
+                  Hangers: "Bedroom & Laundry",
+                  "Bed linens": "Bedroom & Laundry",
+                  "Extra pillows and blankets": "Bedroom & Laundry",
+                  Iron: "Bedroom & Laundry",
+                  "Clothing storage": "Bedroom & Laundry",
+                  "Room-darkening shades": "Bedroom & Laundry",
+                  // Entertainment
+                  TV: "Entertainment",
+                  "Cable TV": "Entertainment",
+                  "Sound system": "Entertainment",
+                  "Game console": "Entertainment",
+                  Books: "Entertainment",
+                  // Heating & Cooling
+                  "Air Conditioning": "Heating & Cooling",
+                  "Air conditioning": "Heating & Cooling",
+                  Heating: "Heating & Cooling",
+                  "Ceiling fan": "Heating & Cooling",
+                  "Portable fans": "Heating & Cooling",
+                  // Internet & Office
+                  WiFi: "Internet & Office",
+                  Wifi: "Internet & Office",
+                  "Dedicated workspace": "Internet & Office",
+                  "Ethernet connection": "Internet & Office",
+                  // Kitchen & Dining
+                  Kitchen: "Kitchen & Dining",
+                  Refrigerator: "Kitchen & Dining",
+                  Microwave: "Kitchen & Dining",
+                  "Cooking basics": "Kitchen & Dining",
+                  "Dishes and silverware": "Kitchen & Dining",
+                  Freezer: "Kitchen & Dining",
+                  Dishwasher: "Kitchen & Dining",
+                  Stove: "Kitchen & Dining",
+                  Oven: "Kitchen & Dining",
+                  "Coffee maker": "Kitchen & Dining",
+                  "Wine glasses": "Kitchen & Dining",
+                  Toaster: "Kitchen & Dining",
+                  "Dining table": "Kitchen & Dining",
+                  "Hot Tub": "Kitchen & Dining",
+                  // Outdoor
+                  Garden: "Outdoor",
+                  "Patio or balcony": "Outdoor",
+                  Backyard: "Outdoor",
+                  "BBQ grill": "Outdoor",
+                  "Outdoor furniture": "Outdoor",
+                  "Outdoor dining area": "Outdoor",
+                  // Parking & Facilities
+                  "Free Parking": "Parking & Facilities",
+                  Parking: "Parking & Facilities",
+                  "Free parking on premises": "Parking & Facilities",
+                  Pool: "Parking & Facilities",
+                  Gym: "Parking & Facilities",
+                  Elevator: "Parking & Facilities",
+                  "EV charger": "Parking & Facilities",
+                  // Safety
+                  "Smoke alarm": "Safety",
+                  "Carbon monoxide alarm": "Safety",
+                  "Fire extinguisher": "Safety",
+                  "First aid kit": "Safety",
+                  "Security cameras": "Safety",
+                };
+                const grouped: Record<string, string[]> = {};
+                property.amenities.forEach((a: string) => {
+                  const cat =
+                    amenityCategoryMap[a] || categoryMap[a] || "Other";
+                  (grouped[cat] ||= []).push(a);
+                });
+                const settingsArr = Array.isArray(siteSettings)
+                  ? siteSettings
+                  : [];
+                const catEntry = settingsArr.find(
+                  (s: any) => s.key === "amenity_categories",
+                );
+                const adminOrder: string[] = Array.isArray(catEntry?.value)
+                  ? catEntry!.value.filter((c: any) => typeof c === "string")
+                  : [];
+                const fallbackOrder = [
+                  "Bathroom",
+                  "Bedroom & Laundry",
+                  "Entertainment",
+                  "Heating & Cooling",
+                  "Internet & Office",
+                  "Kitchen & Dining",
+                  "Outdoor",
+                  "Parking & Facilities",
+                  "Safety",
+                ];
+                const baseOrder = adminOrder.length
+                  ? adminOrder
+                  : fallbackOrder;
+                const extras = Object.keys(grouped).filter(
+                  (c) => !baseOrder.includes(c) && c !== "Other",
+                );
+                const order = [...baseOrder, ...extras, "Other"];
+                return (
+                  <div>
+                    <h2 className="text-lg md:text-2xl font-bold mb-3 md:mb-4">
+                      {t("whatThisPlaceOffers")}
+                    </h2>
+                    <div className="space-y-5 md:space-y-6">
+                      {order
+                        .filter((c) => grouped[c]?.length)
+                        .map((cat) => (
+                          <div key={cat}>
+                            <h3 className="text-sm md:text-base font-semibold text-muted-foreground mb-2 md:mb-3 uppercase tracking-wide">
+                              {cat}
+                            </h3>
+                            <div className="grid grid-cols-2 gap-2 md:gap-4">
+                              {grouped[cat].map((amenity) => {
+                                const customIcon = amenityIconMap[amenity];
+                                const Icon = amenityIcons[amenity] || Home;
+                                return (
+                                  <div
+                                    key={amenity}
+                                    className="flex items-center gap-2.5 p-2.5 md:p-3 rounded-xl border border-border"
+                                  >
+                                    <div className="h-8 w-8 rounded-full bg-accent flex items-center justify-center flex-shrink-0 overflow-hidden">
+                                      {customIcon ? (
+                                        <img
+                                          src={customIcon}
+                                          alt=""
+                                          className="h-6 w-6 object-contain"
+                                        />
+                                      ) : (
+                                        <Icon className="h-4 w-4 text-accent-foreground" />
+                                      )}
+                                    </div>
+                                    <span className="text-sm md:text-base">
+                                      {amenity}
+                                    </span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        ))}
+                    </div>
                   </div>
-                </div>
-              );
-            })()}
-
+                );
+              })()}
 
             {/* Map */}
             <div>
-              <h2 className="text-lg md:text-2xl font-bold mb-3 md:mb-4">{t("location")}</h2>
+              <h2 className="text-lg md:text-2xl font-bold mb-3 md:mb-4">
+                {t("location")}
+              </h2>
               <Card>
                 <CardContent className="p-0 overflow-hidden rounded-xl">
                   {property.latitude && property.longitude ? (
@@ -1167,36 +1371,53 @@ const PropertyDetail = () => {
 
             {/* Things to know */}
             <div>
-              <h2 className="text-lg md:text-2xl font-bold mb-3 md:mb-4">Things to know</h2>
+              <h2 className="text-lg md:text-2xl font-bold mb-3 md:mb-4">
+                Things to know
+              </h2>
               <div className="grid gap-4 md:grid-cols-3">
                 <div className="rounded-xl border bg-card p-4">
                   <h3 className="font-semibold mb-2">House rules</h3>
                   <div className="text-sm text-muted-foreground whitespace-pre-line">
-                    <MarkdownLite text={(property as any).house_rules || "Check-in after the listed check-in time. No smoking. No parties or events. Pets are not allowed unless agreed with the host."} />
+                    <MarkdownLite
+                      text={
+                        (property as any).house_rules ||
+                        "Check-in after the listed check-in time. No smoking. No parties or events. Pets are not allowed unless agreed with the host."
+                      }
+                    />
                   </div>
                 </div>
                 <div className="rounded-xl border bg-card p-4">
                   <h3 className="font-semibold mb-2">Safety & property</h3>
                   <div className="text-sm text-muted-foreground whitespace-pre-line">
-                    <MarkdownLite text={(property as any).safety_property || "Smoke alarm not reported. Carbon monoxide alarm not reported. Please review all safety information with the host on arrival."} />
+                    <MarkdownLite
+                      text={
+                        (property as any).safety_property ||
+                        "Smoke alarm not reported. Carbon monoxide alarm not reported. Please review all safety information with the host on arrival."
+                      }
+                    />
                   </div>
                 </div>
                 <div className="rounded-xl border bg-card p-4">
                   <h3 className="font-semibold mb-2">Cancellation policy</h3>
                   <div className="text-sm text-muted-foreground whitespace-pre-line">
-                    <MarkdownLite text={(property as any).cancellation_policy || "Free cancellation up to 7 days before check-in. After that, cancellations may be partially refundable depending on timing."} />
+                    <MarkdownLite
+                      text={
+                        (property as any).cancellation_policy ||
+                        "Free cancellation up to 7 days before check-in. After that, cancellations may be partially refundable depending on timing."
+                      }
+                    />
                   </div>
                 </div>
               </div>
             </div>
-
 
             {/* Reviews */}
             <div id="reviews" className="scroll-mt-24">
               <div className="flex items-center justify-between mb-4 md:mb-6">
                 <h2 className="text-lg md:text-2xl font-bold flex items-center gap-2">
                   <Star className="h-5 w-5 md:h-6 md:w-6 fill-yellow-500 text-yellow-500" />
-                  {property.rating || 0} · {property.review_count || 0} {t("reviews")}
+                  {property.rating || 0} · {property.review_count || 0}{" "}
+                  {t("reviews")}
                 </h2>
                 {reviewableBooking ? (
                   <Button
@@ -1211,7 +1432,11 @@ const PropertyDetail = () => {
                     size="sm"
                     variant="outline"
                     className="text-xs md:text-sm"
-                    onClick={() => navigate(`/auth?redirect=${encodeURIComponent(`/property/${id}`)}`)}
+                    onClick={() =>
+                      navigate(
+                        `/auth?redirect=${encodeURIComponent(`/property/${id}`)}`,
+                      )
+                    }
                   >
                     {t("writeReview")}
                   </Button>
@@ -1221,7 +1446,9 @@ const PropertyDetail = () => {
               {!reviews || reviews.length === 0 ? (
                 <div className="text-center py-6 md:py-8 border rounded-xl">
                   <Star className="h-8 w-8 md:h-12 md:w-12 mx-auto text-muted-foreground mb-2" />
-                  <p className="text-sm md:text-base text-muted-foreground">{t("noReviewsYet")}</p>
+                  <p className="text-sm md:text-base text-muted-foreground">
+                    {t("noReviewsYet")}
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -1231,29 +1458,52 @@ const PropertyDetail = () => {
                         <div className="flex items-start gap-3">
                           <Avatar className="h-10 w-10">
                             {r.profile?.avatar_url && (
-                              <AvatarImage src={r.profile.avatar_url} alt={r.profile.full_name || "Guest"} />
+                              <AvatarImage
+                                src={r.profile.avatar_url}
+                                alt={r.profile.full_name || "Guest"}
+                              />
                             )}
                             <AvatarFallback className="bg-primary text-primary-foreground">
-                              {(r.profile?.full_name || "G").charAt(0).toUpperCase()}
+                              {(r.profile?.full_name || "G")
+                                .charAt(0)
+                                .toUpperCase()}
                             </AvatarFallback>
                           </Avatar>
                           <div className="flex-1">
                             <div className="flex items-center justify-between mb-1">
-                              <p className="font-semibold text-sm md:text-base">{r.profile?.full_name || "Guest"}</p>
+                              <p className="font-semibold text-sm md:text-base">
+                                {r.profile?.full_name || "Guest"}
+                              </p>
                               <div className="flex items-center gap-0.5">
-                                {Array.from({ length: r.rating }).map((_, i) => (
-                                  <Star key={i} className="h-3 w-3 md:h-4 md:w-4 fill-yellow-500 text-yellow-500" />
-                                ))}
+                                {Array.from({ length: r.rating }).map(
+                                  (_, i) => (
+                                    <Star
+                                      key={i}
+                                      className="h-3 w-3 md:h-4 md:w-4 fill-yellow-500 text-yellow-500"
+                                    />
+                                  ),
+                                )}
                               </div>
                             </div>
                             <p className="text-xs text-muted-foreground mb-2">
-                              {new Date(r.created_at).toLocaleDateString(undefined, { year: "numeric", month: "long" })}
+                              {new Date(r.created_at).toLocaleDateString(
+                                undefined,
+                                { year: "numeric", month: "long" },
+                              )}
                             </p>
-                            {r.comment && <p className="text-sm md:text-base">{r.comment}</p>}
+                            {r.comment && (
+                              <p className="text-sm md:text-base">
+                                {r.comment}
+                              </p>
+                            )}
                             {r.host_response && (
                               <div className="mt-3 pl-3 border-l-2 border-primary">
-                                <p className="text-xs font-semibold mb-1">Response from host</p>
-                                <p className="text-sm text-muted-foreground">{r.host_response}</p>
+                                <p className="text-xs font-semibold mb-1">
+                                  Response from host
+                                </p>
+                                <p className="text-sm text-muted-foreground">
+                                  {r.host_response}
+                                </p>
                               </div>
                             )}
                           </div>
@@ -1272,16 +1522,24 @@ const PropertyDetail = () => {
               <CardContent className="p-6">
                 <div className="mb-6">
                   <div className="flex items-baseline gap-2">
-                    <span className="text-3xl font-bold">{formatPrice(property.price_per_night)}</span>
-                    <span className="text-muted-foreground">{t("perNight")}</span>
+                    <span className="text-3xl font-bold">
+                      {formatPrice(property.price_per_night)}
+                    </span>
+                    <span className="text-muted-foreground">
+                      {t("perNight")}
+                    </span>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1">Prices include all fees</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Prices include all fees
+                  </p>
                 </div>
 
                 <div className="space-y-4 mb-6">
                   <div>
                     <label className="text-sm font-medium mb-2 block flex items-center gap-2">
-                      {t("checkIn")} <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" /> {t("checkOut")}
+                      {t("checkIn")}{" "}
+                      <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />{" "}
+                      {t("checkOut")}
                     </label>
                     <div className="rounded-lg border border-border bg-background overflow-hidden">
                       <Calendar
@@ -1292,9 +1550,11 @@ const PropertyDetail = () => {
                           to: checkOut ? new Date(checkOut) : undefined,
                         }}
                         onSelect={(range) => {
-                          if (range?.from) setCheckIn(format(range.from, "yyyy-MM-dd"));
+                          if (range?.from)
+                            setCheckIn(format(range.from, "yyyy-MM-dd"));
                           else setCheckIn("");
-                          if (range?.to) setCheckOut(format(range.to, "yyyy-MM-dd"));
+                          if (range?.to)
+                            setCheckOut(format(range.to, "yyyy-MM-dd"));
                           else setCheckOut("");
                         }}
                         disabled={(date) =>
@@ -1305,7 +1565,8 @@ const PropertyDetail = () => {
                         }
                         modifiers={{ booked: bookedDates }}
                         modifiersClassNames={{
-                          booked: "line-through text-destructive bg-destructive/10 rounded-md",
+                          booked:
+                            "line-through text-destructive bg-destructive/10 rounded-md",
                         }}
                         className="p-3 pointer-events-auto"
                       />
@@ -1326,21 +1587,26 @@ const PropertyDetail = () => {
                     </div>
                   </div>
                   <div>
-                    <label className="text-sm font-medium mb-2 block">{t("nights") || "Nights"}</label>
+                    <label className="text-sm font-medium mb-2 block">
+                      {t("nights") || "Nights"}
+                    </label>
                     <div className="flex items-center justify-between rounded-lg border border-border bg-background p-2">
                       <Button
                         type="button"
                         variant="outline"
                         size="icon"
                         className="h-8 w-8"
-                        onClick={() => setNights(Math.max(1, currentNights - 1))}
+                        onClick={() =>
+                          setNights(Math.max(1, currentNights - 1))
+                        }
                         disabled={!checkIn || currentNights <= 1}
                         aria-label="Decrease nights"
                       >
                         <Minus className="h-4 w-4" />
                       </Button>
                       <div className="text-sm font-medium">
-                        {currentNights} {currentNights === 1 ? "night" : "nights"}
+                        {currentNights}{" "}
+                        {currentNights === 1 ? "night" : "nights"}
                       </div>
                       <Button
                         type="button"
@@ -1356,13 +1622,18 @@ const PropertyDetail = () => {
                     </div>
                   </div>
                   <div>
-                    <label className="text-sm font-medium mb-2 block">{t("guests")}</label>
+                    <label className="text-sm font-medium mb-2 block">
+                      {t("guests")}
+                    </label>
                     <select
                       value={guests}
                       onChange={(e) => setGuests(Number(e.target.value))}
                       className="w-full p-3 rounded-lg border border-border bg-background"
                     >
-                      {Array.from({ length: property.max_guests }, (_, i) => i + 1).map((num) => (
+                      {Array.from(
+                        { length: property.max_guests },
+                        (_, i) => i + 1,
+                      ).map((num) => (
                         <option key={num} value={num}>
                           {num} {num > 1 ? t("guests") : t("guest")}
                         </option>
@@ -1371,28 +1642,37 @@ const PropertyDetail = () => {
                   </div>
                 </div>
 
-                {calculateTotal() > 0 && (() => {
-                  const pricing = calculatePricingDetails();
-                  return (
-                    <div className="border-t pt-4 mb-4">
-                      {pricing.breakdown.map((item, idx) => (
-                        <div key={idx} className={`flex justify-between mb-2 ${item.amount < 0 ? "text-green-600 font-medium" : "text-muted-foreground"}`}>
-                          <span>{item.label}</span>
-                          <span>
-                            {item.amount < 0 ? "-" : ""}
-                            {formatPrice(Math.abs(item.amount))}
-                          </span>
+                {calculateTotal() > 0 &&
+                  (() => {
+                    const pricing = calculatePricingDetails();
+                    return (
+                      <div className="border-t pt-4 mb-4">
+                        {pricing.breakdown.map((item, idx) => (
+                          <div
+                            key={idx}
+                            className={`flex justify-between mb-2 ${item.amount < 0 ? "text-green-600 font-medium" : "text-muted-foreground"}`}
+                          >
+                            <span>{item.label}</span>
+                            <span>
+                              {item.amount < 0 ? "-" : ""}
+                              {formatPrice(Math.abs(item.amount))}
+                            </span>
+                          </div>
+                        ))}
+                        <div className="flex justify-between font-bold text-lg mt-4 pt-4 border-t">
+                          <span>{t("total")}</span>
+                          <span>{formatPrice(pricing.total)}</span>
                         </div>
-                      ))}
-                      <div className="flex justify-between font-bold text-lg mt-4 pt-4 border-t">
-                        <span>{t("total")}</span>
-                        <span>{formatPrice(pricing.total)}</span>
                       </div>
-                    </div>
-                  );
-                })()}
+                    );
+                  })()}
 
-                <Button className="w-full" size="lg" onClick={handleReserve} disabled={loading}>
+                <Button
+                  className="w-full"
+                  size="lg"
+                  onClick={handleReserve}
+                  disabled={loading}
+                >
                   {loading ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -1410,7 +1690,9 @@ const PropertyDetail = () => {
         {/* Similar Listings */}
         {similarListings.length > 0 && (
           <section className="mt-8 md:mt-16">
-            <h2 className="text-lg md:text-2xl font-bold mb-4 md:mb-6">{t("similarProperties")}</h2>
+            <h2 className="text-lg md:text-2xl font-bold mb-4 md:mb-6">
+              {t("similarProperties")}
+            </h2>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-6">
               {similarListings.map((listing) => (
                 <PropertyCard
@@ -1437,13 +1719,20 @@ const PropertyDetail = () => {
         <div className="flex items-center justify-between">
           <div>
             <div className="flex items-baseline gap-1">
-              <span className="text-lg font-bold">{formatPrice(property.price_per_night)}</span>
-              <span className="text-xs text-muted-foreground">/ {t("perNight")}</span>
+              <span className="text-lg font-bold">
+                {formatPrice(property.price_per_night)}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                / {t("perNight")}
+              </span>
             </div>
-            <p className="text-[10px] text-muted-foreground">Prices include all fees</p>
+            <p className="text-[10px] text-muted-foreground">
+              Prices include all fees
+            </p>
             {checkIn && checkOut && (
               <div className="text-xs font-medium text-foreground mt-0.5">
-                {format(new Date(checkIn), "MMM d")} – {format(new Date(checkOut), "MMM d")}
+                {format(new Date(checkIn), "MMM d")} –{" "}
+                {format(new Date(checkOut), "MMM d")}
               </div>
             )}
             <div className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -1453,8 +1742,17 @@ const PropertyDetail = () => {
               </span>
             </div>
           </div>
-          <Button size="sm" className="px-6 rounded-xl" onClick={handleReserve} disabled={loading}>
-            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : t("reserve")}
+          <Button
+            size="sm"
+            className="px-6 rounded-xl"
+            onClick={handleReserve}
+            disabled={loading}
+          >
+            {loading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              t("reserve")
+            )}
           </Button>
         </div>
       </div>
@@ -1465,8 +1763,8 @@ const PropertyDetail = () => {
           <DialogHeader>
             <DialogTitle>Sign in to reserve</DialogTitle>
             <DialogDescription>
-              You need an account to book this property. Log in if you already have one, or create a new account in
-              seconds.
+              You need an account to book this property. Log in if you already
+              have one, or create a new account in seconds.
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-2 pt-2">
@@ -1474,7 +1772,9 @@ const PropertyDetail = () => {
               className="w-full"
               onClick={() => {
                 setAuthPromptOpen(false);
-                navigate(`/auth?redirect=${encodeURIComponent(`/property/${id}`)}`);
+                navigate(
+                  `/auth?redirect=${encodeURIComponent(`/property/${id}`)}`,
+                );
               }}
             >
               Log in
@@ -1484,7 +1784,9 @@ const PropertyDetail = () => {
               className="w-full"
               onClick={() => {
                 setAuthPromptOpen(false);
-                navigate(`/auth?mode=signup&redirect=${encodeURIComponent(`/property/${id}`)}`);
+                navigate(
+                  `/auth?mode=signup&redirect=${encodeURIComponent(`/property/${id}`)}`,
+                );
               }}
             >
               Create an account
@@ -1497,10 +1799,15 @@ const PropertyDetail = () => {
       <Dialog open={contactOpen} onOpenChange={setContactOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Message {hostProfile?.full_name || "the host"}</DialogTitle>
+            <DialogTitle>
+              Message {hostProfile?.full_name || "the host"}
+            </DialogTitle>
             <DialogDescription>
-              About <span className="font-medium text-foreground">{property?.title}</span>. Your message will appear in
-              your Messages thread with the host.
+              About{" "}
+              <span className="font-medium text-foreground">
+                {property?.title}
+              </span>
+              . Your message will appear in your Messages thread with the host.
             </DialogDescription>
           </DialogHeader>
           <Textarea
@@ -1510,13 +1817,24 @@ const PropertyDetail = () => {
             className="min-h-[140px]"
             maxLength={1000}
           />
-          <p className="text-xs text-muted-foreground text-right">{contactMessage.length}/1000</p>
+          <p className="text-xs text-muted-foreground text-right">
+            {contactMessage.length}/1000
+          </p>
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setContactOpen(false)} disabled={sendingContact}>
+            <Button
+              variant="outline"
+              onClick={() => setContactOpen(false)}
+              disabled={sendingContact}
+            >
               Cancel
             </Button>
-            <Button onClick={handleSendContact} disabled={sendingContact || !contactMessage.trim()}>
-              {sendingContact ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+            <Button
+              onClick={handleSendContact}
+              disabled={sendingContact || !contactMessage.trim()}
+            >
+              {sendingContact ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : null}
               Send message
             </Button>
           </DialogFooter>
@@ -1534,7 +1852,9 @@ const PropertyDetail = () => {
           propertyTitle={property.title}
           onSuccess={() => {
             refetchReviewable();
-            queryClient.invalidateQueries({ queryKey: ["property-reviews", id] });
+            queryClient.invalidateQueries({
+              queryKey: ["property-reviews", id],
+            });
             queryClient.invalidateQueries({ queryKey: ["property", id] });
           }}
         />
@@ -1545,7 +1865,9 @@ const PropertyDetail = () => {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Share this property</DialogTitle>
-            <DialogDescription>Copy the link or share it on your favourite app.</DialogDescription>
+            <DialogDescription>
+              Copy the link or share it on your favourite app.
+            </DialogDescription>
           </DialogHeader>
           <div className="flex gap-2">
             <input
