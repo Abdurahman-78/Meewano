@@ -58,117 +58,7 @@ const Messages = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (!authLoading && !user) {
-      navigate("/auth");
-      return;
-    }
-    if (user) {
-      fetchConversations();
-    }
-  }, [user, authLoading, navigate]);
-
-  // Honor ?to=<userId> deep link to start/select a conversation
-  useEffect(() => {
-    const to = searchParams.get("to");
-    if (!to || !user || to === user.id) return;
-    (async () => {
-      const existing = conversations.find((c) => c.userId === to);
-      if (existing) {
-        setSelectedUserId(to);
-        return;
-      }
-      const { data: prof } = await supabase
-        .from("profiles")
-        .select("id, full_name, email, username")
-        .eq("id", to)
-        .maybeSingle();
-      if (prof) {
-        setConversations((prev) => [{
-          userId: prof.id,
-          userName: prof.full_name || prof.email || "User",
-          username: prof.username || undefined,
-          lastMessage: "",
-          lastMessageTime: "",
-          unreadCount: 0,
-        }, ...prev]);
-        setSelectedUserId(prof.id);
-      }
-    })();
-  }, [searchParams, user, conversations]);
-
-  useEffect(() => {
-    if (selectedUserId && user) {
-      fetchMessages(selectedUserId);
-      markAsRead(selectedUserId);
-    }
-  }, [selectedUserId, user]);
-
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
-  // Real-time subscription
-  useEffect(() => {
-    if (!user) return;
-
-    const channel = supabase
-      .channel("messages")
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "messages",
-          filter: `receiver_id=eq.${user.id}`,
-        },
-        (payload) => {
-          const newMessage = payload.new as Message;
-          if (selectedUserId === newMessage.sender_id) {
-            setMessages((prev) => [...prev, newMessage]);
-            markAsRead(newMessage.sender_id);
-          }
-          fetchConversations();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user, selectedUserId]);
-
-  // Search users by username
-  useEffect(() => {
-    const searchUsers = async () => {
-      if (!newChatSearch.trim() || newChatSearch.length < 2 || !user) {
-        setSearchResults([]);
-        return;
-      }
-
-      setIsSearching(true);
-      try {
-        const { data, error } = await supabase
-          .from("profiles")
-          .select("id, full_name, username, avatar_url")
-          .neq("id", user.id)
-          .or(`username.ilike.%${newChatSearch}%,full_name.ilike.%${newChatSearch}%`)
-          .limit(10);
-
-        if (error) throw error;
-        setSearchResults(data || []);
-      } catch (error) {
-        console.error("Error searching users:", error);
-      } finally {
-        setIsSearching(false);
-      }
-    };
-
-    const debounce = setTimeout(searchUsers, 300);
-    return () => clearTimeout(debounce);
-  }, [newChatSearch, user]);
-
-  const fetchConversations = async () => {
+  const fetchConversations = useCallback(async () => {
     if (!user) return;
 
     try {
@@ -223,9 +113,9 @@ const Messages = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, selectedUserId]);
 
-  const fetchMessages = async (partnerId: string) => {
+  const fetchMessages = useCallback(async (partnerId: string) => {
     if (!user) return;
 
     try {
@@ -242,9 +132,9 @@ const Messages = () => {
     } catch (error) {
       console.error("Error fetching messages:", error);
     }
-  };
+  }, [user]);
 
-  const markAsRead = async (senderId: string) => {
+  const markAsRead = useCallback(async (senderId: string) => {
     if (!user) return;
 
     try {
@@ -256,7 +146,117 @@ const Messages = () => {
     } catch (error) {
       console.error("Error marking as read:", error);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate("/auth");
+      return;
+    }
+    if (user) {
+      fetchConversations();
+    }
+  }, [user, authLoading, navigate, fetchConversations]);
+
+  // Honor ?to=<userId> deep link to start/select a conversation
+  useEffect(() => {
+    const to = searchParams.get("to");
+    if (!to || !user || to === user.id) return;
+    (async () => {
+      const existing = conversations.find((c) => c.userId === to);
+      if (existing) {
+        setSelectedUserId(to);
+        return;
+      }
+      const { data: prof } = await supabase
+        .from("profiles")
+        .select("id, full_name, email, username")
+        .eq("id", to)
+        .maybeSingle();
+      if (prof) {
+        setConversations((prev) => [{
+          userId: prof.id,
+          userName: prof.full_name || prof.email || "User",
+          username: prof.username || undefined,
+          lastMessage: "",
+          lastMessageTime: "",
+          unreadCount: 0,
+        }, ...prev]);
+        setSelectedUserId(prof.id);
+      }
+    })();
+  }, [searchParams, user, conversations]);
+
+  useEffect(() => {
+    if (selectedUserId && user) {
+      fetchMessages(selectedUserId);
+      markAsRead(selectedUserId);
+    }
+  }, [selectedUserId, user, fetchMessages, markAsRead]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  // Real-time subscription
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel("messages")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "messages",
+          filter: `receiver_id=eq.${user.id}`,
+        },
+        (payload) => {
+          const newMessage = payload.new as Message;
+          if (selectedUserId === newMessage.sender_id) {
+            setMessages((prev) => [...prev, newMessage]);
+            markAsRead(newMessage.sender_id);
+          }
+          fetchConversations();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, selectedUserId, fetchConversations, markAsRead]);
+
+  // Search users by username
+  useEffect(() => {
+    const searchUsers = async () => {
+      if (!newChatSearch.trim() || newChatSearch.length < 2 || !user) {
+        setSearchResults([]);
+        return;
+      }
+
+      setIsSearching(true);
+      try {
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("id, full_name, username, avatar_url")
+          .neq("id", user.id)
+          .or(`username.ilike.%${newChatSearch}%,full_name.ilike.%${newChatSearch}%`)
+          .limit(10);
+
+        if (error) throw error;
+        setSearchResults(data || []);
+      } catch (error) {
+        console.error("Error searching users:", error);
+      } finally {
+        setIsSearching(false);
+      }
+    };
+
+    const debounce = setTimeout(searchUsers, 300);
+    return () => clearTimeout(debounce);
+  }, [newChatSearch, user]);
 
   const sendMessage = async () => {
     if (!messageText.trim() || !selectedUserId || !user) return;

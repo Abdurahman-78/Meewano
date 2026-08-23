@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Calendar, MapPin, X, Loader2, MessageSquare } from "lucide-react";
+import { Calendar, MapPin, X, Loader2, MessageSquare, FileText, Info } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
@@ -9,19 +9,14 @@ import { useCurrency } from "@/contexts/CurrencyContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { createNotification } from "@/hooks/useNotifications";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { toast } from "sonner";
 import ReviewDialog from "@/components/ReviewDialog";
+import { CancellationSummaryDialog } from "@/components/CancellationSummaryDialog";
+import {
+  getCancelledStatusInfo,
+  type BookingWithRefundInfo,
+  type RefundRequestRecord,
+} from "@/lib/cancellationStatus";
+import { toast } from "sonner";
 
 interface BookingRow {
   id: string;
@@ -31,16 +26,31 @@ interface BookingRow {
   check_out: string;
   total_price: number;
   status: string;
-  properties?: { title: string; location: string; images: string[] } | null;
+  refund_status?: string | null;
+  refund_amount?: number | null;
+  cancellation_reason?: string | null;
+  cancellation_category?: string | null;
+  cancelled_at?: string | null;
+  created_at?: string;
+  properties?: {
+    id?: string;
+    title: string;
+    location: string;
+    images: string[];
+    cancellation_policy?: string | null;
+  } | null;
   has_review?: boolean;
 }
 
 const statusColor: Record<string, string> = {
-  confirmed: "bg-green-500",
-  pending: "bg-yellow-500",
-  cancelled: "bg-red-500",
-  rejected: "bg-red-500",
-  completed: "bg-muted-foreground",
+  confirmed: "bg-emerald-600 hover:bg-emerald-600 text-white",
+  pending: "bg-amber-500 hover:bg-amber-500 text-white",
+  cancelled: "bg-red-500 hover:bg-red-500 text-white",
+  rejected: "bg-zinc-500 hover:bg-zinc-500 text-white",
+  completed: "bg-blue-600 hover:bg-blue-600 text-white",
+  "Cancelled - Refund in Progress": "bg-amber-600 hover:bg-amber-600 text-white",
+  "Cancelled - Refund Paid to Customer Account": "bg-emerald-600 hover:bg-emerald-600 text-white",
+  "Cancelled - Not qualified for a Refund": "bg-zinc-600 hover:bg-zinc-600 text-white",
 };
 
 const GuestBookings = () => {
@@ -48,18 +58,12 @@ const GuestBookings = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [bookings, setBookings] = useState<BookingRow[]>([]);
+  const [refundRequests, setRefundRequests] = useState<Record<string, RefundRequestRecord>>({});
+  const [selectedCancelledBooking, setSelectedCancelledBooking] = useState<BookingWithRefundInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [reviewing, setReviewing] = useState<BookingRow | null>(null);
 
-  useEffect(() => {
-    if (!authLoading && !user) {
-      navigate("/auth?redirect=/guest/bookings");
-      return;
-    }
-    if (user) load();
-  }, [user, authLoading, navigate]);
-
-  const load = async () => {
+  const load = useCallback(async () => {
     if (!user) return;
     setLoading(true);
     try {
@@ -67,11 +71,26 @@ const GuestBookings = () => {
         .from("bookings")
         .select(
           `id, property_id, host_id, check_in, check_out, total_price, status,
-          properties:properties(title, location, images)`,
+           refund_status, refund_amount, cancellation_reason, cancellation_category, cancelled_at, created_at,
+           properties:properties(id, title, location, images, cancellation_policy)`,
         )
         .eq("guest_id", user.id)
         .order("check_in", { ascending: false });
       if (error) throw error;
+
+      // Fetch refund requests for exceptional claims
+      const { data: rrData } = await supabase
+        .from("refund_requests")
+        .select("*")
+        .eq("guest_id", user.id);
+
+      const rrMap: Record<string, RefundRequestRecord> = {};
+      if (rrData) {
+        for (const rr of rrData) {
+          rrMap[rr.booking_id] = rr;
+        }
+      }
+      setRefundRequests(rrMap);
 
       const ids = (data || []).map((b: any) => b.id);
       let reviewed = new Set<string>();
@@ -85,30 +104,15 @@ const GuestBookings = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
-  const cancel = async (b: BookingRow) => {
-    if (!user) return;
-    try {
-      const { error } = await supabase
-        .from("bookings")
-        .update({ status: "cancelled" })
-        .eq("id", b.id)
-        .eq("guest_id", user.id);
-      if (error) throw error;
-      await createNotification({
-        user_id: b.host_id,
-        title: "Booking cancelled",
-        message: `A guest cancelled their booking for "${b.properties?.title || "your property"}".`,
-        type: "booking",
-        link: "/host/bookings",
-      });
-      toast.success("Booking cancelled");
-      load();
-    } catch {
-      toast.error("Failed to cancel booking");
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate("/auth?redirect=/guest/bookings");
+      return;
     }
-  };
+    if (user) load();
+  }, [user, authLoading, navigate, load]);
 
   const today = new Date();
   const upcoming = bookings.filter(
@@ -128,58 +132,109 @@ const GuestBookings = () => {
     );
   }
 
-  const renderCard = (b: BookingRow, isPast: boolean) => (
-    <Card key={b.id}>
-      <CardHeader>
-        <div className="flex justify-between items-start gap-2">
-          <CardTitle className="text-lg">{b.properties?.title || "Property"}</CardTitle>
-          <Badge className={statusColor[b.status] || "bg-gray-500"}>{b.status}</Badge>
+  const renderCard = (b: BookingRow, isPast: boolean) => {
+    const isCancelled = b.status === "cancelled";
+    const statusInfo = isCancelled
+      ? getCancelledStatusInfo(b, refundRequests[b.id])
+      : null;
+
+    return (
+      <Card key={b.id} className="overflow-hidden flex flex-col justify-between">
+        <div>
+          <CardHeader className="pb-3">
+            <div className="flex justify-between items-start gap-2">
+              <CardTitle className="text-lg font-bold">{b.properties?.title || "Property"}</CardTitle>
+              {isCancelled && statusInfo ? (
+                <Badge className={statusInfo.badgeClass}>
+                  {statusInfo.label}
+                </Badge>
+              ) : (
+                <Badge className={statusColor[b.status] || "bg-muted-foreground"}>
+                  {b.status}
+                </Badge>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex items-center text-sm text-muted-foreground">
+              <MapPin className="h-4 w-4 mr-2 shrink-0" />
+              <span className="truncate">{b.properties?.location || "—"}</span>
+            </div>
+            <div className="flex items-center text-sm text-muted-foreground">
+              <Calendar className="h-4 w-4 mr-2 shrink-0" />
+              <span>{b.check_in} → {b.check_out}</span>
+            </div>
+            <div className="flex items-center text-sm font-semibold pt-1">
+              <span className="text-xs font-bold text-muted-foreground mr-2 bg-accent rounded px-1.5 py-0.5">IQD</span>
+              <span>{formatPrice(b.total_price)}</span>
+            </div>
+
+            {/* Status detail line if cancelled */}
+            {isCancelled && statusInfo && (
+              <div className="mt-2 text-xs rounded-md bg-muted/60 p-2.5 border border-border/50">
+                <div className="font-semibold text-foreground flex items-center gap-1.5">
+                  <Info className="h-3.5 w-3.5 text-primary" />
+                  <span>Status: {statusInfo.label}</span>
+                </div>
+                <p className="text-muted-foreground mt-1 line-clamp-2">
+                  {statusInfo.description}
+                </p>
+              </div>
+            )}
+          </CardContent>
         </div>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        <div className="flex items-center text-sm text-muted-foreground">
-          <MapPin className="h-4 w-4 mr-2" />
-          {b.properties?.location || "—"}
-        </div>
-        <div className="flex items-center text-sm text-muted-foreground">
-          <Calendar className="h-4 w-4 mr-2" />
-          {b.check_in} → {b.check_out}
-        </div>
-        <div className="flex items-center text-sm font-semibold">
-          <span className="text-xs font-bold text-muted-foreground mr-2 bg-accent rounded px-1.5 py-0.5">IQD</span>
-          {formatPrice(b.total_price)}
-        </div>
-        <div className="flex flex-wrap gap-2 pt-4">
-          <Button asChild variant="outline" className="flex-1 min-w-[120px]">
-            <Link to={`/property/${b.property_id}`}>View Property</Link>
-          </Button>
-          <Button asChild variant="outline" size="icon" title="Message host">
-            <Link to="/messages">
-              <MessageSquare className="h-4 w-4" />
-            </Link>
-          </Button>
-          {!isPast && (b.status === "pending" || b.status === "confirmed") && (
-            <Link to={`/cancel-booking/${b.id}`} className="flex-1 min-w-[120px]">
-              <Button variant="destructive" className="w-full">
-                <X className="h-4 w-4 mr-2" />
-                Cancel
-              </Button>
-            </Link>
-          )}
-          {isPast && b.status !== "cancelled" && b.status !== "rejected" && !b.has_review && (
-            <Button className="flex-1 min-w-[120px]" onClick={() => setReviewing(b)}>
-              Leave Review
-            </Button>
-          )}
-          {isPast && b.has_review && (
-            <Badge variant="secondary" className="self-center">
-              Reviewed
-            </Badge>
-          )}
-        </div>
-      </CardContent>
-    </Card>
-  );
+
+        <CardContent className="pt-0">
+          <div className="flex flex-wrap gap-2 pt-3 border-t border-border/40">
+            {isCancelled ? (
+              <>
+                <Button
+                  variant="outline"
+                  className="flex-1 min-w-[130px] font-medium"
+                  onClick={() => setSelectedCancelledBooking(b)}
+                >
+                  <FileText className="h-4 w-4 mr-1.5 text-primary" />
+                  View Detail
+                </Button>
+                <Button asChild variant="ghost" className="flex-1 min-w-[120px]">
+                  <Link to={`/property/${b.property_id}`}>View Property</Link>
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button asChild variant="outline" className="flex-1 min-w-[120px]">
+                  <Link to={`/property/${b.property_id}`}>View Property</Link>
+                </Button>
+                <Button asChild variant="outline" size="icon" title="Message host">
+                  <Link to="/messages">
+                    <MessageSquare className="h-4 w-4" />
+                  </Link>
+                </Button>
+                {!isPast && (b.status === "pending" || b.status === "confirmed") && (
+                  <Link to={`/cancel-booking/${b.id}`} className="flex-1 min-w-[120px]">
+                    <Button variant="destructive" className="w-full">
+                      <X className="h-4 w-4 mr-2" />
+                      Cancel
+                    </Button>
+                  </Link>
+                )}
+                {isPast && b.status !== "rejected" && !b.has_review && (
+                  <Button className="flex-1 min-w-[120px]" onClick={() => setReviewing(b)}>
+                    Leave Review
+                  </Button>
+                )}
+                {isPast && b.has_review && (
+                  <Badge variant="secondary" className="self-center">
+                    Reviewed
+                  </Badge>
+                )}
+              </>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
 
   return (
     <AppLayout>
@@ -225,6 +280,15 @@ const GuestBookings = () => {
           onSuccess={load}
         />
       )}
+
+      <CancellationSummaryDialog
+        open={!!selectedCancelledBooking}
+        onOpenChange={(open) => !open && setSelectedCancelledBooking(null)}
+        booking={selectedCancelledBooking}
+        refundRequest={
+          selectedCancelledBooking ? refundRequests[selectedCancelledBooking.id] : null
+        }
+      />
     </AppLayout>
   );
 };

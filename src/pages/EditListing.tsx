@@ -41,10 +41,6 @@ const EditListing = () => {
     title: "",
     location: "",
     city: "",
-    price_per_night: "",
-    weekend_price: "",
-    weekly_discount_pct: "",
-    monthly_discount_pct: "",
     instant_booking: true,
     bedrooms: "",
     bathrooms: "",
@@ -86,11 +82,7 @@ const EditListing = () => {
     { name: "Halabja", region: "Kurdistan" }, { name: "Koya", region: "Kurdistan" }
   ]) as { name: string; region: string }[];
 
-  useEffect(() => {
-    if (id && user) fetchProperty();
-  }, [id, user]);
-
-  const fetchProperty = async () => {
+  const fetchProperty = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from("properties").select("*").eq("id", id).eq("host_id", user?.id).single();
@@ -98,10 +90,6 @@ const EditListing = () => {
 
       setFormData({
         title: data.title || "", location: data.location || "", city: data.city || "",
-        price_per_night: data.price_per_night?.toString() || "",
-        weekend_price: data.weekend_price?.toString() || "",
-        weekly_discount_pct: data.weekly_discount_pct?.toString() || "",
-        monthly_discount_pct: data.monthly_discount_pct?.toString() || "",
         instant_booking: data.instant_booking ?? true,
         bedrooms: data.bedrooms?.toString() || "", bathrooms: data.bathrooms?.toString() || "",
         max_guests: data.max_guests?.toString() || "", description: data.description || "",
@@ -125,7 +113,11 @@ const EditListing = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id, user?.id, navigate]);
+
+  useEffect(() => {
+    if (id && user) fetchProperty();
+  }, [id, user, fetchProperty]);
 
   const handleAmenityChange = (amenity: string, checked: boolean) => {
     setFormData(prev => ({
@@ -174,7 +166,7 @@ const EditListing = () => {
 
   const handleSubmit = async () => {
     if (!user || !id) return;
-    if (!formData.title || !formData.location || !formData.city || !formData.price_per_night || !formData.bedrooms || !formData.bathrooms || !formData.max_guests) {
+    if (!formData.title || !formData.location || !formData.city || !formData.bedrooms || !formData.bathrooms || !formData.max_guests) {
       setShowErrors(true);
       toast.error("Please fill in all required fields"); return;
     }
@@ -201,10 +193,6 @@ const EditListing = () => {
 
       const { error } = await supabase.from("properties").update({
         title: formData.title, location: formData.location, city: formData.city,
-        price_per_night: parseFloat(formData.price_per_night),
-        weekend_price: formData.weekend_price ? parseFloat(formData.weekend_price) : null,
-        weekly_discount_pct: formData.weekly_discount_pct ? parseInt(formData.weekly_discount_pct) : null,
-        monthly_discount_pct: formData.monthly_discount_pct ? parseInt(formData.monthly_discount_pct) : null,
         instant_booking: formData.instant_booking,
         bedrooms: parseInt(formData.bedrooms) || 1, bathrooms: parseInt(formData.bathrooms) || 1,
         max_guests: parseInt(formData.max_guests) || 2, description: formData.description,
@@ -322,33 +310,19 @@ const EditListing = () => {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="price" className={showErrors && !formData.price_per_night ? "text-destructive" : ""}>Price per Night (IQD) *</Label>
-                      <Input id="price" type="number" placeholder="150000"
-                        className={`mt-2 ${showErrors && !formData.price_per_night ? "border-destructive ring-1 ring-destructive" : ""}`}
-                        value={formData.price_per_night} onChange={(e) => setFormData({ ...formData, price_per_night: e.target.value })} />
-                      {showErrors && !formData.price_per_night && (
-                        <p className="text-xs text-destructive mt-1">This field is required</p>
-                      )}
-                    </div>
-                    <div>
-                      <Label htmlFor="weekend_price">Weekend Price (IQD)</Label>
-                      <Input id="weekend_price" type="number" placeholder="Optional"
-                        className="mt-2"
-                        value={formData.weekend_price} onChange={(e) => setFormData({ ...formData, weekend_price: e.target.value })} />
-                    </div>
-                    <div>
-                      <Label htmlFor="weekly_discount_pct">Weekly Discount (%)</Label>
-                      <Input id="weekly_discount_pct" type="number" placeholder="e.g. 10" min="0" max="100"
-                        className="mt-2"
-                        value={formData.weekly_discount_pct} onChange={(e) => setFormData({ ...formData, weekly_discount_pct: e.target.value })} />
-                    </div>
-                    <div>
-                      <Label htmlFor="monthly_discount_pct">Monthly Discount (%)</Label>
-                      <Input id="monthly_discount_pct" type="number" placeholder="e.g. 20" min="0" max="100"
-                        className="mt-2"
-                        value={formData.monthly_discount_pct} onChange={(e) => setFormData({ ...formData, monthly_discount_pct: e.target.value })} />
+                  <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 text-sm text-muted-foreground flex items-start gap-3">
+                    <Info className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                      <p className="font-semibold text-foreground">Nightly Rates, Discounts & Cleaning Policy</p>
+                      <p className="text-xs mt-0.5 mb-2">
+                        Manage your nightly price, weekend rates, weekly/monthly discounts, and cleaning policy directly in the calendar.
+                      </p>
+                      <Link
+                        to="/host/calendar"
+                        className="inline-flex items-center text-xs font-semibold text-primary hover:underline"
+                      >
+                        Open Host Calendar &rarr;
+                      </Link>
                     </div>
                   </div>
 

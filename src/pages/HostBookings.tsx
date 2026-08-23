@@ -44,19 +44,27 @@ interface BookingRow {
   check_out: string;
   total_price: number;
   status: string;
+  refund_status?: string | null;
+  refund_amount?: number | null;
+  cancellation_reason?: string | null;
+  cancellation_category?: string | null;
+  cancelled_at?: string | null;
   guests: number;
   guest_message: string | null;
   created_at: string;
-  properties?: { title: string; location: string; images: string[] } | null;
+  properties?: { title: string; location: string; images: string[]; cancellation_policy?: string | null } | null;
   guest?: { full_name: string | null; email: string | null; avatar_url: string | null } | null;
 }
 
 const statusColor: Record<string, string> = {
-  confirmed: "bg-green-500",
-  pending: "bg-yellow-500",
-  cancelled: "bg-red-500",
-  rejected: "bg-red-500",
-  completed: "bg-muted-foreground",
+  confirmed: "bg-emerald-600 hover:bg-emerald-600 text-white",
+  pending: "bg-amber-500 hover:bg-amber-500 text-white",
+  cancelled: "bg-red-500 hover:bg-red-500 text-white",
+  rejected: "bg-zinc-500 hover:bg-zinc-500 text-white",
+  completed: "bg-blue-600 hover:bg-blue-600 text-white",
+  "Cancelled - Refund in Progress": "bg-amber-600 hover:bg-amber-600 text-white",
+  "Cancelled - Refund Paid to Customer Account": "bg-emerald-600 hover:bg-emerald-600 text-white",
+  "Cancelled - Not qualified for a Refund": "bg-zinc-600 hover:bg-zinc-600 text-white",
 };
 
 const HostBookings = () => {
@@ -69,31 +77,7 @@ const HostBookings = () => {
   const [tab, setTab] = useState("pending");
   const [expandedBooking, setExpandedBooking] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!authLoading && !user) {
-      navigate("/auth?redirect=/host/bookings");
-      return;
-    }
-    if (user) load();
-  }, [user, authLoading, navigate]);
-
-  // Realtime
-  useEffect(() => {
-    if (!user) return;
-    const channel = supabase
-      .channel(`host-bookings-${user.id}`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "bookings", filter: `host_id=eq.${user.id}` },
-        () => load(),
-      )
-      .subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user]);
-
-  const load = async () => {
+  const load = useCallback(async () => {
     if (!user) return;
     try {
       const { data, error } = await supabase
@@ -124,7 +108,31 @@ const HostBookings = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate("/auth?redirect=/host/bookings");
+      return;
+    }
+    if (user) load();
+  }, [user, authLoading, navigate, load]);
+
+  // Realtime
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel(`host-bookings-${user.id}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "bookings", filter: `host_id=eq.${user.id}` },
+        () => load(),
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, load]);
 
   const act = async (b: BookingRow, action: "confirmed" | "rejected") => {
     if (!user) return;

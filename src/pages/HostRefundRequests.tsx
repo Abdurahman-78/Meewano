@@ -55,7 +55,7 @@ const HostRefundRequests = () => {
   const [note, setNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     if (!user) return;
     setLoading(true);
     const { data, error } = await supabase
@@ -75,9 +75,11 @@ const HostRefundRequests = () => {
       setRequests((data as any) || []);
     }
     setLoading(false);
-  };
+  }, [user]);
 
-  useEffect(() => { if (!authLoading && user) load(); }, [user, authLoading]);
+  useEffect(() => {
+    if (!authLoading && user) load();
+  }, [user, authLoading, load]);
 
   const openEvidence = async (path: string) => {
     if (signedUrls[path]) { window.open(signedUrls[path], "_blank"); return; }

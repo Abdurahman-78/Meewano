@@ -12,6 +12,7 @@ import {
   Info,
   Map,
   Compass,
+  Sparkles,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -122,6 +123,16 @@ const Header = () => {
         </div>
 
         <div className="flex items-center gap-1 md:gap-3">
+          <Link to="/pre-launch" className="hidden sm:inline-flex items-center">
+            <Button
+              variant="outline"
+              size="sm"
+              className="rounded-full font-semibold border-primary/40 text-primary bg-primary/10 hover:bg-primary/20 text-xs px-3 shadow-sm hover:scale-[1.02] transition-transform"
+            >
+              <Sparkles className="h-3.5 w-3.5 mr-1 text-primary" />
+              {language === "ku" ? "پێش-دەستپێکردن" : language === "ar" ? "الإطلاق التجريبي" : "Pre-Launch"}
+            </Button>
+          </Link>
           <Link to={hostCtaTo} className="hidden md:block relative">
             <Button variant="ghost" size="sm" className="rounded-full font-semibold hover:bg-accent relative">
               <Home className="h-4 w-4 mr-1.5" />

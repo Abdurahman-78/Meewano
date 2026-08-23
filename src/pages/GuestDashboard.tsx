@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { Calendar, User, MessageSquare, Heart, MapPin, Loader2 } from "lucide-react";
+import { Calendar, User, MessageSquare, Heart, MapPin, Loader2, FileText, ExternalLink } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,6 +15,12 @@ import { useProperties } from "@/hooks/useProperties";
 import { createNotification } from "@/hooks/useNotifications";
 import ReviewDialog from "@/components/ReviewDialog";
 import { Badge } from "@/components/ui/badge";
+import { CancellationSummaryDialog } from "@/components/CancellationSummaryDialog";
+import {
+  getCancelledStatusInfo,
+  type BookingWithRefundInfo,
+  type RefundRequestRecord,
+} from "@/lib/cancellationStatus";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
@@ -29,12 +35,20 @@ interface Booking {
   check_out: string;
   total_price: number;
   status: string;
+  refund_status?: string | null;
+  refund_amount?: number | null;
+  cancellation_reason?: string | null;
+  cancellation_category?: string | null;
+  cancelled_at?: string | null;
+  created_at?: string;
   guests: number;
   has_review?: boolean;
   property?: {
+    id?: string;
     title: string;
     location: string;
     images: string[];
+    cancellation_policy?: string | null;
   };
 }
 
@@ -51,23 +65,15 @@ export const GuestDashboardContent = ({ withLayout = true }: { withLayout?: bool
   const { favorites } = useFavorites(user?.id || null);
   const { data: allProperties } = useProperties();
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [refundRequests, setRefundRequests] = useState<Record<string, RefundRequestRecord>>({});
+  const [selectedCancelledBooking, setSelectedCancelledBooking] = useState<BookingWithRefundInfo | null>(null);
   const [profile, setProfile] = useState<Profile>({ full_name: null, email: null, phone: null });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [reviewing, setReviewing] = useState<Booking | null>(null);
   const [unreadMsgs, setUnreadMsgs] = useState(0);
 
-  useEffect(() => {
-    if (!authLoading && !user) {
-      navigate("/auth");
-      return;
-    }
-    if (user) {
-      fetchData();
-    }
-  }, [user, authLoading, navigate]);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (!user) return;
     
     try {
@@ -76,12 +82,26 @@ export const GuestDashboardContent = ({ withLayout = true }: { withLayout?: bool
         .from("bookings")
         .select(`
           *,
-          property:properties(title, location, images)
+          property:properties(id, title, location, images, cancellation_policy)
         `)
         .eq("guest_id", user.id)
         .order("check_in", { ascending: false });
 
       if (bookingsError) throw bookingsError;
+
+      // Fetch refund requests for exceptional cancellations
+      const { data: rrData } = await supabase
+        .from("refund_requests")
+        .select("*")
+        .eq("guest_id", user.id);
+
+      const rrMap: Record<string, RefundRequestRecord> = {};
+      if (rrData) {
+        for (const rr of rrData) {
+          rrMap[rr.booking_id] = rr;
+        }
+      }
+      setRefundRequests(rrMap);
 
       // Fetch which bookings already have reviews
       const ids = (bookingsData || []).map((b: any) => b.id);
@@ -118,7 +138,17 @@ export const GuestDashboardContent = ({ withLayout = true }: { withLayout?: bool
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate("/auth");
+      return;
+    }
+    if (user) {
+      fetchData();
+    }
+  }, [user, authLoading, navigate, fetchData]);
 
   const handleCancelBooking = async (booking: Booking) => {
     try {
@@ -237,40 +267,81 @@ export const GuestDashboardContent = ({ withLayout = true }: { withLayout?: bool
                 </Card>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {upcomingBookings.map((booking) => (
-                    <Card key={booking.id}>
-                      <CardContent className="p-6">
-                        <h3 className="text-xl font-bold mb-2">
-                          {booking.property?.title || "Property"}
-                        </h3>
-                        <div className="flex items-center gap-1 text-muted-foreground mb-4">
-                          <MapPin className="h-4 w-4" />
-                          <span className="text-sm">{booking.property?.location || "Location"}</span>
-                        </div>
-                        <div className="space-y-2 text-sm mb-4">
-                          <p><strong>Check-in:</strong> {booking.check_in}</p>
-                          <p><strong>Check-out:</strong> {booking.check_out}</p>
-                          <p><strong>Status:</strong> <span className="capitalize">{booking.status}</span></p>
-                          <p className="text-lg font-bold text-primary">{formatPrice(booking.total_price)}</p>
-                        </div>
-                        <div className="flex gap-2 flex-wrap">
-                          <Link to={`/property/${booking.property_id}`} className="flex-1 min-w-[120px]">
-                            <Button variant="outline" className="w-full">View Details</Button>
-                          </Link>
-                          {booking.status !== "cancelled" && booking.status !== "rejected" && (
-                            <>
-                              <Link to={`/property/${booking.property_id}?modify=${booking.id}`} className="flex-1 min-w-[120px]">
-                                <Button variant="outline" className="w-full">Modify booking</Button>
-                              </Link>
-                              <Link to={`/cancel-booking/${booking.id}`} className="flex-1 min-w-[120px]">
-                                <Button variant="destructive" className="w-full">Cancel booking</Button>
-                              </Link>
-                            </>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                  {upcomingBookings.map((booking) => {
+                    const isCancelled = booking.status === "cancelled";
+                    const statusInfo = isCancelled
+                      ? getCancelledStatusInfo(booking, refundRequests[booking.id])
+                      : null;
+
+                    return (
+                      <Card key={booking.id}>
+                        <CardContent className="p-6">
+                          <h3 className="text-xl font-bold mb-2">
+                            {booking.property?.title || "Property"}
+                          </h3>
+                          <div className="flex items-center gap-1 text-muted-foreground mb-4">
+                            <MapPin className="h-4 w-4" />
+                            <span className="text-sm">{booking.property?.location || "Location"}</span>
+                          </div>
+                          <div className="space-y-2 text-sm mb-4">
+                            <p><strong>Check-in:</strong> {booking.check_in}</p>
+                            <p><strong>Check-out:</strong> {booking.check_out}</p>
+                            <p>
+                              <strong>Status:</strong>{" "}
+                              {isCancelled && statusInfo ? (
+                                <span className="font-semibold text-foreground">
+                                  {statusInfo.label}
+                                </span>
+                              ) : (
+                                <span className="capitalize">{booking.status}</span>
+                              )}
+                            </p>
+                            <p className="text-lg font-bold text-primary">{formatPrice(booking.total_price)}</p>
+                          </div>
+                          <div className="flex gap-2 flex-wrap">
+                            {isCancelled ? (
+                              <>
+                                <Button
+                                  variant="outline"
+                                  className="flex-1 min-w-[120px]"
+                                  onClick={() => setSelectedCancelledBooking(booking)}
+                                >
+                                  <FileText className="h-4 w-4 mr-1.5 text-primary" />
+                                  View Details
+                                </Button>
+                                <Button
+                                  asChild
+                                  variant="ghost"
+                                  className="flex-1 min-w-[120px]"
+                                >
+                                  <Link to={`/property/${booking.property_id}`}>
+                                    <ExternalLink className="h-4 w-4 mr-1.5" />
+                                    View Property
+                                  </Link>
+                                </Button>
+                              </>
+                            ) : (
+                              <>
+                                <Link to={`/property/${booking.property_id}`} className="flex-1 min-w-[120px]">
+                                  <Button variant="outline" className="w-full">View Details</Button>
+                                </Link>
+                                {booking.status !== "rejected" && (
+                                  <>
+                                    <Link to={`/property/${booking.property_id}?modify=${booking.id}`} className="flex-1 min-w-[120px]">
+                                      <Button variant="outline" className="w-full">Modify booking</Button>
+                                    </Link>
+                                    <Link to={`/cancel-booking/${booking.id}`} className="flex-1 min-w-[120px]">
+                                      <Button variant="destructive" className="w-full">Cancel booking</Button>
+                                    </Link>
+                                  </>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -285,33 +356,83 @@ export const GuestDashboardContent = ({ withLayout = true }: { withLayout?: bool
                 </Card>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {pastBookings.map((booking) => (
-                    <Card key={booking.id}>
-                      <CardContent className="p-6">
-                        <h3 className="text-xl font-bold mb-2">
-                          {booking.property?.title || "Property"}
-                        </h3>
-                        <div className="flex items-center gap-1 text-muted-foreground mb-4">
-                          <MapPin className="h-4 w-4" />
-                          <span className="text-sm">{booking.property?.location || "Location"}</span>
-                        </div>
-                        <div className="space-y-2 text-sm mb-4">
-                          <p><strong>Check-in:</strong> {booking.check_in}</p>
-                          <p><strong>Check-out:</strong> {booking.check_out}</p>
-                          <p><strong>Status:</strong> <span className="capitalize">{booking.status}</span></p>
-                          <p className="text-lg font-bold">{formatPrice(booking.total_price)}</p>
-                        </div>
-                        {booking.status !== "cancelled" && booking.status !== "rejected" && !booking.has_review && (
-                          <Button className="w-full bg-primary hover:bg-primary/90" onClick={() => setReviewing(booking)}>
-                            Leave Review
-                          </Button>
-                        )}
-                        {booking.has_review && (
-                          <Badge variant="secondary">Reviewed</Badge>
-                        )}
-                      </CardContent>
-                    </Card>
-                  ))}
+                  {pastBookings.map((booking) => {
+                    const isCancelled = booking.status === "cancelled";
+                    const statusInfo = isCancelled
+                      ? getCancelledStatusInfo(booking, refundRequests[booking.id])
+                      : null;
+
+                    return (
+                      <Card key={booking.id}>
+                        <CardContent className="p-6">
+                          <h3 className="text-xl font-bold mb-2">
+                            {booking.property?.title || "Property"}
+                          </h3>
+                          <div className="flex items-center gap-1 text-muted-foreground mb-4">
+                            <MapPin className="h-4 w-4" />
+                            <span className="text-sm">{booking.property?.location || "Location"}</span>
+                          </div>
+                          <div className="space-y-2 text-sm mb-4">
+                            <p><strong>Check-in:</strong> {booking.check_in}</p>
+                            <p><strong>Check-out:</strong> {booking.check_out}</p>
+                            <p>
+                              <strong>Status:</strong>{" "}
+                              {isCancelled && statusInfo ? (
+                                <span className="font-semibold text-foreground">
+                                  {statusInfo.label}
+                                </span>
+                              ) : (
+                                <span className="capitalize">{booking.status}</span>
+                              )}
+                            </p>
+                            <p className="text-lg font-bold">{formatPrice(booking.total_price)}</p>
+                          </div>
+
+                          <div className="flex gap-2 flex-wrap">
+                            {isCancelled ? (
+                              <>
+                                <Button
+                                  variant="outline"
+                                  className="flex-1 min-w-[120px]"
+                                  onClick={() => setSelectedCancelledBooking(booking)}
+                                >
+                                  <FileText className="h-4 w-4 mr-1.5 text-primary" />
+                                  View Details
+                                </Button>
+                                <Button
+                                  asChild
+                                  variant="ghost"
+                                  className="flex-1 min-w-[120px]"
+                                >
+                                  <Link to={`/property/${booking.property_id}`}>
+                                    <ExternalLink className="h-4 w-4 mr-1.5" />
+                                    View Property
+                                  </Link>
+                                </Button>
+                              </>
+                            ) : (
+                              <>
+                                <Link to={`/property/${booking.property_id}`} className="flex-1 min-w-[120px]">
+                                  <Button variant="outline" className="w-full">View Details</Button>
+                                </Link>
+                                {booking.status !== "rejected" && !booking.has_review && (
+                                  <Button
+                                    className="flex-1 min-w-[120px] bg-primary hover:bg-primary/90"
+                                    onClick={() => setReviewing(booking)}
+                                  >
+                                    Leave Review
+                                  </Button>
+                                )}
+                                {booking.has_review && (
+                                  <Badge variant="secondary" className="self-center">Reviewed</Badge>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -440,6 +561,15 @@ export const GuestDashboardContent = ({ withLayout = true }: { withLayout?: bool
           onSuccess={fetchData}
         />
       )}
+
+      <CancellationSummaryDialog
+        open={!!selectedCancelledBooking}
+        onOpenChange={(open) => !open && setSelectedCancelledBooking(null)}
+        booking={selectedCancelledBooking}
+        refundRequest={
+          selectedCancelledBooking ? refundRequests[selectedCancelledBooking.id] : null
+        }
+      />
     </>
   );
 

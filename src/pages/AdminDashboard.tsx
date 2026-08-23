@@ -76,6 +76,7 @@ import AdminInsights from "@/components/AdminInsights";
 import AdminHostVerifications from "@/components/AdminHostVerifications";
 import AdminPropertyApprovals from "@/components/AdminPropertyApprovals";
 import AdminNewsletters from "@/components/AdminNewsletters";
+import AdminPreLaunchManager from "@/components/AdminPreLaunchManager";
 
 const AdminDashboard = () => {
   const { formatPrice } = useCurrency();
@@ -474,11 +475,19 @@ const AdminDashboard = () => {
             <TabsTrigger value="refunds" onClick={() => navigate("/admin/refund-requests")}>
               Refund Requests
             </TabsTrigger>
+            <TabsTrigger value="pre-launch" className="border border-primary/30 text-primary bg-primary/5">
+              <Sparkles className="h-4 w-4 mr-2 text-primary" />
+              Pre-Launch
+            </TabsTrigger>
             <TabsTrigger value="settings">
               <Settings className="h-4 w-4 mr-2" />
               Site Settings
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="pre-launch">
+            <AdminPreLaunchManager />
+          </TabsContent>
 
           <TabsContent value="blog">
             <AdminBlogManager />

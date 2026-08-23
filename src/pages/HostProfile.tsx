@@ -40,13 +40,7 @@ const HostProfile = () => {
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (id) {
-      fetchHostData();
-    }
-  }, [id]);
-
-  const fetchHostData = async () => {
+  const fetchHostData = useCallback(async () => {
     try {
       // Fetch host profile
       const { data: hostData, error: hostError } = await supabase
@@ -72,7 +66,13 @@ const HostProfile = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
+
+  useEffect(() => {
+    if (id) {
+      fetchHostData();
+    }
+  }, [id, fetchHostData]);
 
   const getInitials = (name: string | null) => {
     if (!name) return "H";

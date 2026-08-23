@@ -53,17 +53,7 @@ const HostDashboard = () => {
 
   const isVerified = verification?.status === "approved";
 
-  useEffect(() => {
-    if (!authLoading && !user) {
-      navigate("/auth");
-      return;
-    }
-    if (user) {
-      fetchData();
-    }
-  }, [user, authLoading, navigate]);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (!user) return;
     
     try {
@@ -95,7 +85,17 @@ const HostDashboard = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate("/auth");
+      return;
+    }
+    if (user) {
+      fetchData();
+    }
+  }, [user, authLoading, navigate, fetchData]);
 
   const handleDeleteProperty = async (propertyId: string) => {
     if (!confirm("Are you sure you want to delete this property?")) return;

@@ -1,8 +1,9 @@
-import { Menu, Home, User, MessageSquare, Settings, Heart, LogOut, Shield, Building2, Info, Map, Compass, DollarSign } from "lucide-react";
+import { Menu, Home, User, MessageSquare, Settings, Heart, LogOut, Shield, Building2, Info, Map, Compass, DollarSign, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useMyHostVerification } from "@/hooks/useHostVerification";
@@ -13,6 +14,7 @@ import { useState } from "react";
 
 const MobileMenu = () => {
   const { t } = useTranslation();
+  const { language } = useLanguage();
   const { user, signOut } = useAuth();
   const { isAdmin } = useUserRole();
   const { data: hostVerification } = useMyHostVerification();
@@ -50,6 +52,11 @@ const MobileMenu = () => {
           <NavItem to="/discover" icon={Compass} label={t("navDiscover")} />
           <NavItem to="/map" icon={Map} label={t("navMap")} />
           <NavItem to="/about" icon={Info} label={t("navAboutUs")} />
+          <NavItem
+            to="/pre-launch"
+            icon={Sparkles}
+            label={language === "ku" ? "پێش-دەستپێکردن" : language === "ar" ? "الإطلاق التجريبي" : "Pre-Launch"}
+          />
 
           <Separator className="my-2" />
 

@@ -287,6 +287,7 @@ export type Database = {
           payment_method: string | null
           property_id: string
           refund_amount: number | null
+          refund_status: string | null
           status: string | null
           total_price: number
           updated_at: string
@@ -309,6 +310,7 @@ export type Database = {
           payment_method?: string | null
           property_id: string
           refund_amount?: number | null
+          refund_status?: string | null
           status?: string | null
           total_price: number
           updated_at?: string
@@ -331,6 +333,7 @@ export type Database = {
           payment_method?: string | null
           property_id?: string
           refund_amount?: number | null
+          refund_status?: string | null
           status?: string | null
           total_price?: number
           updated_at?: string
@@ -761,6 +764,7 @@ export type Database = {
           check_in_time: string | null
           check_out_time: string | null
           city: string
+          cleaning_fee: number | null
           cleaning_policy: string | null
           created_at: string
           currency: string | null
@@ -812,6 +816,7 @@ export type Database = {
           check_in_time?: string | null
           check_out_time?: string | null
           city: string
+          cleaning_fee?: number | null
           cleaning_policy?: string | null
           created_at?: string
           currency?: string | null
@@ -863,6 +868,7 @@ export type Database = {
           check_in_time?: string | null
           check_out_time?: string | null
           city?: string
+          cleaning_fee?: number | null
           cleaning_policy?: string | null
           created_at?: string
           currency?: string | null

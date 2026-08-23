@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
-import { Loader2, ArrowLeft, AlertTriangle, Upload, X } from "lucide-react";
+import { Loader2, ArrowLeft, AlertTriangle, Upload, X, FileText, Image as ImageIcon, CheckCircle2 } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,11 +9,13 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { toast } from "sonner";
 import { computeRefund } from "@/lib/refundCalculator";
+import { countWords } from "@/lib/cancellationStatus";
 
 const GENERAL_REASONS = [
   "My travel plans have changed",
@@ -136,14 +138,47 @@ const CancelBooking = () => {
   };
 
   // ---- Review-request submit ----
+  const MAX_FILES = 3;
+  const MAX_FILE_SIZE_MB = 5;
+  const MAX_WORDS = 500;
+  const MIN_WORDS = 5;
+
   const isXOther = /Other/i.test(xReason);
   const finalXReason = isXOther ? xOther.trim() : xReason;
+  const wordCount = useMemo(() => countWords(details), [details]);
+  const isWordCountValid = wordCount >= MIN_WORDS && wordCount <= MAX_WORDS;
+  const isCharCountValid = details.trim().length >= 20 && details.length <= 4000;
+
   const canSubmitReview =
-    !!xReason && (!isXOther || xOther.trim().length >= 3) && details.trim().length >= 20 && reviewAck;
+    !!xReason &&
+    (!isXOther || xOther.trim().length >= 3) &&
+    isCharCountValid &&
+    isWordCountValid &&
+    reviewAck;
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
 
   const onFilesChosen = (e: React.ChangeEvent<HTMLInputElement>) => {
     const chosen = Array.from(e.target.files || []);
-    const capped = [...files, ...chosen].slice(0, 10);
+    if (!chosen.length) return;
+
+    const oversized = chosen.filter((f) => f.size > MAX_FILE_SIZE_MB * 1024 * 1024);
+    if (oversized.length > 0) {
+      toast.error(`File "${oversized[0].name}" exceeds the ${MAX_FILE_SIZE_MB}MB limit per file.`);
+    }
+
+    const validChosen = chosen.filter((f) => f.size <= MAX_FILE_SIZE_MB * 1024 * 1024);
+    const remainingSlots = Math.max(0, MAX_FILES - files.length);
+
+    if (validChosen.length > remainingSlots) {
+      toast.warning(`Maximum ${MAX_FILES} files allowed. Only ${remainingSlots} more file(s) added.`);
+    }
+
+    const capped = [...files, ...validChosen.slice(0, remainingSlots)];
     setFiles(capped);
     e.target.value = "";
   };
@@ -296,49 +331,120 @@ const CancelBooking = () => {
           </Card>
 
           <Card className="mb-6">
-            <CardHeader><CardTitle>Provide more details</CardTitle></CardHeader>
-            <CardContent className="space-y-2">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle>Provide more details of the circumstance</CardTitle>
+              <Badge variant="outline" className={`text-xs ${wordCount > MAX_WORDS ? "border-destructive text-destructive" : ""}`}>
+                {wordCount} / {MAX_WORDS} words
+              </Badge>
+            </CardHeader>
+            <CardContent className="space-y-2 pt-2">
+              <p className="text-xs text-muted-foreground mb-1">
+                Please provide clear explanation of the situation (min 5 words, max 500 words / 4,000 characters).
+              </p>
               <Textarea
                 rows={5}
                 value={details}
                 onChange={(e) => setDetails(e.target.value)}
-                placeholder="Describe the circumstance in detail (minimum 20 characters)…"
+                placeholder="Describe the circumstance in detail (e.g. emergency medical reasons, sudden government travel restriction, etc.)…"
                 maxLength={4000}
-                className={details.trim().length > 0 && details.trim().length < 20 ? "border-destructive focus-visible:ring-destructive" : ""}
+                className={
+                  (details.trim().length > 0 && (!isWordCountValid || !isCharCountValid))
+                    ? "border-destructive focus-visible:ring-destructive"
+                    : ""
+                }
               />
-              <div className="flex justify-between items-start">
-                {details.trim().length > 0 && details.trim().length < 20 ? (
-                  <p className="text-xs text-destructive font-medium">Minimum 20 characters required.</p>
-                ) : (
-                  <div />
-                )}
-                <p className="text-xs text-muted-foreground">{details.length}/4000</p>
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-1 pt-1">
+                <div>
+                  {details.trim().length > 0 && wordCount < MIN_WORDS && (
+                    <p className="text-xs text-destructive font-medium">
+                      Minimum {MIN_WORDS} words required ({MIN_WORDS - wordCount} more word{MIN_WORDS - wordCount > 1 ? "s" : ""}).
+                    </p>
+                  )}
+                  {wordCount > MAX_WORDS && (
+                    <p className="text-xs text-destructive font-medium">
+                      Word limit exceeded ({wordCount}/{MAX_WORDS} words). Please shorten your text.
+                    </p>
+                  )}
+                  {details.trim().length > 0 && details.trim().length < 20 && wordCount >= MIN_WORDS && (
+                    <p className="text-xs text-destructive font-medium">Minimum 20 characters required.</p>
+                  )}
+                </div>
+                <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                  <span className={wordCount > MAX_WORDS ? "text-destructive font-medium" : ""}>
+                    Word count: <strong>{wordCount}</strong>/{MAX_WORDS}
+                  </span>
+                  <span>·</span>
+                  <span>{details.length}/4,000 chars</span>
+                </div>
               </div>
             </CardContent>
           </Card>
 
           <Card className="mb-6">
-            <CardHeader><CardTitle>Upload supporting evidence</CardTitle></CardHeader>
-            <CardContent className="space-y-3">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle>Upload supporting evidence</CardTitle>
+              <Badge variant="secondary" className="text-xs">
+                {files.length} / {MAX_FILES} files
+              </Badge>
+            </CardHeader>
+            <CardContent className="space-y-3 pt-2">
               <p className="text-sm text-muted-foreground">
-                Please upload as much relevant supporting evidence as possible. For example: medical reports, photos/messages/videos of a safety concern, or funeral notices.
+                Please upload as much relevant supporting evidence as possible. For example: medical reports, photos/messages/videos of a safety concern, or official notices.
               </p>
-              <label className="flex items-center justify-center h-24 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/40">
-                <input type="file" multiple className="hidden" onChange={onFilesChosen}
-                  accept="image/*,application/pdf,video/*" />
-                <span className="flex items-center gap-2 text-sm"><Upload className="h-4 w-4" /> Click to upload files (max 10)</span>
-              </label>
+              
+              {files.length < MAX_FILES ? (
+                <label className="flex flex-col items-center justify-center h-28 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/40 transition-colors">
+                  <input
+                    type="file"
+                    multiple
+                    className="hidden"
+                    onChange={onFilesChosen}
+                    accept="image/*,application/pdf,video/*"
+                  />
+                  <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                    <Upload className="h-4 w-4 text-primary" />
+                    Click to upload evidence files
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Max {MAX_FILES} files · Up to {MAX_FILE_SIZE_MB}MB each (Images, PDF, Videos)
+                  </p>
+                </label>
+              ) : (
+                <div className="p-3 bg-muted/40 border rounded-lg text-xs text-muted-foreground text-center font-medium">
+                  Maximum file limit reached ({MAX_FILES}/{MAX_FILES} files). Remove a file below to upload another.
+                </div>
+              )}
+
               {files.length > 0 && (
-                <ul className="space-y-1">
-                  {files.map((f, i) => (
-                    <li key={i} className="flex items-center justify-between text-sm rounded bg-muted/40 px-3 py-1.5">
-                      <span className="truncate">{f.name}</span>
-                      <button onClick={() => setFiles(files.filter((_, j) => j !== i))} className="text-muted-foreground hover:text-destructive">
-                        <X className="h-4 w-4" />
-                      </button>
-                    </li>
-                  ))}
-                </ul>
+                <div className="space-y-2 pt-1">
+                  <p className="text-xs font-semibold text-muted-foreground">
+                    Uploaded evidence ({files.length}/{MAX_FILES}):
+                  </p>
+                  <ul className="space-y-1.5">
+                    {files.map((f, i) => (
+                      <li
+                        key={i}
+                        className="flex items-center justify-between text-sm rounded-md bg-muted/40 border border-border px-3 py-2"
+                      >
+                        <div className="flex items-center gap-2 truncate pr-2">
+                          <FileText className="h-4 w-4 text-primary shrink-0" />
+                          <span className="truncate font-medium">{f.name}</span>
+                          <span className="text-xs text-muted-foreground shrink-0">
+                            ({formatFileSize(f.size)})
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setFiles(files.filter((_, j) => j !== i))}
+                          className="text-muted-foreground hover:text-destructive p-1 rounded transition-colors"
+                          title="Remove file"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               )}
             </CardContent>
           </Card>

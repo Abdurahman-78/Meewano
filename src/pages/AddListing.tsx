@@ -68,17 +68,12 @@ const AddListing = () => {
     title: "",
     location: intendedArea,
     city: intendedCity,
-    price_per_night: "",
-    weekend_price: "",
-    weekly_discount_pct: "",
-    monthly_discount_pct: "",
     instant_booking: true,
     bedrooms: intendedBedrooms,
     bathrooms: intendedBathrooms,
     max_guests: "",
     description: "",
     amenities: [] as string[],
-    cleaning_policy: "",
     welcome_message: "",
     minimum_nights: "1",
     check_in_time: "15:00",
@@ -276,7 +271,6 @@ const AddListing = () => {
       !formData.title ||
       !formData.location ||
       !formData.city ||
-      !formData.price_per_night ||
       !formData.bedrooms ||
       !formData.bathrooms ||
       !formData.max_guests ||
@@ -301,10 +295,10 @@ const AddListing = () => {
         title: formData.title,
         location: formData.location,
         city: formData.city,
-        price_per_night: parseFloat(formData.price_per_night),
-        weekend_price: formData.weekend_price ? parseFloat(formData.weekend_price) : null,
-        weekly_discount_pct: formData.weekly_discount_pct ? parseInt(formData.weekly_discount_pct) : null,
-        monthly_discount_pct: formData.monthly_discount_pct ? parseInt(formData.monthly_discount_pct) : null,
+        price_per_night: 0,
+        weekend_price: null,
+        weekly_discount_pct: null,
+        monthly_discount_pct: null,
         instant_booking: formData.instant_booking,
         bedrooms: parseInt(formData.bedrooms) || 1,
         bathrooms: parseInt(formData.bathrooms) || 1,
@@ -316,7 +310,7 @@ const AddListing = () => {
         latitude: coords?.lat ?? null,
         longitude: coords?.lng ?? null,
         blocked_dates: getDatesInRange(unavailableRange),
-        cleaning_policy: formData.cleaning_policy || null,
+        cleaning_policy: null,
         welcome_message: formData.welcome_message || null,
         minimum_nights: parseInt(formData.minimum_nights) || 1,
         check_in_time: formData.check_in_time,
@@ -456,65 +450,13 @@ const AddListing = () => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 text-sm text-muted-foreground flex items-start gap-3">
+                  <Info className="h-5 w-5 text-primary shrink-0 mt-0.5" />
                   <div>
-                    <Label htmlFor="price" className={showErrors && !formData.price_per_night ? "text-destructive" : ""}>
-                      Price per Night (IQD) *
-                    </Label>
-                    <Input
-                      id="price"
-                      type="number"
-                      placeholder="150000"
-                      className={`mt-2 ${showErrors && !formData.price_per_night ? "border-destructive ring-1 ring-destructive" : ""}`}
-                      value={formData.price_per_night}
-                      onChange={(e) => setFormData({ ...formData, price_per_night: e.target.value })}
-                    />
-                    {showErrors && !formData.price_per_night && (
-                      <p className="text-xs text-destructive mt-1">This field is required</p>
-                    )}
-                  </div>
-                  <div>
-                    <Label htmlFor="weekend_price">
-                      Weekend Price (IQD)
-                    </Label>
-                    <Input
-                      id="weekend_price"
-                      type="number"
-                      placeholder="Optional"
-                      className="mt-2"
-                      value={formData.weekend_price}
-                      onChange={(e) => setFormData({ ...formData, weekend_price: e.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="weekly_discount_pct">
-                      Weekly Discount (%)
-                    </Label>
-                    <Input
-                      id="weekly_discount_pct"
-                      type="number"
-                      placeholder="e.g. 10"
-                      min="0"
-                      max="100"
-                      className="mt-2"
-                      value={formData.weekly_discount_pct}
-                      onChange={(e) => setFormData({ ...formData, weekly_discount_pct: e.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="monthly_discount_pct">
-                      Monthly Discount (%)
-                    </Label>
-                    <Input
-                      id="monthly_discount_pct"
-                      type="number"
-                      placeholder="e.g. 20"
-                      min="0"
-                      max="100"
-                      className="mt-2"
-                      value={formData.monthly_discount_pct}
-                      onChange={(e) => setFormData({ ...formData, monthly_discount_pct: e.target.value })}
-                    />
+                    <p className="font-semibold text-foreground">Nightly Pricing, Discounts & Cleaning Policy</p>
+                    <p className="text-xs mt-0.5">
+                      You will set your price per night, weekend rates, weekly/monthly discounts, and cleaning policy directly in your <strong>Host Calendar</strong>.
+                    </p>
                   </div>
                 </div>
 
@@ -696,17 +638,6 @@ const AddListing = () => {
                     </PopoverContent>
                   </Popover>
                   <p className="text-xs text-muted-foreground">Optional dates guests cannot book.</p>
-                </div>
-
-                <div>
-                  <Label htmlFor="cleaning">Cleaning policy</Label>
-                  <Textarea
-                    id="cleaning"
-                    placeholder="e.g. Professional cleaning between every stay. Guests are asked to leave dishes in the sink and bag any trash."
-                    className="mt-2 min-h-[90px]"
-                    value={formData.cleaning_policy}
-                    onChange={(e) => setFormData({ ...formData, cleaning_policy: e.target.value })}
-                  />
                 </div>
 
                 <div>

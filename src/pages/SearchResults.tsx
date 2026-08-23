@@ -54,6 +54,27 @@ const parseIQD = (s: string): number | "" => {
   return isNaN(n) ? "" : n;
 };
 
+const PROPERTY_TYPE_KEYWORDS = [
+  "House",
+  "Villa",
+  "Apartment",
+  "Chalet",
+  "Cottage",
+  "Lodge",
+  "Cabin",
+  "Studio",
+  "Hotel",
+  "Resort",
+];
+const RATING_THRESHOLDS = [4.5, 4.0, 3.5, 3.0];
+
+const detectType = (p: DbProperty): string | null => {
+  const hay = `${p.title} ${p.description || ""}`.toLowerCase();
+  return (
+    PROPERTY_TYPE_KEYWORDS.find((k) => hay.includes(k.toLowerCase())) || null
+  );
+};
+
 const SearchResults = () => {
   const [searchParams] = useSearchParams();
   const initialLocation = searchParams.get("location") || "";
@@ -112,29 +133,7 @@ const SearchResults = () => {
   const { data: settings } = useSiteSettings();
   const { convertPrice } = useCurrency();
 
-  // Derive filter options from the actual dataset
-  const PROPERTY_TYPE_KEYWORDS = [
-    "House",
-    "Villa",
-    "Apartment",
-    "Chalet",
-    "Cottage",
-    "Lodge",
-    "Cabin",
-    "Studio",
-    "Hotel",
-    "Resort",
-  ];
-  const RATING_THRESHOLDS = [4.5, 4.0, 3.5, 3.0];
-
   const settingsLocations = (settings?.locations as string[]) || [];
-
-  const detectType = (p: DbProperty): string | null => {
-    const hay = `${p.title} ${p.description || ""}`.toLowerCase();
-    return (
-      PROPERTY_TYPE_KEYWORDS.find((k) => hay.includes(k.toLowerCase())) || null
-    );
-  };
 
   const {
     availableLocations,

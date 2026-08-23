@@ -38,9 +38,10 @@ const ClickHandler = ({ onPick }: { onPick: (lat: number, lng: number) => void }
 
 const Recenter = ({ position }: { position: [number, number] }) => {
   const map = useMap();
+  const [lat, lng] = position;
   useEffect(() => {
-    map.setView(position, Math.max(map.getZoom(), 13));
-  }, [position[0], position[1]]);
+    map.setView([lat, lng], Math.max(map.getZoom(), 13));
+  }, [map, lat, lng]);
   return null;
 };
 
@@ -51,9 +52,13 @@ const LocationPicker = ({ value, onChange, defaultCenter, height = "400px" }: Lo
   const [searching, setSearching] = useState(false);
   const dragRef = useRef<L.Marker | null>(null);
 
+  const valueLat = value?.lat;
+  const valueLng = value?.lng;
   useEffect(() => {
-    if (value) setPos([value.lat, value.lng]);
-  }, [value?.lat, value?.lng]);
+    if (valueLat !== undefined && valueLng !== undefined) {
+      setPos([valueLat, valueLng]);
+    }
+  }, [valueLat, valueLng]);
 
   const handlePick = (lat: number, lng: number) => {
     setPos([lat, lng]);
