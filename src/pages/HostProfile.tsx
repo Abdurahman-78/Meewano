@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
 import { MapPin, Star, Calendar, Shield, MessageCircle, Loader2 } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
