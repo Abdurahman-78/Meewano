@@ -549,8 +549,8 @@ const BecomeHost = () => {
                           <a href="/terms" target="_blank" rel="noreferrer" className="text-primary underline">
                             Terms & Conditions
                           </a>
-                          . I confirm I will provide accurate payment details, abide by all applicable
-                          local laws, be truthful in my listing information, and honor confirmed bookings.
+                          . I confirm I will abide by all applicable
+                          local laws, be truthful in my listing information, and honor our community guidelines.
                         </span>
                       </label>
                     </div>

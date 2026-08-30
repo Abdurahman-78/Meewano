@@ -5,38 +5,51 @@ import AppLayout from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
-
-const STEPS = [
-  {
-    icon: ShieldCheck,
-    title: "Verify your identity",
-    desc: "Upload your ID, a selfie, and proof of property ownership.",
-    cta: "Start verification",
-    to: "/host/verification",
-  },
-  {
-    icon: Home,
-    title: "List your first property",
-    desc: "Add photos, set your price, and submit your listing for review.",
-    cta: "After verification",
-    to: "/host",
-  },
-  {
-    icon: Sparkles,
-    title: "Start earning",
-    desc: "Once approved, guests can book and you get paid.",
-    cta: "View dashboard",
-    to: "/host",
-  },
-];
+import { usePreLaunch } from "@/contexts/PreLaunchContext";
 
 const HostWelcome = () => {
   const { user, loading } = useAuth();
+  const { mode } = usePreLaunch();
   const navigate = useNavigate();
+
+  const isPreLaunch = mode === "pre-launch";
 
   useEffect(() => {
     if (!loading && !user) navigate("/auth?redirect=/host/welcome");
   }, [user, loading, navigate]);
+
+  const LIVE_STEPS = [
+    {
+      icon: ShieldCheck,
+      title: "Verify your identity",
+      desc: "Upload your ID, a selfie, and proof of property ownership.",
+    },
+    {
+      icon: Home,
+      title: "List your first property",
+      desc: "Add photos, set your price, and submit your listing for review.",
+    },
+    {
+      icon: Sparkles,
+      title: "Start earning",
+      desc: "Once approved, guests can book and you get paid.",
+    },
+  ];
+
+  const PRE_LAUNCH_STEPS = [
+    {
+      icon: Home,
+      title: "List your property",
+      desc: "Add your property details and photos to join the pre-launch preview.",
+    },
+    {
+      icon: Sparkles,
+      title: "Prepare for launch",
+      desc: "After Meewano is launched, we verify to set the official price of properties with you.",
+    },
+  ];
+
+  const steps = isPreLaunch ? PRE_LAUNCH_STEPS : LIVE_STEPS;
 
   return (
     <AppLayout>
@@ -64,7 +77,7 @@ const HostWelcome = () => {
         </Card>
 
         <div className="space-y-4">
-          {STEPS.map((s, i) => {
+          {steps.map((s, i) => {
             const Icon = s.icon;
             return (
               <Card key={s.title} className="hover:border-primary/50 transition-colors">
@@ -88,8 +101,12 @@ const HostWelcome = () => {
         </div>
 
         <div className="mt-8 flex justify-center">
-          <Button size="lg" className="h-12 px-8" onClick={() => navigate("/host/verification")}>
-            Start verification
+          <Button 
+            size="lg" 
+            className="h-12 px-8" 
+            onClick={() => navigate(isPreLaunch ? "/host" : "/host/verification")}
+          >
+            {isPreLaunch ? "Go to Host Dashboard" : "Start verification"}
             <ArrowRight className="h-5 w-5 ml-2" />
           </Button>
         </div>

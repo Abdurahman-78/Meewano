@@ -28,56 +28,44 @@ export const DEFAULT_PRE_LAUNCH_SETTINGS: PreLaunchSettings = {
   perks: [
     {
       id: "perk-1",
-      title: "0% Commission for 90 Days",
-      description: "Pre-registered founding hosts enjoy 0% platform service fee for their first 3 months after our official public launch.",
-      icon: "Percent",
+      title: "100% Calendar & Price Autonomy",
+      description: "You decide your nightly rates, weekend prices, seasonal adjustments, and cleaning rules with total control.",
+      icon: "Calendar",
     },
     {
       id: "perk-2",
-      title: "Free Professional Photography",
-      description: "Get your listing photographed and staged for free by our regional media team in Erbil, Sulaymaniyah, and Duhok.",
-      icon: "Camera",
-    },
-    {
-      id: "perk-3",
-      title: "Founding Host Verified Badge",
-      description: "Your host profile permanently retains the prestigious 'Founding Host' badge, building instant guest trust.",
+      title: "Verified Guest Community",
+      description: "Every guest profile undergoes phone number and identity checks before confirmation to protect your property.",
       icon: "Award",
     },
     {
-      id: "perk-4",
-      title: "Local Fast Payouts (FIB, FastPay, Cash)",
-      description: "Receive your rental payouts directly into your FIB, FastPay, ZainCash, or local bank account in IQD or USD within 24 hours of guest check-in.",
-      icon: "Banknote",
-    },
-    {
-      id: "perk-5",
-      title: "Dedicated Kurdish Host Concierge",
-      description: "Direct WhatsApp and phone line with your personal host manager to assist with pricing, calendars, and guest relations.",
+      id: "perk-3",
+      title: "Dedicated Host Concierge",
+      description: "Direct assistance with listing setup, calendar management, and guest relations in Kurdish, Arabic, and English.",
       icon: "Headphones",
     },
     {
-      id: "perk-6",
-      title: "100% Calendar & Price Autonomy",
-      description: "You decide your nightly rates, weekend prices, minimum stays, and cleaning policies with complete flexibility.",
-      icon: "Calendar",
+      id: "perk-4",
+      title: "Direct Host-Guest Communication",
+      description: "Message guests seamlessly through the platform to share check-in instructions and house directions.",
+      icon: "Banknote",
     },
   ],
   faqs: [
     {
       id: "faq-1",
       question: "How does the Pre-Launch phase work?",
-      answer: "During this pre-launch phase, homeowners and hosts pre-register their property details. Our local onboarding team contacts you to verify your listing, schedule free professional photography, and configure your calendar before public bookings open.",
+      answer: "During this pre-launch phase, homeowners pre-register their property details. Our local onboarding team contacts you to verify your listing and configure your calendar before public bookings open.",
     },
     {
       id: "faq-2",
       question: "Is there any cost to register as a host?",
-      answer: "No! Pre-registering and listing your property on Meewano is 100% free. Furthermore, pioneer hosts will enjoy 0% commission for their first 90 days after launch.",
+      answer: "Pre-registering and creating your property listing on Meewano is completely free with no upfront fees.",
     },
     {
       id: "faq-3",
-      question: "How do I get paid for bookings?",
-      answer: "We support direct Iraqi Dinar (IQD) and US Dollar (USD) payouts via First Iraqi Bank (FIB), FastPay, ZainCash, direct wire transfers, or arranged regional cash pickup.",
+      question: "How do I manage my listing?",
+      answer: "You have full control over your photos, descriptions, minimum stay lengths, and house rules directly from your host dashboard.",
     },
     {
       id: "faq-4",
@@ -87,7 +75,7 @@ export const DEFAULT_PRE_LAUNCH_SETTINGS: PreLaunchSettings = {
     {
       id: "faq-5",
       question: "How are guests verified?",
-      answer: "All guests on Meewano must provide verified phone numbers and government-issued ID checks before booking, giving hosts total peace of mind.",
+      answer: "All guests on Meewano must provide verified phone numbers and identity checks before booking, giving hosts total peace of mind.",
     },
   ],
 };

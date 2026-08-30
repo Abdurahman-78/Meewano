@@ -1,9 +1,10 @@
-import { Bath, Bed, Home, Star, Heart } from "lucide-react";
+import { Bath, Bed, Home, Star, Heart, Sparkles } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useFavorites } from "@/hooks/useFavorites";
+import { usePreLaunch } from "@/contexts/PreLaunchContext";
 import { useNavigate } from "react-router-dom";
 
 interface PropertyCardProps {
@@ -36,8 +37,11 @@ const PropertyCard = ({
   const { t } = useTranslation();
   const { formatPrice } = useCurrency();
   const { user } = useAuth();
+  const { mode } = usePreLaunch();
   const { isFavorite, toggleFavorite } = useFavorites(user?.id || null);
   const navigate = useNavigate();
+
+  const isPreLaunch = mode === "pre-launch";
 
   const handleFavoriteClick = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -68,10 +72,17 @@ const PropertyCard = ({
           alt={name}
           className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
         />
-        {(approvalStatus === "pending" || approvalStatus === "changes_pending") && (
-          <div className="absolute top-3 left-3 z-[1] rounded-full bg-yellow-500/95 text-white text-[10px] md:text-xs font-semibold px-2.5 py-1 shadow-sm">
-            Waiting for verification
+        {isPreLaunch ? (
+          <div className="absolute top-3 left-3 z-[1] flex items-center gap-1 rounded-full bg-slate-950/85 text-amber-300 text-[10px] md:text-xs font-semibold px-2.5 py-1 shadow-md border border-amber-400/30 backdrop-blur-xs">
+            <Sparkles className="h-3 w-3 text-amber-300" />
+            Coming Soon
           </div>
+        ) : (
+          (approvalStatus === "pending" || approvalStatus === "changes_pending") && (
+            <div className="absolute top-3 left-3 z-[1] rounded-full bg-yellow-500/95 text-white text-[10px] md:text-xs font-semibold px-2.5 py-1 shadow-sm">
+              Waiting for verification
+            </div>
+          )
         )}
         <button
           onClick={handleFavoriteClick}

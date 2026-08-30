@@ -184,7 +184,7 @@ export const preLaunchContent: Record<"en" | "ku" | "ar", PreLaunchTranslations>
 
     heroTitle: "Empowering Kurdistan's Hosts to Welcome the World",
     heroSubtitle:
-      "Meewano is Kurdistan's premier vacation rental and boutique stay platform. Turn your home, mountain chalet, or villa into a high-earning hospitality destination with 0% fees during our launch period.",
+      "Meewano is Kurdistan's premier vacation rental and boutique stay platform. Turn your home, mountain chalet, or villa into a high-earning hospitality destination.",
     preRegisterCta: "Pre-Register Your Property",
     exploreShowcaseCta: "Explore Kurdistan Showcase",
     countdownTitle: "Official Kurdistan Public Launch In",
@@ -197,10 +197,10 @@ export const preLaunchContent: Record<"en" | "ku" | "ar", PreLaunchTranslations>
     statHostsLabel: "Pre-Registered Hosts",
     statCitiesCount: "16",
     statCitiesLabel: "Cities & Mountain Towns",
-    statCommissionValue: "0%",
-    statCommissionLabel: "Pioneer Host Fees (6 Months)",
+    statCommissionValue: "100%",
+    statCommissionLabel: "Direct Control Over Bookings",
     statPayoutValue: "IQD & USD",
-    statPayoutLabel: "Direct FIB / FastPay Payouts",
+    statPayoutLabel: "Direct Payouts & Transparent Pricing",
 
     aboutBadge: "Our Story & Heritage",
     aboutTitle: "What is Meewano? (میوانۆ)",
@@ -208,12 +208,12 @@ export const preLaunchContent: Record<"en" | "ku" | "ar", PreLaunchTranslations>
     aboutParagraph1:
       "Meewano (from the Kurdish word 'میوانۆ' meaning 'Beloved Guest') is Iraqi Kurdistan's dedicated home rental and boutique stay platform. We connect local homeowners in Erbil, Sulaymaniyah, Duhok, Rawanduz, and beyond with travelers seeking authentic Kurdish stays.",
     aboutParagraph2:
-      "Unlike generic international platforms that lack local payment methods or regional customer support, Meewano is tailored specifically for Kurdistan with instant cash payouts, local language support, and hands-on host assistance.",
+      "Meewano is tailored specifically for Kurdistan with direct payouts, local language support, and hands-on host assistance.",
     aboutPillar1: "Kurdish Identity & Trust Verification",
-    aboutPillar2: "FastPay, FIB, ZainCash & Direct Payouts",
+    aboutPillar2: "Seamless Local Payment Methods",
     aboutPillar3: "Full Calendar & Pricing Independence",
     aboutPillar4: "24/7 Dedicated Host Support in Sorani, Badini, Arabic & English",
-    showcaseCardTag: "Pioneer Showcase",
+    showcaseCardTag: "Featured Stay",
     showcaseCardTitle: "Rawanduz Canyon Overlook Chalet",
     showcaseCardSub: "Listed by Kak Shwan • 180,000 IQD / night",
     showcaseCardBadge: "Pre-Launch Verified",
@@ -241,28 +241,28 @@ export const preLaunchContent: Record<"en" | "ku" | "ar", PreLaunchTranslations>
       "Join 340+ local homeowners pre-registering their villas, chalets, and city flats today.",
     havePropertyBannerBtn: "Pre-Register Now →",
 
-    perksBadge: "Founding Host Privileges",
+    perksBadge: "Host Privileges",
     perksTitle: "Why Pre-Register as a Host?",
     perksSubtitle:
-      "Early pioneer hosts receive unmatched benefits, zero platform fees, and dedicated marketing promotion across Kurdistan.",
-    perk1Title: "0% Commission for 6 Months",
+      "Early hosts receive dedicated marketing promotion and hands-on onboarding across Kurdistan.",
+    perk1Title: "Direct Guest Bookings",
     perk1Desc:
-      "Keep 100% of your rental income. Founding hosts pay zero commission fees for their first six months on Meewano.",
-    perk2Title: "Free Professional Photography",
+      "Connect with travelers seeking quality stays in Kurdistan with full transparency.",
+    perk2Title: "High-Quality Presentation",
     perk2Desc:
-      "Our team will dispatch a professional interior photographer to your property in Kurdistan free of charge.",
-    perk3Title: "VIP Founding Host Badge",
+      "Showcase your property with rich descriptions, verified details, and high-resolution galleries.",
+    perk3Title: "Verified Host Status",
     perk3Desc:
-      "Your listing will permanently display an exclusive 'Founding Host' badge, building instant credibility and trust with guests.",
-    perk4Title: "Guaranteed Local Fast Payouts",
+      "Your listing will display verified authenticity badges, building instant credibility and trust with guests.",
+    perk4Title: "Flexible Payment Options",
     perk4Desc:
-      "Receive automated payouts directly into your FIB, FastPay, ZainCash, or bank account in IQD or USD immediately upon guest check-in.",
+      "Convenient settlement options in IQD or USD immediately upon guest check-in.",
     perk5Title: "Dedicated Local Account Manager",
     perk5Desc:
-      "Get a direct phone/WhatsApp contact with your dedicated Meewano onboarding concierge in Kurdistan.",
+      "Get direct assistance with your dedicated Meewano onboarding concierge in Kurdistan.",
     perk6Title: "Priority Search Ranking",
     perk6Desc:
-      "Pre-registered properties receive guaranteed top placement across search results during our grand public launch.",
+      "Pre-registered properties receive top placement across search results during our public launch.",
 
     calcBadge: "Live Revenue Estimator",
     calcTitle: "How Much Could Your Property Earn on Meewano?",
@@ -271,15 +271,15 @@ export const preLaunchContent: Record<"en" | "ku" | "ar", PreLaunchTranslations>
     calcRateLabel: "Expected Price per Night",
     calcNightsLabel: "Estimated Nights Booked / Month",
     calcMonthlyTitle: "Est. Monthly Earnings",
-    calcMonthlyNote: "0% platform fee during pioneer period",
+    calcMonthlyNote: "Estimated gross hosting revenue",
     calcYearlyTitle: "Est. Annual Revenue",
     calcYearlyNote: "Based on 12 months average projection",
     nightsUnit: "Nights",
 
-    formBadge: "Join the Pioneer Host Cohort",
+    formBadge: "Join as a Host",
     formTitle: "Pre-Register as a Meewano Host",
     formSubtitle:
-      "Takes less than 2 minutes. No upfront fees. Our Kurdish host onboarding team will reach out to verify your listing and arrange free photography.",
+      "Takes less than 2 minutes. Our Kurdish host onboarding team will reach out to verify your listing.",
     formFullName: "Full Name *",
     formFullNamePlaceholder: "e.g. Dana H. Ahmad",
     formPhone: "Phone Number (WhatsApp) *",
@@ -332,13 +332,13 @@ export const preLaunchContent: Record<"en" | "ku" | "ar", PreLaunchTranslations>
     faqTitle: "Got Questions About Meewano?",
     faq1Q: "Does it cost anything to pre-register as a host on Meewano?",
     faq1A:
-      "No, pre-registration is 100% free with zero upfront commitments. Pioneer hosts also benefit from 0% commission fees for their first six months.",
+      "No, pre-registration is free with zero upfront commitments.",
     faq2Q: "How and when do I get paid for bookings?",
     faq2A:
-      "Payouts are processed immediately after guest check-in via FastPay, First Iraqi Bank (FIB), ZainCash, direct bank wire, or cash in both IQD and USD.",
-    faq3Q: "Is the professional photography service really free?",
+      "Payouts are processed securely upon guest check-in via your preferred payment method in IQD or USD.",
+    faq3Q: "How is my listing verified?",
     faq3A:
-      "Yes! Once your listing is pre-registered, our professional real estate photographer in Kurdistan will schedule a convenient shoot time completely free of charge.",
+      "Once your listing is pre-registered, our team in Kurdistan will review and verify your property details.",
     faq4Q: "Can I manage my own house rules and calendar?",
     faq4A:
       "Absolutely. You have 100% control over your nightly pricing, minimum stays, check-in rules, and availability calendar.",

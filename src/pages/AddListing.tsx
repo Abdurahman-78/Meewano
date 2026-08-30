@@ -17,6 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAuth } from "@/contexts/AuthContext";
+import { usePreLaunch } from "@/contexts/PreLaunchContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useSiteSettings } from "@/hooks/useAdminData";
@@ -50,6 +51,9 @@ const AddListing = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { data: verification, isLoading: verificationLoading } = useMyHostVerification();
+  const { mode } = usePreLaunch();
+  const isPreLaunch = mode === "pre-launch";
+  
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [showErrors, setShowErrors] = useState(false);
@@ -262,7 +266,8 @@ const AddListing = () => {
       navigate("/auth");
       return;
     }
-    if (verification?.status !== "approved") {
+    
+    if (!isPreLaunch && verification?.status !== "approved") {
       toast.error("Complete account verification first");
       navigate("/host/verification");
       return;
@@ -349,7 +354,7 @@ const AddListing = () => {
     );
   }
 
-  if (!user || verification?.status !== "approved") {
+  if (!user || (!isPreLaunch && verification?.status !== "approved")) {
     return (
       <AppLayout>
         <main className="container mx-auto px-4 py-16">
@@ -453,9 +458,9 @@ const AddListing = () => {
                 <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 text-sm text-muted-foreground flex items-start gap-3">
                   <Info className="h-5 w-5 text-primary shrink-0 mt-0.5" />
                   <div>
-                    <p className="font-semibold text-foreground">Nightly Pricing, Discounts & Cleaning Policy</p>
-                    <p className="text-xs mt-0.5">
-                      You will set your price per night, weekend rates, weekly/monthly discounts, and cleaning policy directly in your <strong>Host Calendar</strong>.
+                    <p className="font-semibold text-foreground">Nightly Pricing & Launch Verification</p>
+                    <p className="text-xs mt-0.5 leading-relaxed">
+                      After Meewano is launched, we verify to set the official price of properties with you. No payment methods or financial accounts are required during pre-registration.
                     </p>
                   </div>
                 </div>

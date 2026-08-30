@@ -51,6 +51,7 @@ import { useFavorites } from "@/hooks/useFavorites";
 import { useSiteSettings } from "@/hooks/useAdminData";
 import { normalizeAmenities } from "@/lib/amenities";
 import { useTranslation } from "@/hooks/useTranslation";
+import { usePreLaunch } from "@/contexts/PreLaunchContext";
 import { supabase } from "@/integrations/supabase/client";
 import BookingStepIndicator from "@/components/BookingStepIndicator";
 import { toast } from "sonner";
@@ -58,6 +59,8 @@ import { format } from "date-fns";
 
 const PropertyDetail = () => {
   const { id } = useParams();
+  const { mode } = usePreLaunch();
+  const isPreLaunch = mode === "pre-launch";
   const { formatPrice } = useCurrency();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -1667,21 +1670,31 @@ const PropertyDetail = () => {
                     );
                   })()}
 
-                <Button
-                  className="w-full"
-                  size="lg"
-                  onClick={handleReserve}
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      {t("processing")}
-                    </>
-                  ) : (
-                    t("reserve")
-                  )}
-                </Button>
+                {isPreLaunch ? (
+                  <Button
+                    className="w-full bg-muted text-muted-foreground opacity-75 cursor-not-allowed border border-border"
+                    size="lg"
+                    disabled
+                  >
+                    Coming Soon (Pre-Launch)
+                  </Button>
+                ) : (
+                  <Button
+                    className="w-full"
+                    size="lg"
+                    onClick={handleReserve}
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        {t("processing")}
+                      </>
+                    ) : (
+                      t("reserve")
+                    )}
+                  </Button>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -1742,18 +1755,28 @@ const PropertyDetail = () => {
               </span>
             </div>
           </div>
-          <Button
-            size="sm"
-            className="px-6 rounded-xl"
-            onClick={handleReserve}
-            disabled={loading}
-          >
-            {loading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              t("reserve")
-            )}
-          </Button>
+          {isPreLaunch ? (
+            <Button
+              size="sm"
+              className="px-5 rounded-xl bg-muted text-muted-foreground opacity-75 cursor-not-allowed border border-border"
+              disabled
+            >
+              Coming Soon
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              className="px-6 rounded-xl"
+              onClick={handleReserve}
+              disabled={loading}
+            >
+              {loading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                t("reserve")
+              )}
+            </Button>
+          )}
         </div>
       </div>
 

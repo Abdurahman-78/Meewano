@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { BarChart3, Home, Calendar, DollarSign, Plus, TrendingUp, Loader2, Eye, Edit, Trash2, ShieldCheck, Clock, XCircle, RefreshCw, CheckCircle2 } from "lucide-react";
+import { BarChart3, Home, Calendar, DollarSign, Plus, Loader2, Edit, Trash2, ShieldCheck, Clock, XCircle, RefreshCw, CheckCircle2, Sparkles, MapPin, BedDouble, Bath, Users, Info } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import HostLayout from "@/components/HostLayout";
 import { Button } from "@/components/ui/button";
@@ -8,21 +8,24 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { usePreLaunch, PreLaunchPropertyItem } from "@/contexts/PreLaunchContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { createNotification } from "@/hooks/useNotifications";
 import { useMyHostVerification } from "@/hooks/useHostVerification";
 import HostPayoutCard from "@/components/HostPayoutCard";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { GuestDashboardContent } from "@/pages/GuestDashboard";
 
 interface Property {
   id: string;
   title: string;
   location: string;
+  city?: string;
   price_per_night: number;
   is_active: boolean;
   images: string[];
+  bedrooms?: number;
+  bathrooms?: number;
+  max_guests?: number;
   approval_status?: string;
   rejection_reason?: string | null;
   pending_changes?: any;
@@ -46,6 +49,15 @@ const HostDashboard = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { data: verification, isLoading: vLoading } = useMyHostVerification();
+  const {
+    mode,
+    properties: preLaunchProperties,
+    openAddPropertyModal,
+    openEditPropertyModal,
+    deleteProperty: deletePreLaunchProperty,
+  } = usePreLaunch();
+
+  const isPreLaunch = mode === "pre-launch";
 
   const [properties, setProperties] = useState<Property[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -57,35 +69,38 @@ const HostDashboard = () => {
     if (!user) return;
     
     try {
-      // Fetch host's properties
+      // Fetch host's properties from Supabase
       const { data: propertiesData, error: propertiesError } = await supabase
         .from("properties")
         .select("*")
         .eq("host_id", user.id);
 
-      if (propertiesError) throw propertiesError;
+      if (propertiesError) {
+        console.warn("Could not query properties table:", propertiesError.message);
+      }
       setProperties(propertiesData || []);
 
-      // Fetch bookings for host's properties
-      const { data: bookingsData, error: bookingsError } = await supabase
-        .from("bookings")
-        .select(`
-          *,
-          property:properties(title)
-        `)
-        .eq("host_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(10);
+      if (!isPreLaunch) {
+        // Fetch bookings for host's properties in live mode
+        const { data: bookingsData, error: bookingsError } = await supabase
+          .from("bookings")
+          .select(`
+            *,
+            property:properties(title)
+          `)
+          .eq("host_id", user.id)
+          .order("created_at", { ascending: false })
+          .limit(10);
 
-      if (bookingsError) throw bookingsError;
-      setBookings((bookingsData || []) as Booking[]);
+        if (bookingsError) throw bookingsError;
+        setBookings((bookingsData || []) as Booking[]);
+      }
     } catch (error: any) {
       console.error("Error fetching data:", error);
-      toast.error("Failed to load data");
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, isPreLaunch]);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -98,7 +113,14 @@ const HostDashboard = () => {
   }, [user, authLoading, navigate, fetchData]);
 
   const handleDeleteProperty = async (propertyId: string) => {
-    if (!confirm("Are you sure you want to delete this property?")) return;
+    if (!confirm("Are you sure you want to delete this property listing?")) return;
+
+    // Check if it's in prelaunch properties
+    const isPrelaunchItem = preLaunchProperties.some(p => p.id === propertyId);
+    if (isPrelaunchItem) {
+      deletePreLaunchProperty(propertyId);
+      return;
+    }
 
     try {
       const { error } = await supabase
@@ -147,23 +169,232 @@ const HostDashboard = () => {
     .filter(b => b.status === "confirmed" || b.status === "completed")
     .reduce((sum, b) => sum + b.total_price, 0);
 
-  const stats = [
-    { title: "Total Properties", value: properties.length.toString(), icon: Home, color: "text-blue-600" },
-    { title: "Total Bookings", value: bookings.length.toString(), icon: Calendar, color: "text-green-600" },
-    { title: "Total Revenue", value: totalRevenue, icon: DollarSign, color: "text-primary", isPrice: true },
-    { title: "Pending Requests", value: bookings.filter(b => b.status === "pending").length.toString(), icon: BarChart3, color: "text-purple-600" },
-  ];
-
   if (authLoading || loading) {
     return (
       <HostLayout>
         <div className="container mx-auto px-4 py-16 flex items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin" />
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       </HostLayout>
     );
   }
 
+  // PRE-LAUNCH HOST VIEW (Simplified Dashboard: ONLY Properties with Add, Edit, Delete)
+  if (isPreLaunch) {
+    // Combine preLaunchProperties and Supabase properties
+    const displayProperties = [
+      ...preLaunchProperties.map(p => ({
+        id: p.id,
+        title: p.title,
+        location: p.location,
+        city: p.city,
+        price_per_night: p.price_per_night,
+        is_active: p.is_active ?? true,
+        images: [p.image],
+        bedrooms: p.bedrooms,
+        bathrooms: p.bathrooms,
+        max_guests: p.max_guests,
+        isPrelaunch: true,
+        raw: p,
+      })),
+      ...properties
+        .filter(p => !preLaunchProperties.some(pl => pl.id === p.id))
+        .map(p => ({
+          ...p,
+          isPrelaunch: false,
+          raw: null,
+        }))
+    ];
+
+    return (
+      <HostLayout>
+        <main className="container mx-auto px-4 py-8 space-y-6 max-w-6xl">
+          {/* Header Banner */}
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-2 border-b border-border">
+            <div>
+              <div className="flex items-center gap-2 mb-1.5">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/25">
+                  <Sparkles className="h-3.5 w-3.5" />
+                  Pre-Launch Host Hub
+                </span>
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Host Dashboard • My Properties</h1>
+              <p className="text-muted-foreground text-sm mt-1">
+                Manage your registered spaces for Meewano. You can add new properties, edit details, or remove listings.
+              </p>
+            </div>
+            
+            <Button
+              className="bg-primary hover:bg-primary/90 text-primary-foreground h-11 rounded-full px-6 font-semibold shadow-md flex items-center gap-2"
+              onClick={openAddPropertyModal}
+            >
+              <Plus className="h-4 w-4" />
+              + Add Property
+            </Button>
+          </div>
+
+          {/* Pricing Verification Notice */}
+          <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 md:p-5 flex items-start gap-3.5">
+            <Info className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <p className="font-semibold text-foreground text-sm sm:text-base">
+                Property Pricing & Launch Setup
+              </p>
+              <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                After Meewano is launched, our team will verify and finalize the official pricing of your properties with you. No payment methods, calendar setup, or guest bookings are required during the pre-launch phase.
+              </p>
+            </div>
+          </div>
+
+          {/* Properties Grid */}
+          {displayProperties.length === 0 ? (
+            <div className="text-center py-20 bg-accent/20 rounded-2xl border border-dashed border-border/70 p-6">
+              <div className="mx-auto w-16 h-16 bg-background rounded-full flex items-center justify-center shadow-sm border mb-4">
+                <Home className="h-7 w-7 text-primary" />
+              </div>
+              <h3 className="text-xl font-bold mb-2">No properties registered yet</h3>
+              <p className="text-muted-foreground mb-6 max-w-md mx-auto text-sm">
+                Pre-register your villa, apartment, or chalet today. It will be showcased in the pre-launch preview and ready for launch day.
+              </p>
+              <Button
+                className="bg-primary hover:bg-primary/90 text-primary-foreground h-11 rounded-full px-7 font-semibold"
+                onClick={openAddPropertyModal}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Your First Property
+              </Button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {displayProperties.map((property) => {
+                return (
+                  <div
+                    key={property.id}
+                    className="group flex flex-col bg-card rounded-2xl border border-border overflow-hidden hover:shadow-xl transition-all duration-300"
+                  >
+                    <div className="relative aspect-[16/10] bg-muted overflow-hidden">
+                      {property.images && property.images[0] ? (
+                        <img
+                          src={property.images[0]}
+                          alt={property.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-accent/50 text-muted-foreground">
+                          No image
+                        </div>
+                      )}
+                      <div className="absolute top-3 left-3">
+                        <Badge variant="outline" className="backdrop-blur-md bg-background/90 shadow-sm border border-primary/30 text-primary text-xs font-semibold">
+                          <Sparkles className="h-3 w-3 mr-1" />
+                          Pre-Launch Stay
+                        </Badge>
+                      </div>
+                    </div>
+
+                    <div className="p-5 flex-1 flex flex-col">
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
+                        <MapPin className="h-3.5 w-3.5 text-primary shrink-0" />
+                        <span className="font-medium truncate">{property.location}{property.city ? `, ${property.city}` : ""}</span>
+                      </div>
+
+                      <h3 className="font-bold text-lg line-clamp-1 mb-2">
+                        {property.title}
+                      </h3>
+
+                      {/* Rooms / Specs */}
+                      <div className="flex items-center gap-3 text-xs text-muted-foreground mb-4">
+                        {property.bedrooms !== undefined && (
+                          <span className="flex items-center gap-1">
+                            <BedDouble className="h-3.5 w-3.5" />
+                            {property.bedrooms} Bed
+                          </span>
+                        )}
+                        {property.bathrooms !== undefined && (
+                          <span className="flex items-center gap-1">
+                            <Bath className="h-3.5 w-3.5" />
+                            {property.bathrooms} Bath
+                          </span>
+                        )}
+                        {property.max_guests !== undefined && (
+                          <span className="flex items-center gap-1">
+                            <Users className="h-3.5 w-3.5" />
+                            {property.max_guests} Guests
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Price Note */}
+                      <div className="mt-auto pt-3 border-t border-border">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <span className="text-xs text-muted-foreground block">Estimated Nightly</span>
+                            <span className="font-bold text-base text-foreground">
+                              {formatPrice(property.price_per_night)}
+                            </span>
+                          </div>
+                          
+                          {/* Actions: Edit & Delete */}
+                          <div className="flex items-center gap-1.5">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-9 px-3 rounded-xl gap-1.5 text-xs font-semibold hover:border-primary hover:text-primary"
+                              onClick={() => {
+                                if (property.raw) {
+                                  openEditPropertyModal(property.raw as PreLaunchPropertyItem);
+                                } else {
+                                  openEditPropertyModal({
+                                    id: property.id,
+                                    title: property.title,
+                                    city: property.city || "Erbil",
+                                    location: property.location,
+                                    price_per_night: property.price_per_night,
+                                    bedrooms: property.bedrooms || 2,
+                                    bathrooms: property.bathrooms || 1,
+                                    max_guests: property.max_guests || 4,
+                                    description: "",
+                                    image: property.images?.[0] || "",
+                                    rating: 5.0,
+                                    reviews_count: 0,
+                                    badges: ["WiFi", "Mountain View"],
+                                    amenities: ["WiFi", "Mountain View"],
+                                    is_active: true,
+                                  });
+                                }
+                              }}
+                            >
+                              <Edit className="h-3.5 w-3.5" />
+                              Edit
+                            </Button>
+
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-9 px-2.5 rounded-xl text-xs font-semibold text-destructive hover:bg-destructive/10"
+                              onClick={() => handleDeleteProperty(property.id)}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        </div>
+
+                        <p className="text-[11px] text-muted-foreground/80 mt-2 italic">
+                          After Meewano is launched, we verify to set price of properties.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </main>
+      </HostLayout>
+    );
+  }
+
+  // LIVE MODE HOST DASHBOARD
   return (
     <HostLayout>
       <main className="container mx-auto px-4 py-8 space-y-6 max-w-6xl">

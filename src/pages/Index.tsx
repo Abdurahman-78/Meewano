@@ -3,10 +3,12 @@ import AppLayout from "@/components/AppLayout";
 import CollapsibleSearch from "@/components/CollapsibleSearch";
 import PropertyCard from "@/components/PropertyCard";
 import RegionCard from "@/components/RegionCard";
+import PreLaunchView from "@/components/PreLaunchView";
 import { useProperties } from "@/hooks/useProperties";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { usePreLaunch } from "@/contexts/PreLaunchContext";
 import heroBanner from "@/assets/hero-banner.jpg";
 import kurdish1 from "@/assets/property-kurdish-1.jpg";
 import kurdish8 from "@/assets/property-kurdish-8.jpg";
@@ -20,10 +22,20 @@ const Index = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { mode } = usePreLaunch();
   const { data: hostVerification } = useMyHostVerification();
   const { formatPrice } = useCurrency();
   const { data: properties, isLoading } = useProperties();
   const { data: settings } = useSiteSettings();
+
+  // If in Pre-Launch Mode, render the dedicated PreLaunchView
+  if (mode === "pre-launch") {
+    return (
+      <AppLayout>
+        <PreLaunchView />
+      </AppLayout>
+    );
+  }
 
   // Get locations from settings
   const locations = (settings?.locations as string[]) || ["Ranya", "Haji Omran"];

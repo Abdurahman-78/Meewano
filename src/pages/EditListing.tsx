@@ -313,16 +313,10 @@ const EditListing = () => {
                   <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 text-sm text-muted-foreground flex items-start gap-3">
                     <Info className="h-5 w-5 text-primary shrink-0 mt-0.5" />
                     <div className="flex-1">
-                      <p className="font-semibold text-foreground">Nightly Rates, Discounts & Cleaning Policy</p>
-                      <p className="text-xs mt-0.5 mb-2">
-                        Manage your nightly price, weekend rates, weekly/monthly discounts, and cleaning policy directly in the calendar.
+                      <p className="font-semibold text-foreground">Nightly Pricing & Launch Verification</p>
+                      <p className="text-xs mt-0.5 leading-relaxed">
+                        After Meewano is launched, we verify to set the official price of properties with you.
                       </p>
-                      <Link
-                        to="/host/calendar"
-                        className="inline-flex items-center text-xs font-semibold text-primary hover:underline"
-                      >
-                        Open Host Calendar &rarr;
-                      </Link>
                     </div>
                   </div>
 

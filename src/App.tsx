@@ -10,6 +10,7 @@ import { LanguageProvider } from "@/contexts/LanguageContext";
 import { CurrencyProvider } from "@/contexts/CurrencyContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
+import { PreLaunchProvider } from "@/contexts/PreLaunchContext";
 import PageTransition from "@/components/PageTransition";
 import Index from "./pages/Index";
 import PropertyDetail from "./pages/PropertyDetail";
@@ -48,7 +49,6 @@ import Privacy from "./pages/Privacy";
 import Cookies from "./pages/Cookies";
 import CancellationPolicy from "./pages/CancellationPolicy";
 import AboutUs from "./pages/AboutUs";
-import PreLaunch from "./pages/PreLaunch";
 import MapPage from "./pages/MapPage";
 import DiscoverPage from "./pages/DiscoverPage";
 import BookingConfirmationEmail from "./pages/emails/BookingConfirmationEmail";
@@ -90,7 +90,6 @@ const AnimatedRoutes = () => {
         <Route path="/host/messages" element={<PageTransition><Messages /></PageTransition>} />
         <Route path="/host/add-listing" element={<PageTransition><AddListing /></PageTransition>} />
         <Route path="/become-host" element={<PageTransition><BecomeHost /></PageTransition>} />
-        <Route path="/pre-launch" element={<PageTransition><PreLaunch /></PageTransition>} />
         <Route path="/host/edit-listing/:id" element={<PageTransition><EditListing /></PageTransition>} />
         <Route path="/host/verification" element={<PageTransition><HostVerification /></PageTransition>} />
         <Route path="/host/welcome" element={<PageTransition><HostWelcome /></PageTransition>} />
@@ -152,13 +151,15 @@ const App = () => (
         <AuthProvider>
           <LanguageProvider>
             <CurrencyProvider>
-              <TooltipProvider>
-                <Toaster />
-                <Sonner />
-                <BrowserRouter>
-                  <AnimatedRoutes />
-                </BrowserRouter>
-              </TooltipProvider>
+              <PreLaunchProvider>
+                <TooltipProvider>
+                  <Toaster />
+                  <Sonner />
+                  <BrowserRouter>
+                    <AnimatedRoutes />
+                  </BrowserRouter>
+                </TooltipProvider>
+              </PreLaunchProvider>
             </CurrencyProvider>
           </LanguageProvider>
         </AuthProvider>
