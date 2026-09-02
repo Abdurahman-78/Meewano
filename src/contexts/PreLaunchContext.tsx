@@ -8,6 +8,7 @@ export type SiteMode = "live" | "pre-launch";
 export interface PreLaunchPropertyItem extends PreLaunchDemoProperty {
   isCustom?: boolean;
   amenities?: string[];
+  isDemo?: boolean;
 }
 
 interface PreLaunchContextType {

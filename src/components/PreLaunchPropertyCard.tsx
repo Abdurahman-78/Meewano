@@ -70,9 +70,11 @@ export const PreLaunchPropertyCard: React.FC<PreLaunchPropertyCardProps> = ({ pr
               </div>
             </div>
             {/* Demo Property Label */}
-            <span className="inline-flex w-max items-center px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/10 text-amber-600 border border-amber-500/20 uppercase tracking-wider">
-              Demo Property
-            </span>
+            {property.isDemo && (
+              <span className="inline-flex w-max items-center px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/10 text-amber-600 border border-amber-500/20 uppercase tracking-wider">
+                Demo Property
+              </span>
+            )}
           </div>
 
           {/* Location */}

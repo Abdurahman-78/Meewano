@@ -9,17 +9,43 @@ import { Sparkles, Plus, Home, Search, MapPin, SlidersHorizontal, Eye } from "lu
 
 import { useAuth } from "@/contexts/AuthContext";
 import { Link } from "react-router-dom";
+import { useProperties } from "@/hooks/useProperties";
 
 export const PreLaunchView: React.FC = () => {
   const { user } = useAuth();
-  const { properties, openAddPropertyModal } = usePreLaunch();
+  const { properties: demoProperties } = usePreLaunch();
+  const { data: realPropertiesData } = useProperties();
+  
+  // Convert real properties to PreLaunchPropertyItem format
+  const realProperties = (realPropertiesData || []).filter(p => p.is_active).map(p => ({
+    id: p.id,
+    title: p.title,
+    city: p.city || "Erbil",
+    location: p.location,
+    price_per_night: p.price_per_night,
+    bedrooms: p.bedrooms || 2,
+    bathrooms: p.bathrooms || 1,
+    max_guests: p.max_guests || 4,
+    description: p.description || "",
+    image: p.images?.[0] || "",
+    images: p.images || [],
+    rating: p.rating || 5.0,
+    reviews_count: p.review_count || 0,
+    badges: p.amenities || [],
+    amenities: p.amenities || [],
+    isCustom: true,
+    isDemo: false,
+  }));
+
+  const allDemoProperties = demoProperties.map(p => ({ ...p, isDemo: true }));
+  const allProperties = [...realProperties, ...allDemoProperties];
 
   const [selectedCity, setSelectedCity] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState<string>("");
 
   const CITIES = ["All", "Erbil", "Sulaymaniyah", "Duhok", "Rawanduz", "Shaqlawa", "Ranya", "Haji Omran"];
 
-  const filteredProperties = properties.filter((prop) => {
+  const filteredProperties = allProperties.filter((prop) => {
     const matchesCity =
       selectedCity === "All" ||
       prop.city.toLowerCase() === selectedCity.toLowerCase() ||
@@ -33,6 +59,10 @@ export const PreLaunchView: React.FC = () => {
 
     return matchesCity && matchesSearch;
   });
+
+  const hostAddedProperties = filteredProperties.filter(p => !p.isDemo);
+  const demoFilteredProperties = filteredProperties.filter(p => p.isDemo);
+
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -52,7 +82,7 @@ export const PreLaunchView: React.FC = () => {
                 Preview Directory
               </span>
               <span className="text-xs text-muted-foreground font-medium">
-                ({properties.length} Properties Registered)
+                ({allProperties.length} Properties Registered)
               </span>
             </div>
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight text-foreground">
@@ -107,10 +137,35 @@ export const PreLaunchView: React.FC = () => {
 
         {/* Property Grid */}
         {filteredProperties.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-            {filteredProperties.map((property) => (
-              <PreLaunchPropertyCard key={property.id} property={property} />
-            ))}
+          <div className="space-y-12">
+            {hostAddedProperties.length > 0 && (
+              <div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+                  {hostAddedProperties.map((property) => (
+                    <PreLaunchPropertyCard key={property.id} property={property} />
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {demoFilteredProperties.length > 0 && (
+              <div>
+                {hostAddedProperties.length > 0 && (
+                  <div className="flex items-center gap-4 mb-6">
+                    <div className="h-px bg-border flex-1"></div>
+                    <h3 className="text-lg font-bold text-muted-foreground whitespace-nowrap">
+                      Demo Properties
+                    </h3>
+                    <div className="h-px bg-border flex-1"></div>
+                  </div>
+                )}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+                  {demoFilteredProperties.map((property) => (
+                    <PreLaunchPropertyCard key={property.id} property={property} />
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           <div className="text-center py-16 px-4 rounded-3xl border border-dashed border-border bg-muted/20 max-w-md mx-auto">
