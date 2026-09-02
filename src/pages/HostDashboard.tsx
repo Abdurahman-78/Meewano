@@ -115,13 +115,6 @@ const HostDashboard = () => {
   const handleDeleteProperty = async (propertyId: string) => {
     if (!confirm("Are you sure you want to delete this property listing?")) return;
 
-    // Check if it's in prelaunch properties
-    const isPrelaunchItem = preLaunchProperties.some(p => p.id === propertyId);
-    if (isPrelaunchItem) {
-      deletePreLaunchProperty(propertyId);
-      return;
-    }
-
     try {
       const { error } = await supabase
         .from("properties")
@@ -181,30 +174,12 @@ const HostDashboard = () => {
 
   // PRE-LAUNCH HOST VIEW (Simplified Dashboard: ONLY Properties with Add, Edit, Delete)
   if (isPreLaunch) {
-    // Combine preLaunchProperties and Supabase properties
-    const displayProperties = [
-      ...preLaunchProperties.map(p => ({
-        id: p.id,
-        title: p.title,
-        location: p.location,
-        city: p.city,
-        price_per_night: p.price_per_night,
-        is_active: p.is_active ?? true,
-        images: [p.image],
-        bedrooms: p.bedrooms,
-        bathrooms: p.bathrooms,
-        max_guests: p.max_guests,
-        isPrelaunch: true,
-        raw: p,
-      })),
-      ...properties
-        .filter(p => !preLaunchProperties.some(pl => pl.id === p.id))
-        .map(p => ({
-          ...p,
-          isPrelaunch: false,
-          raw: null,
-        }))
-    ];
+    // Only display actual properties from Supabase that belong to the host
+    const displayProperties = properties.map(p => ({
+      ...p,
+      isPrelaunch: false,
+      raw: null,
+    }));
 
     return (
       <HostLayout>
@@ -218,7 +193,7 @@ const HostDashboard = () => {
                   Pre-Launch Host Hub
                 </span>
               </div>
-              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Host Dashboard • My Properties</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">My Properties</h1>
               <p className="text-muted-foreground text-sm mt-1">
                 Manage your registered spaces for Meewano. You can add new properties, edit details, or remove listings.
               </p>
@@ -226,7 +201,7 @@ const HostDashboard = () => {
             
             <Button
               className="bg-primary hover:bg-primary/90 text-primary-foreground h-11 rounded-full px-6 font-semibold shadow-md flex items-center gap-2"
-              onClick={openAddPropertyModal}
+              onClick={() => navigate("/host/add-listing")}
             >
               <Plus className="h-4 w-4" />
               + Add Property
@@ -258,7 +233,7 @@ const HostDashboard = () => {
               </p>
               <Button
                 className="bg-primary hover:bg-primary/90 text-primary-foreground h-11 rounded-full px-7 font-semibold"
-                onClick={openAddPropertyModal}
+                onClick={() => navigate("/host/add-listing")}
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Add Your First Property
@@ -340,29 +315,7 @@ const HostDashboard = () => {
                               size="sm"
                               variant="outline"
                               className="h-9 px-3 rounded-xl gap-1.5 text-xs font-semibold hover:border-primary hover:text-primary"
-                              onClick={() => {
-                                if (property.raw) {
-                                  openEditPropertyModal(property.raw as PreLaunchPropertyItem);
-                                } else {
-                                  openEditPropertyModal({
-                                    id: property.id,
-                                    title: property.title,
-                                    city: property.city || "Erbil",
-                                    location: property.location,
-                                    price_per_night: property.price_per_night,
-                                    bedrooms: property.bedrooms || 2,
-                                    bathrooms: property.bathrooms || 1,
-                                    max_guests: property.max_guests || 4,
-                                    description: "",
-                                    image: property.images?.[0] || "",
-                                    rating: 5.0,
-                                    reviews_count: 0,
-                                    badges: ["WiFi", "Mountain View"],
-                                    amenities: ["WiFi", "Mountain View"],
-                                    is_active: true,
-                                  });
-                                }
-                              }}
+                              onClick={() => navigate(`/host/edit-listing/${property.id}`)}
                             >
                               <Edit className="h-3.5 w-3.5" />
                               Edit

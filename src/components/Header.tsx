@@ -247,9 +247,11 @@ const Header = () => {
                           Host Dashboard (My Properties)
                         </Link>
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={openAddPropertyModal} className="cursor-pointer">
-                        <Sparkles className="h-4 w-4 mr-2" />
-                        List a New Property
+                      <DropdownMenuItem asChild>
+                        <Link to="/host/add-listing" className="cursor-pointer">
+                          <Sparkles className="h-4 w-4 mr-2" />
+                          Add a New Property
+                        </Link>
                       </DropdownMenuItem>
                     </>
                   ) : (

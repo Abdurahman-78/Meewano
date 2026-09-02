@@ -7,6 +7,8 @@ import {
 } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { usePreLaunch } from "@/contexts/PreLaunchContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { Link } from "react-router-dom";
 import {
   Sparkles,
   Percent,
@@ -26,6 +28,7 @@ import {
 
 export const PreLaunchSections: React.FC = () => {
   const { settings, openAddPropertyModal } = usePreLaunch();
+  const { user } = useAuth();
 
   const perkIconMap: Record<string, React.ElementType> = {
     Percent: Percent,
@@ -113,13 +116,12 @@ export const PreLaunchSections: React.FC = () => {
               </div>
 
               <div className="pt-3">
-                <Button
-                  onClick={openAddPropertyModal}
-                  className="rounded-full bg-primary hover:bg-primary/90 font-semibold px-6"
-                >
-                  <Home className="h-4 w-4 mr-2" />
-                  Become a Host
-                </Button>
+                <Link to={user ? "/host" : "/become-host"}>
+                  <Button className="rounded-full bg-primary hover:bg-primary/90 font-semibold px-6">
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    {user ? "Host Dashboard" : "Become a Host"}
+                  </Button>
+                </Link>
               </div>
             </div>
 
@@ -186,7 +188,7 @@ export const PreLaunchSections: React.FC = () => {
             Frequently Asked Questions
           </h2>
           <p className="mt-2 text-sm sm:text-base text-muted-foreground">
-            Everything you need to know about listing your space during pre-launch.
+            Everything you need to know about adding your property during pre-launch.
           </p>
         </div>
 
@@ -261,18 +263,19 @@ export const PreLaunchSections: React.FC = () => {
             </h3>
 
             <p className="text-sm sm:text-base text-white/90 font-normal leading-relaxed">
-              Join homeowners across Erbil, Sulaymaniyah, Duhok, and Rawanduz. List your space in minutes.
+              Join homeowners across Erbil, Sulaymaniyah, Duhok, and Rawanduz.
             </p>
 
             <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
-              <Button
-                size="lg"
-                onClick={openAddPropertyModal}
-                className="w-full sm:w-auto h-12 px-8 rounded-full bg-slate-950 hover:bg-slate-900 text-white font-bold shadow-lg transition-transform hover:scale-105"
-              >
-                <Home className="h-4 w-4 mr-2" />
-                Become a Host Now
-              </Button>
+              <Link to={user ? "/host" : "/become-host"} className="w-full sm:w-auto">
+                <Button
+                  size="lg"
+                  className="w-full sm:w-auto h-12 px-8 rounded-full bg-slate-950 hover:bg-slate-900 text-white font-bold shadow-lg transition-transform hover:scale-105"
+                >
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  {user ? "Host Dashboard" : "Become a Host Now"}
+                </Button>
+              </Link>
             </div>
           </div>
         </div>

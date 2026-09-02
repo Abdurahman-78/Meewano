@@ -248,12 +248,12 @@ export const PreLaunchHostModal: React.FC = () => {
             </span>
           </div>
           <DialogTitle className="text-xl md:text-2xl font-bold tracking-tight">
-            {editingProperty ? "Edit Your Pre-Launch Listing" : "List Your Space with Meewano"}
+            {editingProperty ? "Edit Your Pre-Launch Listing" : "Add a Property to Meewano"}
           </DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground mt-1">
             {editingProperty
               ? "Update your property details. Changes sync immediately to the pre-launch feed."
-              : "Pre-register your space today and join Kurdistan's dedicated vacation rental network."}
+              : "Pre-register your property today and join Kurdistan's dedicated vacation rental network."}
           </DialogDescription>
         </div>
 

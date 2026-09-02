@@ -73,7 +73,7 @@ const HostLayout = ({ children }: HostLayoutProps) => {
               <Button
                 size="sm"
                 className="hidden sm:flex rounded-full gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
-                onClick={openAddPropertyModal}
+                onClick={() => navigate("/host/add-listing")}
               >
                 <Sparkles className="h-3.5 w-3.5" />
                 + Add Property

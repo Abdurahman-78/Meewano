@@ -7,7 +7,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sparkles, Plus, Home, Search, MapPin, SlidersHorizontal, Eye } from "lucide-react";
 
+import { useAuth } from "@/contexts/AuthContext";
+import { Link } from "react-router-dom";
+
 export const PreLaunchView: React.FC = () => {
+  const { user } = useAuth();
   const { properties, openAddPropertyModal } = usePreLaunch();
 
   const [selectedCity, setSelectedCity] = useState<string>("All");
@@ -59,14 +63,15 @@ export const PreLaunchView: React.FC = () => {
             </p>
           </div>
 
-          <Button
-            id="prelaunch-add-property-btn"
-            onClick={openAddPropertyModal}
-            className="rounded-full bg-primary hover:bg-primary/90 font-semibold px-5 shadow-sm shrink-0 self-start md:self-end flex items-center gap-2"
-          >
-            <Plus className="h-4 w-4" />
-            <span>List Your Space</span>
-          </Button>
+          <Link to={user ? "/host/add-listing" : "/become-host"}>
+            <Button
+              id="prelaunch-add-property-btn"
+              className="rounded-full bg-primary hover:bg-primary/90 font-semibold px-5 shadow-sm shrink-0 self-start md:self-end flex items-center gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              <span>Add Property</span>
+            </Button>
+          </Link>
         </div>
 
         {/* City Filter Pills & Quick Search */}

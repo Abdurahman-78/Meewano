@@ -83,7 +83,32 @@ const PropertyDetail = () => {
   const [authPromptOpen, setAuthPromptOpen] = useState(false);
 
   const queryClient = useQueryClient();
-  const { data: property, isLoading, error } = useProperty(id || "");
+  const { data: dbProperty, isLoading: dbLoading, error: dbError } = useProperty(id || "");
+  const { properties: preLaunchProperties } = usePreLaunch();
+  
+  const demoProperty = isPreLaunch ? preLaunchProperties.find(p => p.id === id) : null;
+  
+  const property = demoProperty ? {
+    id: demoProperty.id,
+    title: demoProperty.title,
+    location: demoProperty.location,
+    city: demoProperty.city || "Erbil",
+    price_per_night: demoProperty.price_per_night,
+    bedrooms: demoProperty.bedrooms || 2,
+    bathrooms: demoProperty.bathrooms || 1,
+    max_guests: demoProperty.max_guests || 4,
+    description: demoProperty.description || "A beautiful pre-launch demo property.",
+    images: demoProperty.images || (demoProperty.image ? [demoProperty.image] : []),
+    host_id: "demo-host",
+    rating: demoProperty.rating || 5.0,
+    review_count: demoProperty.reviews_count || 0,
+    amenities: demoProperty.amenities || demoProperty.badges || [],
+    is_active: true,
+  } : dbProperty;
+
+  const isLoading = demoProperty ? false : dbLoading;
+  const error = demoProperty ? null : dbError;
+
   const { data: allProperties } = useProperties();
   const { isFavorite, toggleFavorite } = useFavorites(user?.id || null);
   const favorited = id ? isFavorite(id) : false;
@@ -964,37 +989,46 @@ const PropertyDetail = () => {
                 <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />{" "}
                 {t("checkOut")}
               </label>
-              <div className="rounded-lg border border-border bg-background overflow-hidden">
-                <Calendar
-                  mode="range"
-                  numberOfMonths={1}
-                  selected={{
-                    from: checkIn ? new Date(checkIn) : undefined,
-                    to: checkOut ? new Date(checkOut) : undefined,
-                  }}
-                  onSelect={(range) => {
-                    if (range?.from)
-                      setCheckIn(format(range.from, "yyyy-MM-dd"));
-                    else setCheckIn("");
-                    if (range?.to) setCheckOut(format(range.to, "yyyy-MM-dd"));
-                    else setCheckOut("");
-                  }}
-                  disabled={(date) =>
-                    date < new Date(new Date().setHours(0, 0, 0, 0)) ||
-                    isDateBooked(date) ||
-                    isDateBlocked(date) ||
-                    isDateOutsideAvailability(date)
-                  }
-                  modifiers={{ booked: bookedDates }}
-                  modifiersClassNames={{
-                    booked:
-                      "line-through text-destructive bg-destructive/10 rounded-md",
-                  }}
-                  className="p-3 pointer-events-auto"
-                />
-                <div className="px-3 pb-3 text-xs text-muted-foreground flex items-center gap-2">
-                  <span className="inline-block w-3 h-3 rounded bg-destructive/20 border border-destructive/40" />
-                  Booked — not available
+              <div className="rounded-lg border border-border bg-background overflow-hidden relative">
+                {isPreLaunch && (
+                  <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/50 backdrop-blur-[1px]">
+                    <span className="px-3 py-1.5 rounded-full bg-background/80 border text-sm font-semibold shadow-sm text-foreground">
+                      Coming Soon
+                    </span>
+                  </div>
+                )}
+                <div className={isPreLaunch ? "opacity-50 pointer-events-none select-none" : ""}>
+                  <Calendar
+                    mode="range"
+                    numberOfMonths={1}
+                    selected={{
+                      from: checkIn ? new Date(checkIn) : undefined,
+                      to: checkOut ? new Date(checkOut) : undefined,
+                    }}
+                    onSelect={(range) => {
+                      if (range?.from)
+                        setCheckIn(format(range.from, "yyyy-MM-dd"));
+                      else setCheckIn("");
+                      if (range?.to) setCheckOut(format(range.to, "yyyy-MM-dd"));
+                      else setCheckOut("");
+                    }}
+                    disabled={(date) =>
+                      date < new Date(new Date().setHours(0, 0, 0, 0)) ||
+                      isDateBooked(date) ||
+                      isDateBlocked(date) ||
+                      isDateOutsideAvailability(date)
+                    }
+                    modifiers={{ booked: bookedDates }}
+                    modifiersClassNames={{
+                      booked:
+                        "line-through text-destructive bg-destructive/10 rounded-md",
+                    }}
+                    className="p-3 pointer-events-auto"
+                  />
+                  <div className="px-3 pb-3 text-xs text-muted-foreground flex items-center gap-2">
+                    <span className="inline-block w-3 h-3 rounded bg-destructive/20 border border-destructive/40" />
+                    Booked — not available
+                  </div>
                 </div>
                 <div className="px-3 pb-3">
                   <Button
@@ -1544,38 +1578,47 @@ const PropertyDetail = () => {
                       <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />{" "}
                       {t("checkOut")}
                     </label>
-                    <div className="rounded-lg border border-border bg-background overflow-hidden">
-                      <Calendar
-                        mode="range"
-                        numberOfMonths={1}
-                        selected={{
-                          from: checkIn ? new Date(checkIn) : undefined,
-                          to: checkOut ? new Date(checkOut) : undefined,
-                        }}
-                        onSelect={(range) => {
-                          if (range?.from)
-                            setCheckIn(format(range.from, "yyyy-MM-dd"));
-                          else setCheckIn("");
-                          if (range?.to)
-                            setCheckOut(format(range.to, "yyyy-MM-dd"));
-                          else setCheckOut("");
-                        }}
-                        disabled={(date) =>
-                          date < new Date(new Date().setHours(0, 0, 0, 0)) ||
-                          isDateBooked(date) ||
-                          isDateBlocked(date) ||
-                          isDateOutsideAvailability(date)
-                        }
-                        modifiers={{ booked: bookedDates }}
-                        modifiersClassNames={{
-                          booked:
-                            "line-through text-destructive bg-destructive/10 rounded-md",
-                        }}
-                        className="p-3 pointer-events-auto"
-                      />
-                      <div className="px-3 pb-3 text-xs text-muted-foreground flex items-center gap-2">
-                        <span className="inline-block w-3 h-3 rounded bg-destructive/20 border border-destructive/40" />
-                        Booked — not available
+                    <div className="rounded-lg border border-border bg-background overflow-hidden relative">
+                      {isPreLaunch && (
+                        <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/50 backdrop-blur-[1px]">
+                          <span className="px-3 py-1.5 rounded-full bg-background/80 border text-sm font-semibold shadow-sm text-foreground">
+                            Coming Soon
+                          </span>
+                        </div>
+                      )}
+                      <div className={isPreLaunch ? "opacity-50 pointer-events-none select-none" : ""}>
+                        <Calendar
+                          mode="range"
+                          numberOfMonths={1}
+                          selected={{
+                            from: checkIn ? new Date(checkIn) : undefined,
+                            to: checkOut ? new Date(checkOut) : undefined,
+                          }}
+                          onSelect={(range) => {
+                            if (range?.from)
+                              setCheckIn(format(range.from, "yyyy-MM-dd"));
+                            else setCheckIn("");
+                            if (range?.to)
+                              setCheckOut(format(range.to, "yyyy-MM-dd"));
+                            else setCheckOut("");
+                          }}
+                          disabled={(date) =>
+                            date < new Date(new Date().setHours(0, 0, 0, 0)) ||
+                            isDateBooked(date) ||
+                            isDateBlocked(date) ||
+                            isDateOutsideAvailability(date)
+                          }
+                          modifiers={{ booked: bookedDates }}
+                          modifiersClassNames={{
+                            booked:
+                              "line-through text-destructive bg-destructive/10 rounded-md",
+                          }}
+                          className="p-3 pointer-events-auto"
+                        />
+                        <div className="px-3 pb-3 text-xs text-muted-foreground flex items-center gap-2">
+                          <span className="inline-block w-3 h-3 rounded bg-destructive/20 border border-destructive/40" />
+                          Booked — not available
+                        </div>
                       </div>
                       <div className="px-3 pb-3">
                         <Button

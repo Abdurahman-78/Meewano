@@ -1,0 +1,33 @@
+--- src/pages/PropertyDetail.tsx
++++ src/pages/PropertyDetail.tsx
+@@ -83,7 +83,26 @@
+   const queryClient = useQueryClient();
+ 
+-  const { data: property, isLoading, error } = useProperty(id || "");
++  const { data: dbProperty, isLoading: dbLoading, error: dbError } = useProperty(id || "");
++  const { properties: preLaunchProperties } = usePreLaunch();
++  
++  const demoProperty = isPreLaunch ? preLaunchProperties.find(p => p.id === id) : null;
++  
++  const property = demoProperty ? {
++    id: demoProperty.id,
++    title: demoProperty.title,
++    location: demoProperty.location,
++    city: demoProperty.city || "Erbil",
++    price_per_night: demoProperty.price_per_night,
++    bedrooms: demoProperty.bedrooms || 2,
++    bathrooms: demoProperty.bathrooms || 1,
++    max_guests: demoProperty.max_guests || 4,
++    description: demoProperty.description || "A beautiful pre-launch demo property.",
++    images: demoProperty.images || (demoProperty.image ? [demoProperty.image] : []),
++    host_id: "demo-host",
++    rating: demoProperty.rating || 5.0,
++    review_count: demoProperty.reviews_count || 0,
++    amenities: demoProperty.amenities || demoProperty.badges || [],
++    is_active: true,
++  } : dbProperty;
++
++  const isLoading = demoProperty ? false : dbLoading;
++  const error = demoProperty ? null : dbError;
+ 
+   const { data: allProperties } = useProperties();

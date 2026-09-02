@@ -1,5 +1,5 @@
 import { Menu, Home, User, MessageSquare, Settings, Heart, LogOut, Shield, Building2, Info, Map, Compass, DollarSign, Sparkles, HelpCircle } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -18,6 +18,7 @@ const MobileMenu = () => {
   const { language } = useLanguage();
   const { user, signOut } = useAuth();
   const { isAdmin } = useUserRole();
+  const navigate = useNavigate();
   const { data: hostVerification } = useMyHostVerification();
   const { mode, openAddPropertyModal } = usePreLaunch();
   const isPreLaunch = mode === "pre-launch";
@@ -68,7 +69,7 @@ const MobileMenu = () => {
                   <button
                     onClick={() => {
                       close();
-                      openAddPropertyModal();
+                      navigate("/host/add-listing");
                     }}
                     className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold bg-primary/10 text-primary hover:bg-primary/20 transition-colors text-left"
                   >

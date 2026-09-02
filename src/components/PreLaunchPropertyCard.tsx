@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { usePreLaunch, PreLaunchPropertyItem } from "@/contexts/PreLaunchContext";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 interface PreLaunchPropertyCardProps {
   property: PreLaunchPropertyItem;
@@ -13,10 +14,10 @@ interface PreLaunchPropertyCardProps {
 
 export const PreLaunchPropertyCard: React.FC<PreLaunchPropertyCardProps> = ({ property }) => {
   const { formatPrice } = useCurrency();
-  const { setSelectedPreviewProperty } = usePreLaunch();
+  const navigate = useNavigate();
 
   const handleCardClick = () => {
-    setSelectedPreviewProperty(property);
+    navigate(`/property/${property.id}`);
   };
 
   const handleComingSoonClick = (e: React.MouseEvent) => {
@@ -58,14 +59,20 @@ export const PreLaunchPropertyCard: React.FC<PreLaunchPropertyCardProps> = ({ pr
       <CardContent className="p-4 flex-1 flex flex-col justify-between">
         <div>
           {/* Title & Rating */}
-          <div className="flex items-start justify-between gap-2 mb-1.5">
-            <h3 className="font-bold text-base text-foreground line-clamp-1 group-hover:text-primary transition-colors">
-              {property.title}
-            </h3>
-            <div className="flex items-center gap-1 shrink-0 bg-secondary/80 px-1.5 py-0.5 rounded text-xs font-semibold text-foreground">
-              <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-              <span>{property.rating ? property.rating.toFixed(2) : "5.0"}</span>
+          <div className="flex flex-col gap-1.5 mb-1.5">
+            <div className="flex items-start justify-between gap-2">
+              <h3 className="font-bold text-base text-foreground line-clamp-1 group-hover:text-primary transition-colors">
+                {property.title}
+              </h3>
+              <div className="flex items-center gap-1 shrink-0 bg-secondary/80 px-1.5 py-0.5 rounded text-xs font-semibold text-foreground">
+                <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+                <span>{property.rating ? property.rating.toFixed(2) : "5.0"}</span>
+              </div>
             </div>
+            {/* Demo Property Label */}
+            <span className="inline-flex w-max items-center px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/10 text-amber-600 border border-amber-500/20 uppercase tracking-wider">
+              Demo Property
+            </span>
           </div>
 
           {/* Location */}

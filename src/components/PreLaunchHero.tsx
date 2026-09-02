@@ -2,6 +2,8 @@ import React from "react";
 import heroBanner from "@/assets/hero-banner.jpg";
 import { Button } from "@/components/ui/button";
 import { usePreLaunch } from "@/contexts/PreLaunchContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { Link } from "react-router-dom";
 import {
   Sparkles,
   Home,
@@ -10,6 +12,7 @@ import {
 
 export const PreLaunchHero: React.FC = () => {
   const { openAddPropertyModal } = usePreLaunch();
+  const { user } = useAuth();
 
   const scrollToProperties = () => {
     const el = document.getElementById("prelaunch-properties-section");
@@ -40,7 +43,7 @@ export const PreLaunchHero: React.FC = () => {
         <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-white tracking-tight leading-[1.15] mb-5">
           Meewano is launching soon!
           <span className="block text-primary font-extrabold mt-1 text-2xl sm:text-3xl md:text-4xl">
-            List your space early and become a host today.
+            Become a host today.
           </span>
         </h1>
 
@@ -49,17 +52,18 @@ export const PreLaunchHero: React.FC = () => {
           Kurdistan’s dedicated vacation rental platform. Pre-register your villa, chalet, or modern apartment across Erbil, Sulaymaniyah, Duhok, Rawanduz, and beyond.
         </p>
 
-        {/* Hero Call-to-Actions (removed 0% Fee and styled matching brand logo) */}
+        {/* Hero Call-to-Actions */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3.5">
-          <Button
-            id="hero-become-host-btn"
-            size="lg"
-            className="w-full sm:w-auto h-12 md:h-14 px-8 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-base shadow-xl transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-2 border border-primary/30"
-            onClick={openAddPropertyModal}
-          >
-            <Home className="h-5 w-5" />
-            Become a Host
-          </Button>
+          <Link to={user ? "/host" : "/become-host"} className="w-full sm:w-auto">
+            <Button
+              id="hero-become-host-btn"
+              size="lg"
+              className="w-full h-12 md:h-14 px-8 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-base shadow-xl transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-2 border border-primary/30"
+            >
+              <Sparkles className="h-5 w-5" />
+              {user ? "Host Dashboard" : "Become a Host"}
+            </Button>
+          </Link>
 
           <Button
             id="hero-preview-stays-btn"
