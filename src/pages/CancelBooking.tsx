@@ -60,6 +60,26 @@ const CancelBooking = () => {
 
   // Not-eligible / request-review state
   const [mode, setMode] = useState<Mode>("eligible");
+
+  const { data: recentCancellations = 0 } = useQuery({
+    queryKey: ["recent-cancellations", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      const { count, error } = await supabase
+        .from("bookings")
+        .select("*", { count: "exact", head: true })
+        .eq("guest_id", user!.id)
+        .eq("status", "cancelled")
+        .gte("cancelled_at", thirtyDaysAgo.toISOString());
+      if (error) throw error;
+      return count || 0;
+    }
+  });
+  
+  const showCancelWarning = recentCancellations >= 3;
+
   const [xReason, setXReason] = useState("");
   const [xOther, setXOther] = useState("");
   const [details, setDetails] = useState("");
@@ -239,7 +259,8 @@ const CancelBooking = () => {
   );
 
   const SummaryCard = (
-    <Card className="mb-6">
+    
+          <Card className="mb-6">
       <CardHeader><CardTitle>Cancellation Summary</CardTitle></CardHeader>
       <CardContent className="space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
@@ -258,6 +279,14 @@ const CancelBooking = () => {
       <AppLayout>
         <main className="container mx-auto px-4 py-6 md:py-10 max-w-3xl">
           {SummaryHeader}
+          {showCancelWarning && (
+            <div className="mb-6 p-4 rounded-xl border border-destructive/50 bg-destructive/10 text-destructive flex gap-3">
+              <AlertTriangle className="h-5 w-5 shrink-0 mt-0.5" />
+              <p className="text-sm font-semibold">
+                This is your {recentCancellations + 1}th time you have cancelled a booking, please note your cancellation frequency will be reviewed!
+              </p>
+            </div>
+          )}
           {SummaryCard}
 
           <Card className="mb-6 border-destructive/40">
@@ -308,7 +337,16 @@ const CancelBooking = () => {
       <AppLayout>
         <main className="container mx-auto px-4 py-6 md:py-10 max-w-3xl">
           {SummaryHeader}
+          {showCancelWarning && (
+            <div className="mb-6 p-4 rounded-xl border border-destructive/50 bg-destructive/10 text-destructive flex gap-3">
+              <AlertTriangle className="h-5 w-5 shrink-0 mt-0.5" />
+              <p className="text-sm font-semibold">
+                This is your {recentCancellations + 1}th time you have cancelled a booking, please note your cancellation frequency will be reviewed!
+              </p>
+            </div>
+          )}
 
+          
           <Card className="mb-6">
             <CardHeader><CardTitle>Select reason for cancellation</CardTitle></CardHeader>
             <CardContent className="space-y-4">
@@ -330,6 +368,7 @@ const CancelBooking = () => {
             </CardContent>
           </Card>
 
+          
           <Card className="mb-6">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle>Provide more details of the circumstance</CardTitle>
@@ -380,6 +419,7 @@ const CancelBooking = () => {
             </CardContent>
           </Card>
 
+          
           <Card className="mb-6">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle>Upload supporting evidence</CardTitle>
@@ -449,6 +489,7 @@ const CancelBooking = () => {
             </CardContent>
           </Card>
 
+          
           <Card className="mb-6">
             <CardContent className="pt-6 space-y-3">
               <label className="flex items-start gap-3 cursor-pointer">
@@ -479,8 +520,17 @@ const CancelBooking = () => {
     <AppLayout>
       <main className="container mx-auto px-4 py-6 md:py-10 max-w-3xl">
         {SummaryHeader}
+          {showCancelWarning && (
+            <div className="mb-6 p-4 rounded-xl border border-destructive/50 bg-destructive/10 text-destructive flex gap-3">
+              <AlertTriangle className="h-5 w-5 shrink-0 mt-0.5" />
+              <p className="text-sm font-semibold">
+                This is your {recentCancellations + 1}th time you have cancelled a booking, please note your cancellation frequency will be reviewed!
+              </p>
+            </div>
+          )}
 
-        <Card className="mb-6">
+        
+          <Card className="mb-6">
           <CardHeader><CardTitle>Cancellation Summary</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
@@ -506,7 +556,8 @@ const CancelBooking = () => {
           </CardContent>
         </Card>
 
-        <Card className="mb-6">
+        
+          <Card className="mb-6">
           <CardHeader><CardTitle>Select a reason for cancellation</CardTitle></CardHeader>
           <CardContent className="space-y-6">
             <div>

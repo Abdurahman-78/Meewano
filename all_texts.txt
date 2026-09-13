@@ -1,0 +1,843 @@
+[ 3892, -4338] MUST HAVE 
+[ 4265, -4335] SHOULD HAVE
+[ 4661, -4334] COULD HAVE 
+[ 4219, -4282] (Important but not critical- 
+ could be added after launch)
+[ 3882, -4282] (Needs be included 
+ before launch)
+[ 4595, -4273] (Nice to have extras,optional)
+[ 5759, -4249]  
+ Standard  Cancellation Policy: 
+  
+ Within 24 Hours of Booking and check in is more than 7 days away.   
+ >Full refund. 
+ Reason: People make mistakes. 
+  
+ More Than 30 Days Before Check-in 
+ >Full refund. 
+ Reason: Host has plenty of time to rebook. 
+  
+ 14–30 Days Before Check-in 
+ >90% refund. 
+ Host keeps 10%. 
+ Reason: Host may suffer some loss. 
+  
+ >7–14 Days Before Check-in 
+ 50% refund. 
+ Reason: Risk is shared fairly. 
+  
+ Less Than 7 Days Before Check-in 
+ No refund unless: 
+ Property rebooks 
+ Host voluntarily agrees 
+ Exceptional circumstances apply 
+  
+  
+ Exceptional Circumstances: 
+ Full refund if: 
+ Death of immediate family member 
+ Serious illness with evidence 
+ Government travel ban 
+ War or civil unrest 
+ Natural disaster 
+  
+ *Cancellation causes Meewano loss due to payment fees,  
+ later when business grows, include payment fees 
+  
+ 
+[ 6415, -4229] Customer No Show
+[ 3855, -4200] 1. Fast operating air-bnb 
+ style website 
+  
+ 2. Easy to Navigate 
+  
+ 3. Modern light design  
+  
+ 4. Compatible on all devices 
+  
+ 5. Cash in hand payment 
+ method 
+  
+ 6. Popular online payment 
+ methods in Iraq 
+  
+ 7. Host custom pricing 
+ strategies  
+  
+ 8. Fully secured 
+ websites/data 
+  
+ 9. Pre-laucn 
+ 
+[ 4212, -4197] 1. International payment 
+ method -visa debit, 
+ paypal... 
+  
+ 2. 
+[ 4581, -4190] * Comprehensive Photo and ID 
+ verification API  
+  
+ * Suggest recommended prices to hosts 
+ based on available meewano data. 
+[ 6415, -4186] When a guest books on Booking.com with a cash-on-arrival option and 
+ fails to turn up (a "no-show"), the host must mark the reservation as a 
+ no-show in the extranet to avoid paying commission, while Booking.com 
+ charges no commission for that cancelled stay once reported. [1]
+[ 6543, -4108] ## What Happens to the Host
+[ 6417, -4084] * Marking the No-Show: The host must log into the Booking.com Extranet 
+ and mark the guest as a "no-show" (usually available starting from the 
+ check-in date). [2]
+[ 6420, -4032] * Commission Charges: If marked correctly as a no-show, the host does 
+ not pay commission to Booking.com for the uncollected revenue. [3]
+[ 6412, -4006] * Loss of Income & Room Availability: The host loses the expected 
+ revenue for that night and often could not sell the room to someone else 
+ because it was held.
+[ 6412, -3968] * Fee Collection Limitations: If the booking relied strictly on cash 
+ with no valid credit card provided or pre-authorization set up, the host 
+ generally cannot collect any no-show or cancellation fees from the 
+ guest. [2]
+[ 6534, -3871] ## What Happens to Booking.com
+[ 6415, -3847] * Commission Waiver: Booking.com will waive the commission fee for that 
+ specific reservation once the property officially marks it as a no-show 
+ in their system. [4, 5]
+[ 6415, -3802] * Guest Accountability: Booking.com tracks guest no-shows. If a guest 
+ repeatedly fails to show up without cancelling, Booking.com may issue a 
+ warning or eventually close/restrict the guest's account.
+[ 6417, -3731] If you are managing a property and dealing with a current no-show, let 
+ me know:
+[ 6438, -3674] * Did you collect a credit card or phone number during booking?
+[ 6415, -3656] * Have you already marked the reservation as a no-show in the extranet?
+[ 6412, -3625] I can walk you through the exact steps to protect your listing and waive 
+ the commission.
+[ 5458, -3435] Withhold 
+ payment until 
+ booking 
+ completed?
+[12383, -3374] Benefits of Joining Meewano Today
+[12451, -3364] Greater Property Visibility
+[12395, -3363] Reach More Guests
+[12453, -3360] Give your property a professional 
+ presence on a dedicated 
+ accommodation marketplace.
+[12395, -3359] Get your property in front of a 
+ wider audience looking for 
+ accommodation in Kurdistan.
+[12397, -3343] Set Your Own Price
+[12397, -3339] You control of your rates and can 
+ adjust pricing to suit demand 
+ through easy calendar system. 
+[12618, -3337] We will showcase your property  
+ to guests from across the world. 
+[12714, -3334] Guests view and book  
+ your property
+[12548, -3332] Register Your Property
+[ 5402, -3286] Deduct service fees for 
+ Meewano: 
+ 
+[ 6788, -2581] Remove
+[ 3784, -2565] pre-launch landing page for host set up (This a change from agreement, 
+ although it is standard for this kind of website/business)  
+   
+ - Ahmad produce Prelaunch map for 23/08/26 
+ - Start pre launch from week 17/08/26 
+ - Pre-launch ready for review in 06/09/26 
+ - Pr-launch (check list: security...etc) 
+ - Pe-launch live - 13/09/26 
+   
+ 
+[ 6683, -2533] Add for admin view - Number of hosts per location 
+[ 9669, -2244] 0-30 Properties registered = show 'Our First Properties are now Joining Meewano' 
+ >30 properties registered = show '31/100 Properties Registered' 
+ >100 properties register = '101 Properties Registered'
+[ 8008, -2212] Languages not set
+[ 7389, -2147] Remove Star Symbol (it shows its made by Ai)
+[ 8211, -2111] New Section 
+[ 9505, -2055] Our First Properties are now Joinign Meewano
+[ 9086, -2055] Registered Properties
+[10211, -2043] 'Add Your Property'
+[ 9070, -2001] All registered properties will be advertised during the main website launch.  
+ Be from the first 100 hosts to register your property and receive one time only special offer.
+[11883, -1960] 4 Demo properties is enough.  
+  
+ Admin user to be able to edit,  
+ change all demo properties. 
+[ 9874, -1954] Swap places
+[ 9849, -1907] swap positions
+[ 6984, -1897] Register Your Property and Reach More Guests
+[12520, -1851] Meewano is a digital accommodation marketplace connecting guests with hotels, holiday 
+ homes, apartments, villas and other short-stay properties across Kurdistan. 
+  
+ We make it easier for guests to discover and book accommodation, while giving local hosts a 
+ simple way to showcase and manage their properties
+[15168, -1841] Question and answers to be revised........
+[13797, -1831] An Easier Way to Explore Kurdistan
+[ 4676, -1828] 30/08/26 - Check Pre-launch process steps  
+ Some updates will be done for next week. 
+[ 7595, -1805] Property
+[ 7125, -1788] Meewano is the first accomodation marketplace built for Kurdistan to 
+ connect hosts with guests looking for short-term stays.
+[13789, -1757] Meewano was created from a simple observation: exploring Kurdistan should be easier, and finding a place to stay should not be a source of 
+ uncertainty or frustration. 
+  
+ The idea was inspired by the experience of travellers struggling to find reliable holiday accommodation through personal recommendations, 
+ social media and informal networks. Prices often required lengthy negotiation, availability was unpredictable, and it was difficult to know whether 
+ a property would truly match its description. 
+  
+ There was also a lack of clear information for guests — from property instructions and local guidance to what they could expect on arrival — 
+ while hosts could be hesitant to accept guests due to a lack of trust and reliable information. 
+  
+ Meewano brings hosts and guests together through a dedicated accommodation marketplace, Meewano is creating a simpler, clearer and more 
+ trusted way to stay in Kurdistan. 
+  
+ Our vision is simple: make hosting easier, and help people explore Kurdistan with confidence 
+ 
+[ 7187, -1695] Register Your Property
+[12749, -1687] How It Works
+[ 7021, -1620] Be one of our first 100 hosts and enjoy your first 10 bookings comission-free!
+[ 4058, -1568] Main Website - 
+ Offline
+[ 5983, -1553] Offical Launch
+[13290, -1533] 4
+[13386, -1533] Host
+[13015, -1533] 3
+[13078, -1532] Bookings
+[12480, -1531] Register
+[12788, -1531] Publish
+[12420, -1531] 1
+[12718, -1530] 2
+[13310, -1448] Welcome Your Guest and  
+ receive your booking income. 
+[13049, -1447] Guests discover and book  
+ your property on Meewano
+[12369, -1445] Create an account 
+ and register your property through easy  
+ step by step process. 
+[12693, -1435] Add your property details, upload photos,  
+ add pricing and publish your property. 
+[ 9393, -1367] The symbols needs to match main website,  
+ and show only symbol and number, no text
+[ 4801, -1323] Host Sign Up Process
+[ 4293, -1281] Pre-Launch Page
+[15357, -1244] Register Your Property
+[ 5368, -1173] Property Live 
+ Demo
+[ 4804, -1143] Let Your Property
+[ 3755,  -743] Host Process 
+[ 6332,  -732]  
+ + Add option for Cash Payment  
+ + Add Master Card / Visa Card  
+[ 8257,  -722] Location and 
+ steps to be 
+ updated.
+[ 6032,  -700] Add Payment Details format 
+ verification for all payment 
+ methods
+[ 6765,  -658] Add multi tab progress flow
+[ 6977,  -618] multi tab not added
+[ 9015,  -604] This button should 
+ be grey colour if no 
+ changes are made, 
+ if changes are made 
+ then it is pink 
+ colour. 
+[ 8079,  -604] Delete 
+ Account
+[ 7954,  -601] Edit 
+ Properties
+[ 7830,  -601] Add new 
+ Property
+[ 7716,  -599] Payment 
+ Details
+[ 7609,  -598] Account 
+ Details
+[ 7481,  -592] Host Panel
+[ 6322,  -588] Copy across initial form information
+[ 3676,  -528] Pre-launch Start
+[ 5499,  -503] Account 
+ Details
+[ 7305,  -476] Name of 
+ property  
+  
+ Features 
+  
+ Description  
+  
+ Map 
+ Location 
+  
+ Upload 
+ Images 
+  
+ Price  
+  
+ Availability  
+  
+ Cleaning 
+ Policy 
+  
+ Welcome 
+ Email
+[ 7978,  -403] Approve
+[ 5600,  -399] Account Verification
+[ 7888,  -384] Admin 
+ Review
+[ 7548,  -381] Submit New Property 
+ to be Listed
+[ 8146,  -379] Property Approved
+[ 6605,  -352] Approve
+[ 5996,  -347] Upload 
+ Ownership 
+ Documents
+[ 9876,  -344] Availability not showing,  
+ month arrow not showing 
+[ 6784,  -338] Welcome Email to 
+ Host and Next Steps
+[ 5085,  -337] Welcome Email to 
+ Host and Next Steps
+[ 5830,  -336] Upload 
+ Selfie
+[ 6159,  -334] Payment 
+ Details
+[ 7077,  -334] Add new 
+ Property
+[ 6515,  -333] Admin 
+ Review
+[ 3686,  -331] Let  Your Property 
+[ 5392,  -329] Host Login
+[ 4552,  -329] Email Verification
+[ 4297,  -328] Submit Form
+[ 4022,  -328] Host Fills in Form
+[ 4824,  -327] Account Created
+[ 5643,  -327] Upload ID
+[ 6343,  -325] Submit 
+[ 7847,  -293] Reject
+[ 6475,  -249] Reject
+[ 8330,  -246] Edit live 
+ property  
+  
+ ( Name, 
+ photos, 
+ features)
+[ 4017,  -229] Number of Rooms 
+  
+ Number of 
+ Bathrooms 
+  
+ Location  
+  
+ First Name  
+ Surname 
+  
+ Email 
+  
+ Password  
+  
+ Mobile Number
+[ 8722,  -221] Approve
+[ 7625,  -202] Email with reason of 
+ rejection
+[ 8633,  -201] Admin 
+ Review
+[ 8880,  -199] Property changes Go 
+ Live
+[ 9722,  -183] Pre-launch End
+[ 6911,  -179] Add option for host to 
+ select 'Instant Booking' 
+ or 'Request to Book'. 
+ Information pop up - 
+ hover over 'Guest can 
+ book available property 
+ immediately' and 'You 
+ will review and approve 
+ each booking request 
+ before it is confirmed'
+[ 7911,  -151] Delete 
+ Account and 
+ Flag
+[10317,  -143] Host can select 
+ property to go to live 
+ or remove from being 
+ live
+[ 5851,  -142] Email with reason of 
+ rejection
+[ 4307,  -109] Password 
+ Strength/Guidance
+[ 8588,   -99] Reject
+[ 5041,   -70] Works as a simple check,  
+ for example accepted face of lion  
+[ 5358,   -70] Add MediaPipe / Face-api.js 
+ for face detection
+[ 7656,   -34] Dates Not Available for Letting
+[ 6486,   -33] Delete 
+ Account and 
+ Flag
+[ 8264,   -23] Email with reason of 
+ rejection
+[ 7221,    31] Upload Property 
+ Ownerhsip
+[ 9109,    60] Host First Name and 
+ Surname not  visible.
+[ 9298,    62] User first name and last name to be shown in top right corner, 
+  instead of email. Email to be shown when hovered over name. 
+[ 8615,    65] Delete 
+ Account and 
+ Flag
+[ 7502,   132] Host to select Cancellation Policy for property: 
+  
+ > Extra Flexible:  
+ -Full refund up to 3 days before check-in 
+ -50% refund up to 24 hours before check-in* 
+ -No refund within 12 hours of check in* 
+  
+ >Flexible:  
+  -Full refund up to 7 days before check-in 
+ -50% refund up to 24 hours before check-in* 
+ -No refund within 24 hours of check in* 
+  
+ >Standard:  
+ -Full Refund up to 30 days before check-in 
+ -50% refund up to 7 days before check-in* 
+ -No refund within 7 days of check in* 
+  
+ >Strict: 
+ -Full refund up to 60 days before check-in 
+ -50% refund up to 30 days before check-in* 
+ -No refund within 30 days before check-in*  
+  
+  
+ *Unless: Host voluntarily cancels the booking. Or if customer experiences 
+ exceptional circumstances (Emergency, sickness, death, war...), the host is 
+ requested to review the request for refund and make a decision.  
+ 
+[ 5131,   137] Optional - AI backend ID 
+ check - for later 
+ development or after launch
+[ 6100,   153] Make rejected items red
+[ 4815,   155] Works as a simple check,  
+ for example accepted face of lion  
+[10210,   181] 06/09/26 - checked, but pricing feature was not shown
+[ 6600,   297] If no data input before 
+ submission > give warning
+[ 7245,   302] Agree contract / Terms & 
+ Conditions 
+  
+ (Payment details, abiding 
+ by laws, being truth full 
+ etc) 
+ * CAN BE UPDATED BY 
+ ADMIN
+[ 9089,   320] Host Property Pricing Options 
+[ 6625,   365] Check data validation
+[ 3757,   373] 24/05/2026 - checked main steps for host process were created. Detail review of process on 31/05/26.
+[ 9084,   394] Add/select prices on Calendar + select availabilities 
+ Be able to apply discounts and promotions (and displayed) 
+ Option to add cleaning fees amount 
+ Add data validation for min and max price to warn host 
+  
+ 
+[ 3759,   417] 31/05/2026 -  Next week to recheck process with the changes 
+[ 3758,   469] 07/06/2026 -   
+[ 6685,   521] add feature to allow host to  re- 
+ arrange photos
+[ 3756,   521] 27/07/26 - check for new changes  
+[ 7121,   537] 4
+[ 7041,   538] 3
+[ 6865,   540] 1
+[ 6949,   541] 2
+[ 7802,   885] Booking Modification Page 
+[ 3595,   921] Customer Process
+[ 8044,   951] To be confirmed
+[10449,  1006] Add Free Cancelation At Any Time
+[ 6896,  1040] Host 
+ approve 
+ booking?
+[ 7017,  1044] Yes
+[10453,  1055] Cash payment process -  
+ Balance system - hosts add balance, similar to Karim App 
+   
+ 
+[ 6711,  1080] Request 
+ to Book
+[12618,  1102] Admin to see the number 
+ of rejections/approvals 
+ from Host Account
+[10037,  1110] Cancellation Summary
+[ 7233,  1126] Email guest 'Request 
+ declined' and remove 
+ booking request
+[ 9527,  1135] View Details
+[ 6951,  1142] No
+[ 6327,  1178] Add multi tab progress flow
+[ 8448,  1180] Back to Guest 
+ Dashboard
+[ 9023,  1180] Make this option  
+ show in grey box
+[ 9405,  1191] Status: Cancelled - Refund in Progress 
+ Status: Cancelled - Refund Paid to Customer Account 
+ Status: Cancelled - Not qualified for a Refund
+[ 5022,  1193] After selecting date, calendar pop up  
+ should not close automaticlly 
+[12628,  1235] Cash in hand refund 
+ process? 
+[ 7158,  1302] Email Invoice to 
+ Customer
+[ 8155,  1326] Booking Cancellation Page 
+[ 6286,  1331] Booking Details 
+ Guest Details 
+ Payment Details 
+ Page
+[12530,  1336] Customer Lost Email login
+[ 5744,  1337] Yes
+[ 5622,  1338] Customer 
+ logged 
+ in? 
+[ 4219,  1342] Enter Login 
+ Detail
+[ 5016,  1345] Select the start end 
+ date from Calendar
+[ 6569,  1345] Pay & Confirm 
+ Booking
+[ 4477,  1347] Customer Search 
+ Property 
+[ 3687,  1353] Login
+[ 4763,  1356] Property Page
+[ 3970,  1357] Login Page
+[ 6846,  1357] Confirmation Page and 
+ Invoice
+[ 5346,  1358] Book
+[ 5970,  1359] Booking Form 
+[ 8914,  1372] Tick Box: I 
+ understand this 
+ action cannot be 
+ undone
+[ 8440,  1387] Keep Booking
+[ 9431,  1388] Automatic Refund 
+ Processing
+[ 8690,  1393] Select Reason for 
+ Cancellation
+[ 6743,  1394] Instant  
+ Booking
+[ 9141,  1395] Cancel Booking
+[ 8085,  1396] Yes
+[ 7914,  1398] Booking is 
+ within Refund 
+ Period / 
+ Cancellation 
+ Policy for this 
+ property? 
+[ 8198,  1400] Display Refund 
+ Summary 
+[ 7130,  1423] Send Welcome Email to 
+ Customer
+[ 8432,  1439] Cancel Booking
+[ 5666,  1463] No
+[ 5029,  1469] And/or select the 
+ number of nights
+[ 9376,  1484] >System cancels booking  
+  
+ >Reopen property calender date for booking 
+  
+ >Refunds Guest Account 
+  
+ > Email Guest Account: '' Your refund request 
+ XXXX IQD for booking number xxxxxx is being 
+ processed. Please allow 14 days to receive 
+ your refund before contacting our team about 
+ your refund.''  
+  
+ >Send email to host: ''Guest has cancelled 
+ reservation #12345. Dates are now available 
+ for new bookings. 
+  
+ Since the cancellation is within XX days of the 
+ check-in date, according to the property policy 
+ (Standard/Flexible........) XXXXXX IQD will be 
+ paid to your account and XXXXX IQD will be 
+ redunded to the guest'' 
+  
+ 
+[ 3956,  1530] Create an 
+ Account
+[ 6150,  1530] Customer Details 
+ auto-filled 
+[ 7138,  1555] Email Booking Detail 
+[ 9575,  1558] TBC
+[ 8790,  1578] General Reasons: 
+ My travel plans have changed 
+ My travel dates have changed 
+ I booked by accident 
+ Changed my mind 
+ Found an alternative accomodation 
+ Transport Distruption 
+ I am unhappy about the host 
+ The property listing is not as described 
+ Emergency Circumstances 
+ Other reasons - Please specify 
+  
+ Exceptional Circumstances:  
+ Severe illness or Injury 
+ Property Safety Concern 
+ Natural Disaster 
+ Death of a Family Member  
+ War or Civil Unrest 
+ Government Travel Restrictions 
+ Other exceptional circumstances - Please specify
+[ 8052,  1584] No
+[ 6142,  1609] Surname not autofilled
+[ 5642,  1613] Login
+[ 8140,  1619] Cancellation Summary 
+  
+ Date Booked: xx/xx/xx    Check-in date: xx/xx/xx 
+ Number of days remaining Until Check in: xx 
+ Your are within the XX days of the cancellation policy.  
+  
+ Accommodation refund: 250,000 IQD 
+  
+ Meewano Service fees: 10,000 IQD 
+  
+ Refund amount: 240,000 IQD 
+  
+ Refund depends on your payment method, please allow 14 
+ days for refund to be processed before contacting meewano. 
+[ 4961,  1628] Continue with your 
+ booking
+[ 4187,  1645] Customer Verifies 
+ Email
+[ 5454,  1730] Dont have an 
+ account
+[ 6868,  1771] Payment Sent to 
+ Meewano 
+ Account
+[11321,  1783] 16/08/26 -Section completed, 
+  check 
+[10695,  1822] Booking amount (excluding 
+ fees) made into discount code 
+ for customer - month expiry to 
+ use only at this property. 
+[ 4187,  1823] Send Verification 
+ Email
+[ 6585,  1834] Agree contract / Terms & 
+ Conditions
+[ 3641,  1837] Mobile Number (optional)
+[10981,  1930] > Email Guest Account: '' Your refund request 
+ XXXX IQD for booking number xxxxxx has 
+ been approved by the host. Please allow 14 
+ days to receive your refund before contacting 
+ our team about your refund.''  
+  
+ >Send email to host: ''Thank you for approving 
+ the refund request for booking number XXXX, 
+ the guest will now be refunded for the 
+ booking'' 
+  
+ 
+[10552,  1974] Suggest re-booking 
+ on different dates or 
+ allow guest to 
+ select another 
+ available dates
+[ 4724,  2000] User's to have both guest and host profile capabilities, 
+ Currently a host can make bookings but guest dashboard is not shown 
+[ 4189,  2014] Account Created
+[ 7457,  2020] Modify Your Booking
+[ 4596,  2027] User
+[ 7459,  2060] Cancel Your Booking
+[ 9170,  2075] Max upload size set? - specify to user
+[ 4768,  2100] Guest Profile / Dashbaord
+[ 7473,  2105] This is your 4th time you have 
+ cancelled a booking, please note 
+ your cancellation frequency will 
+ be reviewed!
+[ 4772,  2153] Host Profile / Dashbaord
+[10632,  2167] Approve - Re-booking
+[ 8158,  2189] Booking Cancellation Page 
+[ 7448,  2194] Guest cancellation limit; frequency in given period. 3 
+ number of cancellation within one month.   
+ (add to contract and terms of agreement).   
+ Admin to edit cancellation limiter for accounts
+[ 4772,  2198] Host and Guest profile to have different colour theme so its clear when user is in Host or Guest mode. 
+[ 3573,  2222] 31/05/2026 -  Next week to recheck process with the changes 
+[ 9642,  2250] Submit Your 
+ Request for 
+ Refund 
+[ 8930,  2253] Provide more 
+ Details of the 
+ Circumstance 
+[ 9176,  2254] Upload 
+ Supporting 
+ Evidence
+[10704,  2256] Approve - Refund
+[ 8201,  2262] Display Refund 
+ Summary 
+[ 8685,  2263] Select Reason for 
+ Cancellation
+[ 9411,  2267] Tick Box 
+ Agreement
+[10116,  2267] Host Panel - 
+ Refund Requests
+[ 8427,  2268] Request refund 
+[10599,  2269] Host 
+ Review
+[10359,  2270] Open Refund 
+ Requests
+[ 9894,  2275] Cancel Booking
+[10864,  2276] Automatic Refund 
+ Processing
+[ 3598,  2297] 02/08/26 - check for new changes 
+[11296,  2341] > Email Guest Account: '' Unfortunately, 
+ your refund request under exceptional 
+ circumstances for booking number xxxxxx 
+ has been declined by the host.''
+[10645,  2368] Reject - Refund  
+ (Provide reason for rejection)
+[ 8510,  2442]  
+ Exceptional Circumstances:  
+ Severe illness or Injury 
+ Property Safety Concern 
+ Natural Disaster 
+ Death of a Family Member  
+ War or Civil Unrest 
+ Government Travel Restrictions 
+ Other exceptional circumstances - Please specify
+[ 8949,  2444] Text Box
+[ 9083,  2447] Please upload as much as relevant supporting 
+ evidence as possible. For example: 
+  
+ Serious illness: Upload Medical Report or a letter 
+ from the hospital or doctor.  
+  
+ Property Safety Concern: Photos, messages, videos. 
+  
+ Bereavement:  Funeral notice, contact to verify 
+ bereavement.  
+ 
+[ 9534,  2456] 'By ticking this box I understand that I am not 
+ automatically eligible for a refund. I am requesting 
+ the host to review my exceptional circumstances for 
+ a refund. The host will review my request and can 
+ decide to agree to a full or partial refund, no refund 
+ or agree to re-schedule your booking.'
+[ 7722,  2476] Cancellation Summary 
+  
+ Date Booked: xx/xx/xx    Check-in date: xx/xx/xx 
+ Number of days remaining Until Check in: xx 
+ You are outside this property's automatic refund period. 
+  
+ According to the cancellation policy, you are not entitled to an automatic refund. 
+  
+ You may request a refund review if there are exceptional circumstances.
+[ 9963,  2495] >System cancels booking  
+  
+ >Reopen property calender date for booking 
+  
+ > Send email to Guest: ''Your refund request has 
+ been submitted. We aim to provide a response as 
+ soon as possible, but please allow up to 5 days 
+ before contacting our team.''  
+  
+ >Send email to host: ''Guest has cancelled 
+ reservation #12345. Dates are now available for 
+ new bookings. 
+  
+ The Guest has requested a refund for booking 
+ number xxxxx under exceptional circumstances. 
+ Please review the details and provide a decision 
+ within 24 hours. Please select here to see the 
+ refund request details''  
+[10981,  2519] Approve Rejection
+[10531,  2526] Notify Admin of outcome 
+ via email/notification/ 
+ Refund Panel
+[11139,  2531] Email Decision to 
+ Guest
+[10886,  2536] Admin 
+ Review
+[ 6183,  2563] when cash in hand payment method is selected - show option 'Reserve Now' 
+[ 8920,  2610] Add word count 
+ /limit
+[10926,  2630] Decline Rejection
+[11400,  2648] Automatic Refund 
+ Processing
+[10855,  2709] Email Decision to 
+ Host and Guest
+[ 9682,  2764] my
+[10905,  2785] > Email Guest Account: '' Unfortunately, your refund 
+ request under exceptional circumstances for booking 
+ number xxxxxx has been declined by the host. 
+ However meewano team has reviewed the details and 
+ decided to refund you 100/75%/50%/25% of the 
+ booking amount. Please allow 14 days to receive your 
+ refund before contacting our team about your refund.''
+[10572,  2793] > Email Host: '' Meewano has reviewed 
+ your reason for rejection. Meewano has 
+ decided in this instance to refund the 
+ quest 100/75%/50%/25% of the booking 
+ amount. 
+[ 9705,  2810] my
+[ 7555,  2948] If you are cancelling your booking due to exceptional circumstances
+[ 9936,  2959] Show error is minimum character for  
+ 'Provide more details' section is not provided
+[ 7766,  2966] Tick box - I understand this action cannot be undone
+[ 7852,  3013] Cancel Booking
+[ 3553,  3256] Admin Process/Account
+[ 9443,  3270] Front end visuals 
+[10507,  3282] Add
+[ 3646,  3386] Host Metrics to collect and see 
+  
+ * Number of Host No Shows per month and 
+ per year. 
+ * 
+[ 3572,  4714] Customer Lost Email login
+[ 5474,  4734] Security 
+[ 6669,  4754] Mapping 
+[ 6122,  4860] Used - but Clerk to be adobted
+[ 5694,  4883] https://clerk.com/
+[ 6700,  4897] https://dev.to/alex1998dmit/how-to-create-map-like-in-airbnb-with-react-and-google-maps- 
+ 28i3
+[ 4317,  6249] Host login should not see guest dashboard  
+[ 4865,  6277] Host Dashboard to be reviewed 
+[ 4203,  6280] UI
+[ 4319,  6297] Guest should not see host dashboard
+[ 6914,  6430] Add promotional webistes like:  
+  
+ https://kurdistanhouse.com/visit-kurdistan
+[ 4837,  6650] ? 
+[ 3579,  6658] Check List 
+  
+ > Check messaging feature 
+ > Host to be able to add host name 
+ > Login with Google.  
+ > Customer Lost email - replace existing email with new email - generate a new password 
+ >Check wording of all messages to hosts and guests  
+ > Reviews feature 
+ > Check host dashboard and pages 
+ >Check website UI design overall 
+ >Check website compatibility across devices and browsers. 
+ > If Profile photos > Verification Required, otherwise keep it to Icons only  
+ > Guest and Host Reporting Feauture 
+ > Keep host and guest account seperate? 
+ > Add FAQ section - booking cancellation?  
+ 
+[ 5408,  6768] Should be 
+ hidden 
+ when not 
+ logged in
+[ 5788,  6974] Future Options to Consider: 
+  
+ > Change booking Process 
+ >  
+ 
+[ 4596,  7335] Seps 
+ 1. Host Process complete - works 
+ 2. Customer Process complete - works  
+ Pre-launch 
+ 3. Admin panel and process - comepleted and work 
+ 4. Review user interface design and complete 
+ 5. Cyber Security, email, password cracker, admin cracker, email attack - 
+ anything more? 
+ 6. Pilot host - testing  
+ 7. Launch  
+ 8. Monitor and review - 3 months 
+ 
+[ 3584,  7477] MeewanoTest! 
+ CustomerTest1!

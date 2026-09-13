@@ -1,7 +1,7 @@
 import React from "react";
 import { usePreLaunch } from "@/contexts/PreLaunchContext";
 import { Button } from "@/components/ui/button";
-import { Sparkles, Globe, Eye, ArrowRightLeft } from "lucide-react";
+import {  Globe, Eye, ArrowRightLeft, Building2 } from "lucide-react";
 
 export const ModeToggleFloatingButton: React.FC = () => {
   const { mode, setMode } = usePreLaunch();
@@ -48,7 +48,7 @@ export const ModeToggleFloatingButton: React.FC = () => {
           }`}
           onClick={() => setMode("pre-launch")}
         >
-          <Sparkles className="h-3.5 w-3.5 mr-1.5" />
+          <Building2 className="h-3.5 w-3.5 mr-1.5" />
           Pre-Launch Mode
         </Button>
       </div>

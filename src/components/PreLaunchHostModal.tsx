@@ -26,7 +26,7 @@ import {
   Check,
   Plus,
   Trash2,
-  Sparkles,
+  
   BedDouble,
   Bath,
   Users,
@@ -34,7 +34,7 @@ import {
   MapPin,
   X,
   Info,
-} from "lucide-react";
+Building2 } from "lucide-react";
 import { toast } from "sonner";
 import kurdish1 from "@/assets/property-kurdish-1.jpg";
 import kurdish2 from "@/assets/property-kurdish-2.jpg";
@@ -241,12 +241,7 @@ export const PreLaunchHostModal: React.FC = () => {
     }}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0 rounded-2xl border border-border shadow-2xl">
         <div className="sticky top-0 z-10 bg-card border-b border-border p-5 md:p-6 pb-4">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/25">
-              <Sparkles className="h-3.5 w-3.5" />
-              Pre-Launch Host Onboarding
-            </span>
-          </div>
+          
           <DialogTitle className="text-xl md:text-2xl font-bold tracking-tight">
             {editingProperty ? "Edit Your Pre-Launch Listing" : "Add a Property to Meewano"}
           </DialogTitle>
@@ -335,10 +330,7 @@ export const PreLaunchHostModal: React.FC = () => {
                 <p className="text-[11px] text-muted-foreground mt-1">
                   Approx. ${Math.round(pricePerNight / 1320)} USD / night
                 </p>
-                <div className="rounded-lg border border-primary/20 bg-primary/5 p-2.5 text-xs text-muted-foreground flex items-start gap-2 mt-2">
-                  <Info className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                  <span>After Meewano is launched, we will verify and set the official price of properties with you.</span>
-                </div>
+                
               </div>
 
               <div>
@@ -418,7 +410,7 @@ export const PreLaunchHostModal: React.FC = () => {
                 <ImageIcon className="h-4 w-4 text-primary" />
                 Photos & Imagery
               </h4>
-              <span className="text-xs text-muted-foreground">Select preset or upload</span>
+              <span className="text-xs text-muted-foreground">Upload image</span>
             </div>
 
             {/* Current Active Image Preview */}
@@ -430,27 +422,6 @@ export const PreLaunchHostModal: React.FC = () => {
               />
               <div className="absolute bottom-2 left-2 bg-black/70 text-white text-xs px-2.5 py-1 rounded-md backdrop-blur-sm">
                 Primary Cover Photo
-              </div>
-            </div>
-
-            {/* Preset Image Options */}
-            <div className="space-y-1.5">
-              <p className="text-xs font-medium text-muted-foreground">Choose from Kurdish architectural presets:</p>
-              <div className="grid grid-cols-6 gap-2">
-                {PRESET_IMAGES.map((preset, idx) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => setImages([preset.src, ...images.slice(1)])}
-                    className={`relative aspect-video rounded-lg overflow-hidden border-2 transition-all ${
-                      images[0] === preset.src
-                        ? "border-primary ring-2 ring-primary/40 scale-105"
-                        : "border-transparent opacity-75 hover:opacity-100"
-                    }`}
-                  >
-                    <img src={preset.src} alt={preset.label} className="w-full h-full object-cover" />
-                  </button>
-                ))}
               </div>
             </div>
 
@@ -498,7 +469,7 @@ export const PreLaunchHostModal: React.FC = () => {
           {/* Section 4: Amenities */}
           <div className="space-y-3 pt-2 border-t border-border">
             <h4 className="text-sm font-semibold text-foreground uppercase tracking-wider flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-primary" />
+              <Building2 className="h-4 w-4 text-primary" />
               Amenities & Features
             </h4>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -542,17 +513,6 @@ export const PreLaunchHostModal: React.FC = () => {
               onChange={(e) => setDescription(e.target.value)}
               className="resize-none text-sm"
             />
-          </div>
-
-          {/* Pre-launch Note */}
-          <div className="rounded-xl bg-primary/10 border border-primary/20 p-3 text-xs text-foreground">
-            <p className="font-semibold flex items-center gap-1.5 mb-1 text-primary">
-              <Sparkles className="h-3.5 w-3.5" />
-              Pre-Launch Registration Active
-            </p>
-            <p className="text-muted-foreground">
-              Your property will be previewed in the pre-launch catalog. Our team will verify your listing details and calibrate availability prior to public guest bookings.
-            </p>
           </div>
 
           <DialogFooter className="sticky bottom-0 bg-card border-t border-border -mx-5 -mb-5 p-4 md:-mx-6 md:-mb-6 flex-row justify-end gap-2">

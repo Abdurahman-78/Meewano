@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { CheckCircle2, ShieldCheck, Home, Sparkles, ArrowRight, Mail } from "lucide-react";
+import { CheckCircle2, ShieldCheck, Home, Building2, ArrowRight, Mail } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -30,7 +30,7 @@ const HostWelcome = () => {
       desc: "Add photos, set your price, and submit your listing for review.",
     },
     {
-      icon: Sparkles,
+      icon: Building2,
       title: "Start earning",
       desc: "Once approved, guests can book and you get paid.",
     },
@@ -43,9 +43,9 @@ const HostWelcome = () => {
       desc: "Add your property details and photos to join the pre-launch preview.",
     },
     {
-      icon: Sparkles,
+      icon: Building2,
       title: "Prepare for launch",
-      desc: "After Meewano is launched, we verify to set the official price of properties with you.",
+      desc: "List your property quickly.",
     },
   ];
 

@@ -20,7 +20,7 @@ import {
   Loader2,
   Check,
   Calendar as CalendarIcon,
-  Sparkles,
+  Building2,
   ShieldAlert,
   Percent,
   DollarSign,

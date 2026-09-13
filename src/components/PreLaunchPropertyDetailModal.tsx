@@ -17,13 +17,13 @@ import {
   Bath,
   Users,
   BedDouble,
-  Sparkles,
+  
   Lock,
   ShieldCheck,
   CheckCircle2,
   X,
   Share2,
-} from "lucide-react";
+Building2 } from "lucide-react";
 import { toast } from "sonner";
 
 export const PreLaunchPropertyDetailModal: React.FC = () => {
@@ -61,7 +61,7 @@ export const PreLaunchPropertyDetailModal: React.FC = () => {
 
           {/* Coming Soon Pill */}
           <div className="absolute top-4 left-4 z-10 flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/80 text-primary-foreground text-xs font-bold border border-primary/40 backdrop-blur-md">
-            <Sparkles className="h-3.5 w-3.5 text-primary" />
+            <Building2 className="h-3.5 w-3.5 text-primary" />
             <span>Pre-Launch Preview • Stays Launching Soon</span>
           </div>
 
@@ -159,7 +159,7 @@ export const PreLaunchPropertyDetailModal: React.FC = () => {
               className="w-full max-w-sm h-11 rounded-xl bg-muted text-muted-foreground opacity-60 cursor-not-allowed border border-border"
             >
               <Lock className="h-4 w-4 mr-2" />
-              Bookings Coming Soon
+              {t("comingSoon")}
             </Button>
           </div>
         </div>

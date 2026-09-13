@@ -1,4 +1,4 @@
-import { Menu, Home, User, MessageSquare, Settings, Heart, LogOut, Shield, Building2, Info, Map, Compass, DollarSign, Sparkles, HelpCircle } from "lucide-react";
+import { Menu, Home, User, MessageSquare, Settings, Heart, LogOut, Shield, Building2, Info, Map, Compass, DollarSign, HelpCircle } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -50,11 +50,6 @@ const MobileMenu = () => {
         <SheetHeader className="p-4 pb-2">
           <SheetTitle className="text-left flex items-center justify-between">
             <span>Menu</span>
-            {isPreLaunch && (
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-600 font-semibold border border-amber-500/30">
-                Pre-Launch
-              </span>
-            )}
           </SheetTitle>
         </SheetHeader>
         <div className="flex flex-col gap-1 px-2 py-2 overflow-y-auto">
@@ -65,7 +60,7 @@ const MobileMenu = () => {
             <>
               {user ? (
                 <>
-                  <NavItem to="/host" icon={Home} label="Host Dashboard (My Properties)" />
+                  <NavItem to="/host" icon={Home} label={t("hostDashboardMyProps")} />
                   <button
                     onClick={() => {
                       close();
@@ -73,7 +68,7 @@ const MobileMenu = () => {
                     }}
                     className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold bg-primary/10 text-primary hover:bg-primary/20 transition-colors text-left"
                   >
-                    <Sparkles className="h-5 w-5 text-primary" />
+                    <Building2 className="h-5 w-5 text-primary" />
                     + Add New Property
                   </button>
                 </>
@@ -85,7 +80,7 @@ const MobileMenu = () => {
                     onClick={close}
                     className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold bg-primary/10 text-primary hover:bg-primary/20 transition-colors text-left"
                   >
-                    <Sparkles className="h-5 w-5 text-primary" />
+                    <Building2 className="h-5 w-5 text-primary" />
                     Become a Host
                   </Link>
                 </>
@@ -98,25 +93,20 @@ const MobileMenu = () => {
                 onClick={close}
                 className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-foreground hover:bg-accent transition-colors"
               >
-                <Info className="h-5 w-5 text-muted-foreground" />
-                What is Meewano?
-              </a>
+                <Info className="h-5 w-5 text-muted-foreground" />{t("navWhatIsMeewano")}</a>
               <a
                 href="#about-us"
                 onClick={close}
                 className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-foreground hover:bg-accent transition-colors"
               >
                 <Home className="h-5 w-5 text-muted-foreground" />
-                About Us
-              </a>
+                {t("navAboutUs")}</a>
               <a
                 href="#host-faq"
                 onClick={close}
                 className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-foreground hover:bg-accent transition-colors"
               >
-                <HelpCircle className="h-5 w-5 text-muted-foreground" />
-                Host FAQ
-              </a>
+                <HelpCircle className="h-5 w-5 text-muted-foreground" />{t("navHostFaq")}</a>
             </>
           ) : (
             <>

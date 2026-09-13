@@ -1,4 +1,4 @@
-import { Home, Search, Map, Heart, User, Sparkles, HelpCircle, Info } from "lucide-react";
+import { Home, Search, Map, Heart, User, HelpCircle, Info, Building2 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -41,7 +41,7 @@ const MobileBottomNav = () => {
             className="flex flex-col items-center justify-center gap-1 flex-1 h-full text-primary font-bold"
           >
             <div className="h-7 w-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-md">
-              <Sparkles className="h-4 w-4" />
+              <Building2 className="h-4 w-4" />
             </div>
             <span className="text-[10px]">Add Property</span>
           </button>

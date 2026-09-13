@@ -48,9 +48,9 @@ const statusColor: Record<string, string> = {
   cancelled: "bg-red-500 hover:bg-red-500 text-white",
   rejected: "bg-zinc-500 hover:bg-zinc-500 text-white",
   completed: "bg-blue-600 hover:bg-blue-600 text-white",
-  "Cancelled - Refund in Progress": "bg-amber-600 hover:bg-amber-600 text-white",
-  "Cancelled - Refund Paid to Customer Account": "bg-emerald-600 hover:bg-emerald-600 text-white",
-  "Cancelled - Not qualified for a Refund": "bg-zinc-600 hover:bg-zinc-600 text-white",
+  "Cancelled - Refund in Progress": "bg-slate-200 hover:bg-slate-300 text-slate-800 border border-slate-300",
+  "Cancelled - Refund Paid to Customer Account": "bg-slate-200 hover:bg-slate-300 text-slate-800 border border-slate-300",
+  "Cancelled - Not qualified for a Refund": "bg-slate-200 hover:bg-slate-300 text-slate-800 border border-slate-300",
 };
 
 const GuestBookings = () => {

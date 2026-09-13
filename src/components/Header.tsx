@@ -12,7 +12,7 @@ import {
   Info,
   Map,
   Compass,
-  Sparkles,
+  
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -92,12 +92,6 @@ const Header = () => {
           <MobileMenu />
           <Link to="/" className="flex items-center gap-2">
             <img src="/favicon.png" alt="Meewano" className="h-8 w-auto md:h-9" />
-            {isPreLaunch && (
-              <span className="hidden lg:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
-                <Sparkles className="h-3 w-3" />
-                Pre-Launch
-              </span>
-            )}
           </Link>
 
           {/* Navigation Links: HIDE in Pre-Launch Mode */}
@@ -133,21 +127,15 @@ const Header = () => {
               <a
                 href="#what-is-meewano"
                 className="hover:text-primary transition-colors"
-              >
-                What is Meewano?
-              </a>
+              >{t("navWhatIsMeewano")}</a>
               <a
                 href="#about-us"
                 className="hover:text-primary transition-colors"
-              >
-                About Us
-              </a>
+              >{t("navAboutUs")}</a>
               <a
                 href="#host-faq"
                 className="hover:text-primary transition-colors"
-              >
-                Host FAQ
-              </a>
+              >{t("navHostFaq")}</a>
             </nav>
           )}
         </div>
@@ -161,8 +149,8 @@ const Header = () => {
                 size="sm"
                 className="rounded-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold px-4 py-1.5 text-xs sm:text-sm shadow-md hover:shadow-lg transition-all hover:scale-105 active:scale-95 flex items-center gap-1.5 border border-primary/20"
               >
-                <Sparkles className="h-4 w-4" />
-                <span>{user ? "Host Dashboard" : "Become a Host"}</span>
+                <Building2 className="h-4 w-4" />
+                <span>{user ? t("hostDashboard") : t("becomeHost")}</span>
               </Button>
             </Link>
           ) : (
@@ -206,7 +194,7 @@ const Header = () => {
           {/* Auth Button or User Profile */}
           {user ? (
             <Link to="/host" className="hidden md:block">
-              <Button variant="ghost" size="sm" className="rounded-full font-medium">
+              <Button variant="ghost" size="sm" className="rounded-full font-medium" title={user.email}>
                 {profile?.full_name || user.email?.split("@")[0] || "Host"}
               </Button>
             </Link>
@@ -244,12 +232,12 @@ const Header = () => {
                       <DropdownMenuItem asChild>
                         <Link to="/host" className="cursor-pointer font-semibold text-primary">
                           <Home className="h-4 w-4 mr-2 text-primary" />
-                          Host Dashboard (My Properties)
+                          {t("hostDashboardMyProps")}
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
                         <Link to="/host/add-listing" className="cursor-pointer">
-                          <Sparkles className="h-4 w-4 mr-2" />
+                          <Building2 className="h-4 w-4 mr-2" />
                           Add a New Property
                         </Link>
                       </DropdownMenuItem>
@@ -269,12 +257,14 @@ const Header = () => {
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem asChild>
-                        <Link to="/guest" className="cursor-pointer">
-                          <User className="h-4 w-4 mr-2" />
-                          {t("guestDashboard")}
-                        </Link>
-                      </DropdownMenuItem>
+                      {!isVerifiedHost && (
+                        <DropdownMenuItem asChild>
+                          <Link to="/guest" className="cursor-pointer">
+                            <User className="h-4 w-4 mr-2" />
+                            {t("guestDashboard")}
+                          </Link>
+                        </DropdownMenuItem>
+                      )}
                       {isVerifiedHost ? (
                         <DropdownMenuItem asChild>
                           <Link to="/host" className="cursor-pointer">

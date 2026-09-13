@@ -5,8 +5,9 @@ import PreLaunchSections from "@/components/PreLaunchSections";
 import { usePreLaunch } from "@/contexts/PreLaunchContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Sparkles, Plus, Home, Search, MapPin, SlidersHorizontal, Eye } from "lucide-react";
+import { Plus, Home, Search, MapPin, SlidersHorizontal, Eye, Gift } from "lucide-react";
 
+import { useTranslation } from "@/hooks/useTranslation";
 import { useAuth } from "@/contexts/AuthContext";
 import { Link } from "react-router-dom";
 import { useProperties } from "@/hooks/useProperties";
@@ -43,6 +44,21 @@ export const PreLaunchView: React.FC = () => {
   const [selectedCity, setSelectedCity] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState<string>("");
 
+  
+  const getCityName = (city: string) => {
+    switch(city) {
+      case "All": return t("allLocations");
+      case "Erbil": return t("erbil");
+      case "Sulaymaniyah": return t("sulaymaniyah");
+      case "Duhok": return t("duhok");
+      case "Rawanduz": return t("rawanduz");
+      case "Shaqlawa": return t("shaqlawa");
+      case "Ranya": return t("ranya");
+      case "Haji Omran": return t("hajiOmran");
+      default: return city;
+    }
+  };
+
   const CITIES = ["All", "Erbil", "Sulaymaniyah", "Duhok", "Rawanduz", "Shaqlawa", "Ranya", "Haji Omran"];
 
   const filteredProperties = allProperties.filter((prop) => {
@@ -64,6 +80,18 @@ export const PreLaunchView: React.FC = () => {
   const demoFilteredProperties = filteredProperties.filter(p => p.isDemo);
 
 
+  const { t } = useTranslation();
+  const registeredCount = realProperties.length;
+
+  let sectionTitle = "";
+  if (registeredCount <= 30) {
+    sectionTitle = t("preLaunchTitle");
+  } else if (registeredCount <= 100) {
+    sectionTitle = t("preLaunchTitleCount").replace("{{count}}", registeredCount.toString());
+  } else {
+    sectionTitle = t("preLaunchTitleFull").replace("{{count}}", registeredCount.toString());
+  }
+
   return (
     <div className="flex flex-col min-h-screen">
       {/* 1. Pre-Launch Hero Section */}
@@ -76,36 +104,31 @@ export const PreLaunchView: React.FC = () => {
       >
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
           <div>
-            <div className="flex items-center gap-2 mb-1.5">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/20">
-                <Sparkles className="h-3.5 w-3.5" />
-                Preview Directory
-              </span>
-              <span className="text-xs text-muted-foreground font-medium">
-                ({allProperties.length} Properties Registered)
-              </span>
-            </div>
+            
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight text-foreground">
-              Featured Upcoming Stays in Kurdistan
+              {sectionTitle}
             </h2>
-            <p className="text-sm sm:text-base text-muted-foreground mt-1 max-w-xl">
-              Explore founding properties and chalets. Guest bookings activate during public launch.
-            </p>
+            <p className="text-sm sm:text-base text-muted-foreground mt-2 max-w-xl">
+    {t("preLaunchSubtitle").split("\n").map((line, i) => <React.Fragment key={i}>{line}<br/></React.Fragment>)}
+  </p>
           </div>
 
-          <Link to={user ? "/host/add-listing" : "/become-host"}>
-            <Button
-              id="prelaunch-add-property-btn"
-              className="rounded-full bg-primary hover:bg-primary/90 font-semibold px-5 shadow-sm shrink-0 self-start md:self-end flex items-center gap-2"
-            >
-              <Plus className="h-4 w-4" />
-              <span>Add Property</span>
-            </Button>
-          </Link>
+          
         </div>
 
-        {/* City Filter Pills & Quick Search */}
+                {/* City Filter Pills & Quick Search */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-8 bg-muted/40 p-2.5 rounded-2xl border border-border">
+          {/* Search Input */}
+          <div className="relative min-w-[200px] sm:max-w-xs">
+            <Search className="h-3.5 w-3.5 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
+            <Input
+              placeholder={t("searchStays")}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="h-9 pl-8 text-xs rounded-full bg-background border-border/80"
+            />
+          </div>
+
           {/* City Pills */}
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
             {CITIES.map((city) => (
@@ -118,20 +141,9 @@ export const PreLaunchView: React.FC = () => {
                     : "bg-background text-muted-foreground hover:text-foreground hover:bg-card border border-border/70"
                 }`}
               >
-                {city === "All" ? "All Locations" : city}
+                {getCityName(city)}
               </button>
             ))}
-          </div>
-
-          {/* Search Input */}
-          <div className="relative min-w-[200px] sm:max-w-xs">
-            <Search className="h-3.5 w-3.5 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
-            <Input
-              placeholder="Search stays or areas..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="h-9 pl-8 text-xs rounded-full bg-background border-border/80"
-            />
           </div>
         </div>
 
@@ -182,7 +194,7 @@ export const PreLaunchView: React.FC = () => {
                 setSearchQuery("");
               }}
             >
-              Reset Filters
+              {t("resetFilters")}
             </Button>
           </div>
         )}

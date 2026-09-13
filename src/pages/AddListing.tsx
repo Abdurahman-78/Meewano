@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { format } from "date-fns";
-import { Calendar as CalendarIcon, Upload, Loader2, X, FileCheck2, CheckCircle2, ShieldCheck, Info } from "lucide-react";
+import { Calendar as CalendarIcon, Upload, Loader2, X, FileCheck2, CheckCircle2, ShieldCheck, Info, ChevronLeft, ChevronRight } from "lucide-react";
 import ListingStepIndicator from "@/components/ListingStepIndicator";
 import { useNavigate } from "react-router-dom";
 import type { DateRange } from "react-day-picker";
@@ -458,10 +458,7 @@ const AddListing = () => {
                 <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 text-sm text-muted-foreground flex items-start gap-3">
                   <Info className="h-5 w-5 text-primary shrink-0 mt-0.5" />
                   <div>
-                    <p className="font-semibold text-foreground">Nightly Pricing & Launch Verification</p>
-                    <p className="text-xs mt-0.5 leading-relaxed">
-                      After Meewano is launched, we verify to set the official price of properties with you. No payment methods or financial accounts are required during pre-registration.
-                    </p>
+                    
                   </div>
                 </div>
 
@@ -800,11 +797,35 @@ const AddListing = () => {
                           dragOverIndex === index ? "ring-primary scale-105 z-10" : "ring-transparent"
                         }`}
                       >
-                        {index === 0 && (
+                        {index === 0 ? (
                           <span className="absolute top-1 left-1 bg-primary text-primary-foreground text-[10px] font-bold px-1.5 py-0.5 rounded z-10">
-                            Cover
+                            1 (Cover)
+                          </span>
+                        ) : (
+                          <span className="absolute top-1 left-1 bg-black/70 text-white text-[10px] font-bold px-1.5 py-0.5 rounded z-10">
+                            {index + 1}
                           </span>
                         )}
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 z-10">
+                          {index > 0 && (
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); moveImage(index, index - 1); }}
+                              className="p-1 bg-background/90 rounded hover:bg-background text-foreground shadow-sm"
+                            >
+                              <ChevronLeft className="h-4 w-4" />
+                            </button>
+                          )}
+                          {index < imagePreviews.length - 1 && (
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); moveImage(index, index + 1); }}
+                              className="p-1 bg-background/90 rounded hover:bg-background text-foreground shadow-sm"
+                            >
+                              <ChevronRight className="h-4 w-4" />
+                            </button>
+                          )}
+                        </div>
                         <img src={preview} alt={`Preview ${index + 1}`} className="w-full h-full object-cover" />
                         <button
                           type="button"

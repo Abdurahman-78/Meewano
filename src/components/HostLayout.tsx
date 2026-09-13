@@ -4,7 +4,7 @@ import { usePreLaunch } from "@/contexts/PreLaunchContext";
 import NotificationBell from "@/components/NotificationBell";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { User, LogOut, Home, Sparkles } from "lucide-react";
+import { User, LogOut, Home, Building2 } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
 interface HostLayoutProps {
@@ -25,8 +25,8 @@ const HostLayout = ({ children }: HostLayoutProps) => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <header className="sticky top-0 z-50 w-full border-b border-border bg-card">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950/20 flex flex-col">
+      <header className="sticky top-0 z-50 w-full border-b border-border bg-slate-900 text-slate-50 dark:bg-slate-950">
         <div className="flex h-16 items-center justify-between px-4 md:px-8">
           <div className="flex items-center gap-3">
             <Link to="/" className="flex items-center gap-2">
@@ -42,27 +42,27 @@ const HostLayout = ({ children }: HostLayoutProps) => {
 
           {!isPreLaunch ? (
             <nav className="hidden md:flex items-center gap-6 absolute left-1/2 -translate-x-1/2">
-              <Link to="/host/calendar" className={`text-sm font-medium transition-colors hover:text-primary ${isActive("/host/calendar") ? "text-primary border-b-2 border-primary py-5" : "text-muted-foreground"}`}>
+              <Link to="/host/calendar" className={`text-sm font-medium transition-colors hover:text-primary ${isActive("/host/calendar") ? "text-primary border-b-2 border-primary py-5" : "text-slate-400"}`}>
                 Calendar
               </Link>
-              <Link to="/host" className={`text-sm font-medium transition-colors hover:text-primary ${isActive("/host") ? "text-primary border-b-2 border-primary py-5" : "text-muted-foreground"}`}>
+              <Link to="/host" className={`text-sm font-medium transition-colors hover:text-primary ${isActive("/host") ? "text-primary border-b-2 border-primary py-5" : "text-slate-400"}`}>
                 Listings
               </Link>
-              <Link to="/host/refund-requests" className={`text-sm font-medium transition-colors hover:text-primary ${isActive("/host/refund-requests") ? "text-primary border-b-2 border-primary py-5" : "text-muted-foreground"}`}>
+              <Link to="/host/refund-requests" className={`text-sm font-medium transition-colors hover:text-primary ${isActive("/host/refund-requests") ? "text-primary border-b-2 border-primary py-5" : "text-slate-400"}`}>
                 Refund requests
               </Link>
-              <Link to="/host/messages" className={`text-sm font-medium transition-colors hover:text-primary ${isActive("/host/messages") ? "text-primary border-b-2 border-primary py-5" : "text-muted-foreground"}`}>
+              <Link to="/host/messages" className={`text-sm font-medium transition-colors hover:text-primary ${isActive("/host/messages") ? "text-primary border-b-2 border-primary py-5" : "text-slate-400"}`}>
                 Inbox
               </Link>
             </nav>
           ) : (
             <nav className="hidden md:flex items-center gap-6 absolute left-1/2 -translate-x-1/2">
-              <Link to="/host" className={`text-sm font-semibold transition-colors hover:text-primary flex items-center gap-1.5 ${isActive("/host") ? "text-primary border-b-2 border-primary py-5" : "text-muted-foreground"}`}>
+              <Link to="/host" className={`text-sm font-semibold transition-colors hover:text-primary flex items-center gap-1.5 ${isActive("/host") ? "text-primary border-b-2 border-primary py-5" : "text-slate-400"}`}>
                 <Home className="h-4 w-4" />
                 My Properties
               </Link>
-              <Link to="/" className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary flex items-center gap-1.5">
-                <Sparkles className="h-4 w-4 text-primary" />
+              <Link to="/" className="text-sm font-medium text-slate-400 transition-colors hover:text-primary flex items-center gap-1.5">
+                <Building2 className="h-4 w-4 text-primary" />
                 Pre-Launch Feed
               </Link>
             </nav>
@@ -75,7 +75,7 @@ const HostLayout = ({ children }: HostLayoutProps) => {
                 className="hidden sm:flex rounded-full gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
                 onClick={() => navigate("/host/add-listing")}
               >
-                <Sparkles className="h-3.5 w-3.5" />
+                <Building2 className="h-3.5 w-3.5" />
                 + Add Property
               </Button>
             )}
@@ -98,7 +98,7 @@ const HostLayout = ({ children }: HostLayoutProps) => {
                     <div className="px-2 py-1.5 text-sm font-normal">
                       <div className="flex flex-col space-y-1">
                         <p className="text-sm font-medium leading-none truncate">Host</p>
-                        <p className="text-xs leading-none text-muted-foreground truncate">
+                        <p className="text-xs leading-none text-slate-400 truncate">
                           {user.email}
                         </p>
                       </div>
@@ -112,11 +112,7 @@ const HostLayout = ({ children }: HostLayoutProps) => {
                     My Properties
                   </Link>
                 </DropdownMenuItem>
-                {!isPreLaunch && (
-                  <DropdownMenuItem asChild>
-                    <Link to="/guest">Switch to guest</Link>
-                  </DropdownMenuItem>
-                )}
+
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive">
                   <LogOut className="mr-2 h-4 w-4" />

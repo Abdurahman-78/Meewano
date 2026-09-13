@@ -1,5 +1,5 @@
 import React from "react";
-import { Bath, BedDouble, Home, Star, Sparkles, Lock } from "lucide-react";
+import { Bath, BedDouble, Home, Star, Lock } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7,12 +7,14 @@ import { useCurrency } from "@/contexts/CurrencyContext";
 import { usePreLaunch, PreLaunchPropertyItem } from "@/contexts/PreLaunchContext";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface PreLaunchPropertyCardProps {
   property: PreLaunchPropertyItem;
 }
 
 export const PreLaunchPropertyCard: React.FC<PreLaunchPropertyCardProps> = ({ property }) => {
+  const { t } = useTranslation();
   const { formatPrice } = useCurrency();
   const navigate = useNavigate();
 
@@ -43,8 +45,7 @@ export const PreLaunchPropertyCard: React.FC<PreLaunchPropertyCardProps> = ({ pr
 
         {/* Visible "Coming Soon" Badge matching brand */}
         <div className="absolute top-3 left-3 z-10 flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-950/80 text-primary text-[11px] font-bold tracking-wide backdrop-blur-md border border-primary/40 shadow-md">
-          <Sparkles className="h-3 w-3 text-primary" />
-          <span>Coming Soon</span>
+          <span>{t("comingSoon")}</span>
         </div>
 
         {/* Subtle City Tag at Bottom Left */}
@@ -86,15 +87,15 @@ export const PreLaunchPropertyCard: React.FC<PreLaunchPropertyCardProps> = ({ pr
           <div className="flex items-center gap-3 text-xs text-muted-foreground mb-3 pb-3 border-b border-border/60">
             <div className="flex items-center gap-1">
               <Home className="h-3.5 w-3.5" />
-              <span>{property.bedrooms} {property.bedrooms === 1 ? "bd" : "bds"}</span>
+              <span>{property.bedrooms}</span>
             </div>
             <div className="flex items-center gap-1">
               <Bath className="h-3.5 w-3.5" />
-              <span>{property.bathrooms} {property.bathrooms === 1 ? "ba" : "ba"}</span>
+              <span>{property.bathrooms}</span>
             </div>
             <div className="flex items-center gap-1">
               <BedDouble className="h-3.5 w-3.5" />
-              <span>{property.max_guests} guests</span>
+              <span>{property.max_guests}</span>
             </div>
           </div>
 
@@ -121,11 +122,9 @@ export const PreLaunchPropertyCard: React.FC<PreLaunchPropertyCardProps> = ({ pr
               <span className="text-base font-bold text-foreground font-mono">
                 {formatPrice(property.price_per_night)}
               </span>
-              <span className="text-[11px] text-muted-foreground">/ night</span>
+              <span className="text-[11px] text-muted-foreground">{t("perNight")}</span>
             </div>
-            <p className="text-[10px] text-primary font-medium">
-              Host: {property.host_name || "Host"}
-            </p>
+            
           </div>
 
           {/* Disabled Dimmed/Darkened "Coming Soon" Button */}
@@ -136,7 +135,7 @@ export const PreLaunchPropertyCard: React.FC<PreLaunchPropertyCardProps> = ({ pr
             onClick={handleComingSoonClick}
           >
             <Lock className="h-3 w-3" />
-            Coming Soon
+            {t("comingSoon")}
           </Button>
         </div>
       </CardContent>

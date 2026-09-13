@@ -1,4 +1,4 @@
-import { Bath, Bed, Home, Star, Heart, Sparkles } from "lucide-react";
+import { Bath, Bed, Home, Star, Heart } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useCurrency } from "@/contexts/CurrencyContext";
@@ -74,7 +74,6 @@ const PropertyCard = ({
         />
         {isPreLaunch ? (
           <div className="absolute top-3 left-3 z-[1] flex items-center gap-1 rounded-full bg-slate-950/85 text-amber-300 text-[10px] md:text-xs font-semibold px-2.5 py-1 shadow-md border border-amber-400/30 backdrop-blur-xs">
-            <Sparkles className="h-3 w-3 text-amber-300" />
             Coming Soon
           </div>
         ) : (

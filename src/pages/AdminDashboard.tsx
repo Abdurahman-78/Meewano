@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import { 
   Users, Home, DollarSign, TrendingUp, Search, MoreVertical, Shield, 
   FileText, Settings, Download, Edit, Trash2, Eye, Check, X, 
@@ -76,6 +76,7 @@ import AdminInsights from "@/components/AdminInsights";
 import AdminHostVerifications from "@/components/AdminHostVerifications";
 import AdminPropertyApprovals from "@/components/AdminPropertyApprovals";
 import AdminNewsletters from "@/components/AdminNewsletters";
+import AdminDemoProperties from "@/components/AdminDemoProperties";
 
 const AdminDashboard = () => {
   const { formatPrice } = useCurrency();
@@ -86,7 +87,24 @@ const AdminDashboard = () => {
   // Data hooks
   const { data: stats, isLoading: statsLoading } = useAdminStats();
   const { data: users, isLoading: usersLoading, refetch: refetchUsers } = useAllUsers();
+
   const { data: properties, isLoading: propertiesLoading, refetch: refetchProperties } = useAllProperties();
+  
+  const hostsPerLocation = useMemo(() => {
+    const map: Record<string, Set<string>> = {};
+    if (properties) {
+      properties.forEach(p => {
+        const city = p.city?.trim();
+        const hostId = p.host_id;
+        if (city && hostId) {
+          if (!map[city]) map[city] = new Set();
+          map[city].add(hostId);
+        }
+      });
+    }
+    return map;
+  }, [properties]);
+
   const { data: bookings, isLoading: bookingsLoading, refetch: refetchBookings } = useAllBookings();
   const { data: siteSettings, isLoading: settingsLoading } = useSiteSettings();
 
@@ -427,6 +445,11 @@ const AdminDashboard = () => {
               <Building className="h-4 w-4 mr-2" />
               Properties
             </TabsTrigger>
+            <TabsTrigger value="demo-properties">
+              <Building className="h-4 w-4 mr-2" />
+              Demo Properties
+            </TabsTrigger>
+
             <TabsTrigger value="bookings">
               <Calendar className="h-4 w-4 mr-2" />
               Bookings
@@ -486,6 +509,9 @@ const AdminDashboard = () => {
 
           <TabsContent value="newsletters">
             <AdminNewsletters />
+          </TabsContent>
+          <TabsContent value="demo-properties">
+            <AdminDemoProperties />
           </TabsContent>
 
           <TabsContent value="insights">
@@ -743,6 +769,26 @@ const AdminDashboard = () => {
 
           {/* Bookings Tab */}
           <TabsContent value="bookings">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <Card>
+                <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Host No Shows (This Month)</CardTitle></CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-destructive flex items-center gap-2">
+                    {bookings?.filter(b => (b.cancellation_category === "host_no_show" || b.cancellation_reason?.toLowerCase().includes("no show")) && new Date(b.created_at).getMonth() === new Date().getMonth() && new Date(b.created_at).getFullYear() === new Date().getFullYear()).length || 0}
+                    <span className="text-xs font-normal text-muted-foreground">incidents</span>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Host No Shows (This Year)</CardTitle></CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-destructive flex items-center gap-2">
+                    {bookings?.filter(b => (b.cancellation_category === "host_no_show" || b.cancellation_reason?.toLowerCase().includes("no show")) && new Date(b.created_at).getFullYear() === new Date().getFullYear()).length || 0}
+                    <span className="text-xs font-normal text-muted-foreground">incidents</span>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
             <Card>
               <CardHeader>
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -1281,6 +1327,7 @@ const AdminDashboard = () => {
                     <TableRow>
                       <TableHead>City</TableHead>
                       <TableHead>Region</TableHead>
+                      <TableHead className="text-center">Hosts</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -1306,9 +1353,12 @@ const AdminDashboard = () => {
                         </TableCell>
                         <TableCell>
                           {editingLocation?.original === location.name ? (
-                            <Input value={editingLocation.region} className="h-8"
+                            <Input value={editingLocation.region} className="h-8" 
                               onChange={(e) => setEditingLocation({ ...editingLocation, region: e.target.value })} />
                           ) : location.region}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {hostsPerLocation[location.name]?.size || 0}
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-1">

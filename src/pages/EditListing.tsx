@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from "react";
-import { Upload, Loader2, X, RefreshCw, Clock, XCircle, Info } from "lucide-react";
+import { useState, useEffect, useRef, useMemo } from "react";
+import { Upload, Loader2, X, RefreshCw, Clock, XCircle, Info, ChevronLeft, ChevronRight } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import ListingStepIndicator from "@/components/ListingStepIndicator";
 import { useNavigate, useParams } from "react-router-dom";
@@ -59,6 +59,7 @@ const EditListing = () => {
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [existingFloorPlan, setExistingFloorPlan] = useState<string | null>(null);
   const [floorPlanFile, setFloorPlanFile] = useState<File | null>(null);
+  const [initialDataStr, setInitialDataStr] = useState<string>("");
   const floorPlanInputRef = useRef<HTMLInputElement>(null);
 
   // Normalize siteSettings safely
@@ -105,7 +106,23 @@ const EditListing = () => {
       if (data.latitude != null && data.longitude != null) {
         setCoords({ lat: Number(data.latitude), lng: Number(data.longitude) });
       }
-      if (data.blocked_dates) setBlockedDates(data.blocked_dates.map((d: string) => new Date(d)));
+            if (data.blocked_dates) setBlockedDates(data.blocked_dates.map((d: string) => new Date(d)));
+      
+      // Capture initial state for dirty checking
+      setInitialDataStr(JSON.stringify({
+        title: data.title || "", location: data.location || "", city: data.city || "",
+        instant_booking: data.instant_booking ?? true,
+        bedrooms: data.bedrooms?.toString() || "", bathrooms: data.bathrooms?.toString() || "",
+        max_guests: data.max_guests?.toString() || "", description: data.description || "",
+        amenities: (data.amenities || []).sort(), is_active: data.is_active ?? true,
+        cancellation_policy: (data as any).cancellation_policy || "",
+        house_rules: (data as any).house_rules || "",
+        safety_property: (data as any).safety_property || "",
+        images: data.images || [],
+        floor_plan_url: (data as any).floor_plan_url || null,
+        blocked_dates: (data.blocked_dates || []).sort(),
+        coords: data.latitude != null && data.longitude != null ? { lat: Number(data.latitude), lng: Number(data.longitude) } : null
+      }));
     } catch (error: any) {
       console.error("Error fetching property:", error);
       toast.error("Property not found or access denied");
@@ -118,6 +135,20 @@ const EditListing = () => {
   useEffect(() => {
     if (id && user) fetchProperty();
   }, [id, user, fetchProperty]);
+
+  
+  const isDirty = useMemo(() => {
+    if (!initialDataStr) return false;
+    const currentStr = JSON.stringify({
+      ...formData,
+      amenities: [...formData.amenities].sort(),
+      images: existingImages,
+      floor_plan_url: existingFloorPlan,
+      blocked_dates: blockedDates.map(d => d.toISOString().split("T")[0]).sort(),
+      coords: coords
+    });
+    return currentStr !== initialDataStr || newImageFiles.length > 0 || floorPlanFile !== null;
+  }, [formData, existingImages, newImageFiles, blockedDates, coords, existingFloorPlan, floorPlanFile, initialDataStr]);
 
   const handleAmenityChange = (amenity: string, checked: boolean) => {
     setFormData(prev => ({
@@ -142,10 +173,36 @@ const EditListing = () => {
     setExistingImages(prev => prev.filter((_, i) => i !== index));
   };
 
+  
   const removeNewImage = (index: number) => {
     setNewImageFiles(prev => prev.filter((_, i) => i !== index));
     setNewImagePreviews(prev => prev.filter((_, i) => i !== index));
   };
+
+  const moveExistingImage = (from: number, to: number) => {
+    setExistingImages(prev => {
+      const copy = [...prev];
+      const item = copy.splice(from, 1)[0];
+      copy.splice(to, 0, item);
+      return copy;
+    });
+  };
+
+  const moveNewImage = (from: number, to: number) => {
+    setNewImageFiles(prev => {
+      const copy = [...prev];
+      const item = copy.splice(from, 1)[0];
+      copy.splice(to, 0, item);
+      return copy;
+    });
+    setNewImagePreviews(prev => {
+      const copy = [...prev];
+      const item = copy.splice(from, 1)[0];
+      copy.splice(to, 0, item);
+      return copy;
+    });
+  };
+
 
   const uploadNewImages = async (): Promise<string[]> => {
     if (!user || newImageFiles.length === 0) return [];
@@ -313,10 +370,7 @@ const EditListing = () => {
                   <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 text-sm text-muted-foreground flex items-start gap-3">
                     <Info className="h-5 w-5 text-primary shrink-0 mt-0.5" />
                     <div className="flex-1">
-                      <p className="font-semibold text-foreground">Nightly Pricing & Launch Verification</p>
-                      <p className="text-xs mt-0.5 leading-relaxed">
-                        After Meewano is launched, we verify to set the official price of properties with you.
-                      </p>
+                      
                     </div>
                   </div>
 
@@ -494,9 +548,38 @@ const EditListing = () => {
                       <div className="grid grid-cols-3 md:grid-cols-4 gap-3">
                         {existingImages.map((url, index) => (
                           <div key={index} className="relative group rounded-lg overflow-hidden aspect-video">
+                            {index === 0 ? (
+                              <span className="absolute top-1 left-1 bg-primary text-primary-foreground text-[10px] font-bold px-1.5 py-0.5 rounded z-10">
+                                1 (Cover)
+                              </span>
+                            ) : (
+                              <span className="absolute top-1 left-1 bg-black/70 text-white text-[10px] font-bold px-1.5 py-0.5 rounded z-10">
+                                {index + 1}
+                              </span>
+                            )}
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 z-10">
+                              {index > 0 && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => { e.stopPropagation(); moveExistingImage(index, index - 1); }}
+                                  className="p-1 bg-background/90 rounded hover:bg-background text-foreground shadow-sm"
+                                >
+                                  <ChevronLeft className="h-4 w-4" />
+                                </button>
+                              )}
+                              {index < existingImages.length - 1 && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => { e.stopPropagation(); moveExistingImage(index, index + 1); }}
+                                  className="p-1 bg-background/90 rounded hover:bg-background text-foreground shadow-sm"
+                                >
+                                  <ChevronRight className="h-4 w-4" />
+                                </button>
+                              )}
+                            </div>
                             <img src={url} alt={`Property ${index + 1}`} className="w-full h-full object-cover" />
                             <button type="button" onClick={() => removeExistingImage(index)}
-                              className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                               <X className="h-3 w-3" />
                             </button>
                           </div>
@@ -519,9 +602,32 @@ const EditListing = () => {
                     <div className="grid grid-cols-3 md:grid-cols-4 gap-3 mt-4">
                       {newImagePreviews.map((preview, index) => (
                         <div key={index} className="relative group rounded-lg overflow-hidden aspect-video">
+                          <span className="absolute top-1 left-1 bg-black/70 text-white text-[10px] font-bold px-1.5 py-0.5 rounded z-10">
+                            {existingImages.length + index + 1}
+                          </span>
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 z-10">
+                            {index > 0 && (
+                              <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); moveNewImage(index, index - 1); }}
+                                className="p-1 bg-background/90 rounded hover:bg-background text-foreground shadow-sm"
+                              >
+                                <ChevronLeft className="h-4 w-4" />
+                              </button>
+                            )}
+                            {index < newImagePreviews.length - 1 && (
+                              <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); moveNewImage(index, index + 1); }}
+                                className="p-1 bg-background/90 rounded hover:bg-background text-foreground shadow-sm"
+                              >
+                                <ChevronRight className="h-4 w-4" />
+                              </button>
+                            )}
+                          </div>
                           <img src={preview} alt={`New ${index + 1}`} className="w-full h-full object-cover" />
                           <button type="button" onClick={() => removeNewImage(index)}
-                            className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                             <X className="h-3 w-3" />
                           </button>
                         </div>
@@ -598,7 +704,7 @@ const EditListing = () => {
             {/* Submit */}
             <div className="flex gap-3">
               <Button variant="outline" className="flex-1 h-12" onClick={() => navigate("/host")}>Cancel</Button>
-              <Button className="flex-1 bg-primary hover:bg-primary/90 h-12" onClick={handleSubmit} disabled={saving}>
+              <Button className={`flex-1 h-12 text-white ${isDirty ? "bg-primary hover:bg-primary/90" : "bg-slate-400 hover:bg-slate-400 cursor-not-allowed"}`} onClick={handleSubmit} disabled={saving || !isDirty}>
                 {(saving || uploading) ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                 {uploading ? "Uploading images..." : "Save Changes"}
               </Button>

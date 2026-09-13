@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { BarChart3, Home, Calendar, DollarSign, Plus, Loader2, Edit, Trash2, ShieldCheck, Clock, XCircle, RefreshCw, CheckCircle2, Sparkles, MapPin, BedDouble, Bath, Users, Info } from "lucide-react";
+import { BarChart3, Home, Calendar, DollarSign, Plus, Loader2, Edit, Trash2, ShieldCheck, Clock, XCircle, RefreshCw, CheckCircle2, Building2, MapPin, BedDouble, Bath, Users, Info } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import HostLayout from "@/components/HostLayout";
 import { Button } from "@/components/ui/button";
@@ -189,7 +189,7 @@ const HostDashboard = () => {
             <div>
               <div className="flex items-center gap-2 mb-1.5">
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/25">
-                  <Sparkles className="h-3.5 w-3.5" />
+                  <Building2 className="h-3.5 w-3.5" />
                   Pre-Launch Host Hub
                 </span>
               </div>
@@ -215,9 +215,7 @@ const HostDashboard = () => {
               <p className="font-semibold text-foreground text-sm sm:text-base">
                 Property Pricing & Launch Setup
               </p>
-              <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                After Meewano is launched, our team will verify and finalize the official pricing of your properties with you. No payment methods, calendar setup, or guest bookings are required during the pre-launch phase.
-              </p>
+              
             </div>
           </div>
 
@@ -261,7 +259,7 @@ const HostDashboard = () => {
                       )}
                       <div className="absolute top-3 left-3">
                         <Badge variant="outline" className="backdrop-blur-md bg-background/90 shadow-sm border border-primary/30 text-primary text-xs font-semibold">
-                          <Sparkles className="h-3 w-3 mr-1" />
+                          <Building2 className="h-3 w-3 mr-1" />
                           Pre-Launch Stay
                         </Badge>
                       </div>
@@ -332,9 +330,7 @@ const HostDashboard = () => {
                           </div>
                         </div>
 
-                        <p className="text-[11px] text-muted-foreground/80 mt-2 italic">
-                          After Meewano is launched, we verify to set price of properties.
-                        </p>
+                        
                       </div>
                     </div>
                   </div>
