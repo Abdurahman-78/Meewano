@@ -1,15 +1,15 @@
 import React, { useState } from "react";
 import PreLaunchHero from "@/components/PreLaunchHero";
+import PreLaunchWhyList from "@/components/PreLaunchWhyList";
 import PreLaunchPropertyCard from "@/components/PreLaunchPropertyCard";
 import PreLaunchSections from "@/components/PreLaunchSections";
 import { usePreLaunch } from "@/contexts/PreLaunchContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Home, Search, MapPin, SlidersHorizontal, Eye, Gift } from "lucide-react";
+import { Home, Search } from "lucide-react";
 
 import { useTranslation } from "@/hooks/useTranslation";
 import { useAuth } from "@/contexts/AuthContext";
-import { Link } from "react-router-dom";
 import { useProperties } from "@/hooks/useProperties";
 
 export const PreLaunchView: React.FC = () => {
@@ -38,7 +38,8 @@ export const PreLaunchView: React.FC = () => {
     isDemo: false,
   }));
 
-  const allDemoProperties = demoProperties.map(p => ({ ...p, isDemo: true }));
+  // Strictly cap demo properties to 4
+  const allDemoProperties = demoProperties.slice(0, 4).map(p => ({ ...p, isDemo: true }));
   const allProperties = [...realProperties, ...allDemoProperties];
 
   const [selectedCity, setSelectedCity] = useState<string>("All");
@@ -97,7 +98,10 @@ export const PreLaunchView: React.FC = () => {
       {/* 1. Pre-Launch Hero Section */}
       <PreLaunchHero />
 
-      {/* 2. Pre-Launch Property Feed Section */}
+      {/* 2. Why List Your Property with Meewano? Section */}
+      <PreLaunchWhyList />
+
+      {/* 3. Pre-Launch Property Feed Section */}
       <section
         id="prelaunch-properties-section"
         className="container mx-auto px-4 py-12 md:py-16 scroll-mt-20"

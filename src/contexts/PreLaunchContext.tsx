@@ -49,13 +49,24 @@ export const PreLaunchProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed;
+          const custom = parsed.filter((p: any) => p.isCustom);
+          const demos = parsed.filter((p: any) => !p.isCustom).slice(0, 4);
+          if (demos.length === 0) {
+            return [
+              ...custom,
+              ...DEFAULT_DEMO_PROPERTIES.slice(0, 4).map((p) => ({
+                ...p,
+                amenities: p.badges || ["WiFi", "Mountain View", "Kitchen", "Free Parking"],
+              })),
+            ];
+          }
+          return [...custom, ...demos];
         }
       }
     } catch {
       // Fallback
     }
-    return DEFAULT_DEMO_PROPERTIES.map((p) => ({
+    return DEFAULT_DEMO_PROPERTIES.slice(0, 4).map((p) => ({
       ...p,
       amenities: p.badges || ["WiFi", "Mountain View", "Kitchen", "Free Parking"],
     }));

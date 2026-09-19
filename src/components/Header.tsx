@@ -125,17 +125,21 @@ const Header = () => {
           {isPreLaunch && (
             <nav className="hidden md:flex items-center gap-4 text-sm font-medium text-muted-foreground">
               <a
+                href="#why-list"
+                className="hover:text-primary transition-colors"
+              >{t("whyListTitle").replace("?", "")}</a>
+              <a
                 href="#what-is-meewano"
                 className="hover:text-primary transition-colors"
               >{t("navWhatIsMeewano")}</a>
               <a
-                href="#about-us"
+                href="#how-it-works"
                 className="hover:text-primary transition-colors"
-              >{t("navAboutUs")}</a>
+              >{t("howItWorks")}</a>
               <a
                 href="#host-faq"
                 className="hover:text-primary transition-colors"
-              >{t("navHostFaq")}</a>
+              >{t("faqs")}</a>
             </nav>
           )}
         </div>
@@ -150,7 +154,7 @@ const Header = () => {
                 className="rounded-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold px-4 py-1.5 text-xs sm:text-sm shadow-md hover:shadow-lg transition-all hover:scale-105 active:scale-95 flex items-center gap-1.5 border border-primary/20"
               >
                 <Building2 className="h-4 w-4" />
-                <span>{user ? t("hostDashboard") : t("becomeHost")}</span>
+                <span>{t("registerYourProperty")}</span>
               </Button>
             </Link>
           ) : (

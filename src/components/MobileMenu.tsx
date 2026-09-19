@@ -1,4 +1,4 @@
-import { Menu, Home, User, MessageSquare, Settings, Heart, LogOut, Shield, Building2, Info, Map, Compass, DollarSign, HelpCircle } from "lucide-react";
+import { Menu, Home, User, MessageSquare, Settings, Heart, LogOut, Shield, Building2, Info, Map, Compass, DollarSign, HelpCircle, CheckCircle } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -89,24 +89,37 @@ const MobileMenu = () => {
               <Separator className="my-2" />
 
               <a
+                href="#why-list"
+                onClick={close}
+                className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-foreground hover:bg-accent transition-colors"
+              >
+                <CheckCircle className="h-5 w-5 text-muted-foreground" />
+                {t("whyListTitle").replace("?", "")}
+              </a>
+              <a
                 href="#what-is-meewano"
                 onClick={close}
                 className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-foreground hover:bg-accent transition-colors"
               >
-                <Info className="h-5 w-5 text-muted-foreground" />{t("navWhatIsMeewano")}</a>
+                <Info className="h-5 w-5 text-muted-foreground" />
+                {t("navWhatIsMeewano")}
+              </a>
               <a
-                href="#about-us"
+                href="#how-it-works"
                 onClick={close}
                 className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-foreground hover:bg-accent transition-colors"
               >
-                <Home className="h-5 w-5 text-muted-foreground" />
-                {t("navAboutUs")}</a>
+                <HelpCircle className="h-5 w-5 text-muted-foreground" />
+                {t("howItWorks")}
+              </a>
               <a
                 href="#host-faq"
                 onClick={close}
                 className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-foreground hover:bg-accent transition-colors"
               >
-                <HelpCircle className="h-5 w-5 text-muted-foreground" />{t("navHostFaq")}</a>
+                <HelpCircle className="h-5 w-5 text-muted-foreground" />
+                {t("faqs")}
+              </a>
             </>
           ) : (
             <>
