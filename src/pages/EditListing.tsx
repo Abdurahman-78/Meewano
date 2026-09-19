@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef, useMemo } from "react";
-import { Upload, Loader2, X, RefreshCw, Clock, XCircle, Info, ChevronLeft, ChevronRight } from "lucide-react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { Upload, Loader2, X, RefreshCw, Clock, XCircle, Info, ChevronLeft, ChevronRight, Calendar as CalendarIcon, ArrowRight } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import ListingStepIndicator from "@/components/ListingStepIndicator";
 import { useNavigate, useParams } from "react-router-dom";
@@ -13,8 +13,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Calendar } from "@/components/ui/calendar";
 import { useAuth } from "@/contexts/AuthContext";
+import { usePreLaunch } from "@/contexts/PreLaunchContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useSiteSettings } from "@/hooks/useAdminData";
@@ -25,7 +25,8 @@ import { CANCELLATION_POLICIES, formatCancellationPolicy, detectPolicyKey } from
 
 const EditListing = () => {
   const { id } = useParams();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
+  const { properties: preLaunchProperties, updateProperty: updatePreLaunchProperty } = usePreLaunch();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -34,6 +35,7 @@ const EditListing = () => {
   const [blockedDates, setBlockedDates] = useState<Date[]>([]);
   const [approvalStatus, setApprovalStatus] = useState<string>("approved");
   const [rejectionReason, setRejectionReason] = useState<string | null>(null);
+  const [isPreLaunchProperty, setIsPreLaunchProperty] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { data: siteSettings } = useSiteSettings();
   
@@ -41,6 +43,7 @@ const EditListing = () => {
     title: "",
     location: "",
     city: "",
+    price_per_night: "",
     instant_booking: true,
     bedrooms: "",
     bathrooms: "",
@@ -84,17 +87,54 @@ const EditListing = () => {
   ]) as { name: string; region: string }[];
 
   const fetchProperty = useCallback(async () => {
+    if (!id) return;
+
+    // 1. Check if it's a pre-launch property from PreLaunchContext
+    const preLaunchMatch = preLaunchProperties.find(p => p.id === id);
+    if (preLaunchMatch) {
+      setIsPreLaunchProperty(true);
+      setFormData({
+        title: preLaunchMatch.title || "",
+        location: preLaunchMatch.location || "",
+        city: preLaunchMatch.city || "Erbil",
+        price_per_night: preLaunchMatch.price_per_night?.toString() || "150000",
+        instant_booking: true,
+        bedrooms: preLaunchMatch.bedrooms?.toString() || "2",
+        bathrooms: preLaunchMatch.bathrooms?.toString() || "1",
+        max_guests: preLaunchMatch.max_guests?.toString() || "4",
+        description: preLaunchMatch.description || "",
+        amenities: preLaunchMatch.amenities || preLaunchMatch.badges || [],
+        is_active: preLaunchMatch.is_active ?? true,
+        cancellation_policy: "",
+        house_rules: "",
+        safety_property: "",
+      });
+      setExistingImages(preLaunchMatch.image ? [preLaunchMatch.image] : []);
+      setApprovalStatus("pending");
+      setLoading(false);
+      return;
+    }
+
+    // 2. Otherwise, fetch from Supabase
+    if (!user?.id) return;
+
     try {
       const { data, error } = await supabase
-        .from("properties").select("*").eq("id", id).eq("host_id", user?.id).single();
+        .from("properties").select("*").eq("id", id).eq("host_id", user.id).single();
       if (error) throw error;
 
       setFormData({
-        title: data.title || "", location: data.location || "", city: data.city || "",
+        title: data.title || "",
+        location: data.location || "",
+        city: data.city || "",
+        price_per_night: data.price_per_night != null ? data.price_per_night.toString() : "",
         instant_booking: data.instant_booking ?? true,
-        bedrooms: data.bedrooms?.toString() || "", bathrooms: data.bathrooms?.toString() || "",
-        max_guests: data.max_guests?.toString() || "", description: data.description || "",
-        amenities: data.amenities || [], is_active: data.is_active ?? true,
+        bedrooms: data.bedrooms?.toString() || "",
+        bathrooms: data.bathrooms?.toString() || "",
+        max_guests: data.max_guests?.toString() || "",
+        description: data.description || "",
+        amenities: data.amenities || [],
+        is_active: data.is_active ?? true,
         cancellation_policy: (data as any).cancellation_policy || "",
         house_rules: (data as any).house_rules || "",
         safety_property: (data as any).safety_property || "",
@@ -106,11 +146,12 @@ const EditListing = () => {
       if (data.latitude != null && data.longitude != null) {
         setCoords({ lat: Number(data.latitude), lng: Number(data.longitude) });
       }
-            if (data.blocked_dates) setBlockedDates(data.blocked_dates.map((d: string) => new Date(d)));
+      if (data.blocked_dates) setBlockedDates(data.blocked_dates.map((d: string) => new Date(d)));
       
       // Capture initial state for dirty checking
       setInitialDataStr(JSON.stringify({
         title: data.title || "", location: data.location || "", city: data.city || "",
+        price_per_night: data.price_per_night != null ? data.price_per_night.toString() : "",
         instant_booking: data.instant_booking ?? true,
         bedrooms: data.bedrooms?.toString() || "", bathrooms: data.bathrooms?.toString() || "",
         max_guests: data.max_guests?.toString() || "", description: data.description || "",
@@ -130,11 +171,17 @@ const EditListing = () => {
     } finally {
       setLoading(false);
     }
-  }, [id, user?.id, navigate]);
+  }, [id, user?.id, preLaunchProperties, navigate]);
 
   useEffect(() => {
-    if (id && user) fetchProperty();
-  }, [id, user, fetchProperty]);
+    if (authLoading) return;
+    const isPreLaunch = preLaunchProperties.some(p => p.id === id);
+    if (!user && !isPreLaunch) {
+      navigate("/auth");
+      return;
+    }
+    if (id) fetchProperty();
+  }, [id, user, authLoading, preLaunchProperties, fetchProperty, navigate]);
 
   
   const isDirty = useMemo(() => {
@@ -221,13 +268,15 @@ const EditListing = () => {
     return urls;
   };
 
-  const handleSubmit = async () => {
-    if (!user || !id) return;
+  const handleSubmit = async (options?: { goToCalendar?: boolean }) => {
+    if (!id) return;
     if (!formData.title || !formData.location || !formData.city || !formData.bedrooms || !formData.bathrooms || !formData.max_guests) {
       setShowErrors(true);
       toast.error("Please fill in all required fields"); return;
     }
     setShowErrors(false);
+
+    const shouldGoToCalendar = options?.goToCalendar ?? false;
 
     setSaving(true);
     try {
@@ -235,7 +284,7 @@ const EditListing = () => {
       const uploadedUrls = await uploadNewImages();
 
       let floorPlanUrl: string | null = existingFloorPlan;
-      if (floorPlanFile) {
+      if (floorPlanFile && user?.id) {
         const file = floorPlanFile.type.startsWith("image/") ? await optimizeImage(floorPlanFile) : floorPlanFile;
         const ext = (file.name.split(".").pop() || "webp").toLowerCase();
         const path = `${user.id}/floorplan-${Date.now()}.${ext}`;
@@ -248,12 +297,45 @@ const EditListing = () => {
       setUploading(false);
       const allImages = [...existingImages, ...uploadedUrls];
 
-      const { error } = await supabase.from("properties").update({
-        title: formData.title, location: formData.location, city: formData.city,
+      if (isPreLaunchProperty) {
+        updatePreLaunchProperty(id, {
+          title: formData.title,
+          location: formData.location,
+          city: formData.city,
+          price_per_night: formData.price_per_night ? parseFloat(formData.price_per_night) : 150000,
+          bedrooms: parseInt(formData.bedrooms) || 1,
+          bathrooms: parseInt(formData.bathrooms) || 1,
+          max_guests: parseInt(formData.max_guests) || 2,
+          description: formData.description,
+          amenities: formData.amenities,
+          image: allImages[0] || "",
+          is_active: formData.is_active,
+        });
+        toast.success(shouldGoToCalendar ? "Property saved! Redirecting to calendar..." : "Property updated successfully!");
+        if (shouldGoToCalendar) {
+          navigate(`/host/calendar?propertyId=${id}`);
+        } else {
+          navigate("/host");
+        }
+        return;
+      }
+
+      if (!user) {
+        toast.error("You must be logged in to update this property.");
+        return;
+      }
+
+      const updateData: any = {
+        title: formData.title,
+        location: formData.location,
+        city: formData.city,
         instant_booking: formData.instant_booking,
-        bedrooms: parseInt(formData.bedrooms) || 1, bathrooms: parseInt(formData.bathrooms) || 1,
-        max_guests: parseInt(formData.max_guests) || 2, description: formData.description,
-        amenities: formData.amenities, is_active: formData.is_active,
+        bedrooms: parseInt(formData.bedrooms) || 1,
+        bathrooms: parseInt(formData.bathrooms) || 1,
+        max_guests: parseInt(formData.max_guests) || 2,
+        description: formData.description,
+        amenities: formData.amenities,
+        is_active: formData.is_active,
         blocked_dates: blockedDates.map(d => d.toISOString().split('T')[0]),
         images: allImages,
         latitude: coords?.lat ?? null,
@@ -262,11 +344,27 @@ const EditListing = () => {
         cancellation_policy: formData.cancellation_policy || null,
         house_rules: formData.house_rules || null,
         safety_property: formData.safety_property || null,
-      }).eq("id", id).eq("host_id", user.id);
+      };
+
+      if (formData.price_per_night !== undefined && formData.price_per_night !== "") {
+        updateData.price_per_night = parseFloat(formData.price_per_night) || 0;
+      }
+
+      const { error } = await supabase.from("properties").update(updateData)
+        .eq("id", id)
+        .eq("host_id", user.id);
 
       if (error) throw error;
-      toast.success(approvalStatus === "approved" ? "Changes saved — pending admin review" : "Property updated");
-      navigate("/host");
+      toast.success(
+        approvalStatus === "approved"
+          ? (shouldGoToCalendar ? "Changes saved! Opening calendar..." : "Changes saved — pending admin review")
+          : (shouldGoToCalendar ? "Property updated! Opening calendar..." : "Property updated successfully!")
+      );
+      if (shouldGoToCalendar) {
+        navigate(`/host/calendar?propertyId=${id}`);
+      } else {
+        navigate("/host");
+      }
     } catch (error: any) {
       console.error("Error updating property:", error);
       toast.error(error.message || "Failed to update property");
@@ -364,13 +462,6 @@ const EditListing = () => {
                       {showErrors && !formData.city && (
                         <p className="text-xs text-destructive mt-1">This field is required</p>
                       )}
-                    </div>
-                  </div>
-
-                  <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 text-sm text-muted-foreground flex items-start gap-3">
-                    <Info className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                    <div className="flex-1">
-                      
                     </div>
                   </div>
 
@@ -684,29 +775,73 @@ const EditListing = () => {
 
 
 
-            {/* Availability Calendar */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Availability Calendar</CardTitle>
-                <p className="text-sm text-muted-foreground">Click on dates to block/unblock them</p>
-              </CardHeader>
-              <CardContent>
-                <Calendar mode="multiple" selected={blockedDates}
-                  onSelect={(dates) => setBlockedDates(dates || [])}
-                  numberOfMonths={2} className="rounded-md border p-3 pointer-events-auto"
-                  disabled={(date) => date < new Date()} />
-                <p className="text-sm text-muted-foreground mt-2">
-                  Selected dates ({blockedDates.length}) will be blocked for bookings
-                </p>
+            {/* Rates & Calendar Next Step Card */}
+            <Card className="border-primary/25 bg-gradient-to-br from-primary/5 via-accent/5 to-transparent overflow-hidden">
+              <CardContent className="p-5 sm:p-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="flex items-start gap-3.5">
+                    <div className="h-10 w-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0 mt-0.5">
+                      <CalendarIcon className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-foreground text-base">
+                        Rates, Pricing & Availability Calendar
+                      </h3>
+                      <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 max-w-xl">
+                        Base nightly rates (IQD), weekend pricing, cleaning fees, and blocked dates are now managed in the Host Calendar. Save this property and click Next to adjust rates and availability in the calendar.
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="border-primary/40 text-primary hover:bg-primary hover:text-white rounded-xl font-medium shrink-0 gap-1.5"
+                    onClick={() => handleSubmit({ goToCalendar: true })}
+                    disabled={saving || uploading}
+                  >
+                    <span>Next: Go to Calendar</span>
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </div>
               </CardContent>
             </Card>
 
-            {/* Submit */}
-            <div className="flex gap-3">
-              <Button variant="outline" className="flex-1 h-12" onClick={() => navigate("/host")}>Cancel</Button>
-              <Button className={`flex-1 h-12 text-white ${isDirty ? "bg-primary hover:bg-primary/90" : "bg-slate-400 hover:bg-slate-400 cursor-not-allowed"}`} onClick={handleSubmit} disabled={saving || !isDirty}>
-                {(saving || uploading) ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                {uploading ? "Uploading images..." : "Save Changes"}
+            {/* Submit & Navigation */}
+            <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full sm:w-auto sm:px-6 h-12 order-3 sm:order-1 rounded-xl"
+                onClick={() => navigate("/host")}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full sm:w-auto sm:px-6 h-12 border-border hover:bg-muted font-semibold order-2 sm:order-2 rounded-xl"
+                onClick={() => handleSubmit({ goToCalendar: false })}
+                disabled={saving || uploading}
+              >
+                {saving && !uploading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                Save Property Only
+              </Button>
+              <Button
+                type="button"
+                className="w-full sm:flex-1 h-12 text-white bg-primary hover:bg-primary/90 font-semibold shadow-sm order-1 sm:order-3 gap-2 rounded-xl text-base"
+                onClick={() => handleSubmit({ goToCalendar: true })}
+                disabled={saving || uploading}
+              >
+                {(saving || uploading) ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                ) : (
+                  <CalendarIcon className="h-4 w-4 mr-1" />
+                )}
+                {uploading
+                  ? "Uploading images..."
+                  : saving
+                  ? "Saving changes..."
+                  : "Save & Next: Go to Calendar →"}
               </Button>
             </div>
           </div>

@@ -4,7 +4,7 @@ import { usePreLaunch } from "@/contexts/PreLaunchContext";
 import NotificationBell from "@/components/NotificationBell";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { User, LogOut, Home, Building2 } from "lucide-react";
+import { User, LogOut, Home, Building2, Calendar as CalendarIcon } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
 interface HostLayoutProps {
@@ -60,6 +60,10 @@ const HostLayout = ({ children }: HostLayoutProps) => {
               <Link to="/host" className={`text-sm font-semibold transition-colors hover:text-primary flex items-center gap-1.5 ${isActive("/host") ? "text-primary border-b-2 border-primary py-5" : "text-slate-400"}`}>
                 <Home className="h-4 w-4" />
                 My Properties
+              </Link>
+              <Link to="/host/calendar" className={`text-sm font-medium transition-colors hover:text-primary flex items-center gap-1.5 ${isActive("/host/calendar") ? "text-primary border-b-2 border-primary py-5" : "text-slate-400"}`}>
+                <CalendarIcon className="h-4 w-4" />
+                Calendar
               </Link>
               <Link to="/" className="text-sm font-medium text-slate-400 transition-colors hover:text-primary flex items-center gap-1.5">
                 <Building2 className="h-4 w-4 text-primary" />

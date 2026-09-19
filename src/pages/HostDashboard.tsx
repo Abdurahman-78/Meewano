@@ -112,8 +112,13 @@ const HostDashboard = () => {
     }
   }, [user, authLoading, navigate, fetchData]);
 
-  const handleDeleteProperty = async (propertyId: string) => {
+  const handleDeleteProperty = async (propertyId: string, isPrelaunch?: boolean) => {
     if (!confirm("Are you sure you want to delete this property listing?")) return;
+
+    if (isPrelaunch) {
+      deletePreLaunchProperty(propertyId);
+      return;
+    }
 
     try {
       const { error } = await supabase
@@ -174,12 +179,33 @@ const HostDashboard = () => {
 
   // PRE-LAUNCH HOST VIEW (Simplified Dashboard: ONLY Properties with Add, Edit, Delete)
   if (isPreLaunch) {
-    // Only display actual properties from Supabase that belong to the host
-    const displayProperties = properties.map(p => ({
-      ...p,
-      isPrelaunch: false,
-      raw: null,
-    }));
+    const customPreLaunch = preLaunchProperties
+      .filter(p => p.isCustom)
+      .map(p => ({
+        id: p.id,
+        title: p.title,
+        location: p.location,
+        city: p.city,
+        price_per_night: p.price_per_night || 0,
+        bedrooms: p.bedrooms || 1,
+        bathrooms: p.bathrooms || 1,
+        max_guests: p.max_guests || 2,
+        images: p.image ? [p.image] : [],
+        approval_status: "pending",
+        is_active: p.is_active ?? true,
+        rejection_reason: null,
+        isPrelaunch: true,
+        raw: p,
+      }));
+
+    const displayProperties = [
+      ...properties.map(p => ({
+        ...p,
+        isPrelaunch: false,
+        raw: null,
+      })),
+      ...customPreLaunch.filter(cp => !properties.some(p => p.id === cp.id)),
+    ];
 
     return (
       <HostLayout>
@@ -206,17 +232,6 @@ const HostDashboard = () => {
               <Plus className="h-4 w-4" />
               + Add Property
             </Button>
-          </div>
-
-          {/* Pricing Verification Notice */}
-          <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 md:p-5 flex items-start gap-3.5">
-            <Info className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-            <div className="space-y-1">
-              <p className="font-semibold text-foreground text-sm sm:text-base">
-                Property Pricing & Launch Setup
-              </p>
-              
-            </div>
           </div>
 
           {/* Properties Grid */}
@@ -307,13 +322,30 @@ const HostDashboard = () => {
                             </span>
                           </div>
                           
-                          {/* Actions: Edit & Delete */}
+                          {/* Actions: Edit, Calendar & Delete */}
                           <div className="flex items-center gap-1.5">
                             <Button
                               size="sm"
                               variant="outline"
+                              className="h-9 px-2.5 rounded-xl gap-1.5 text-xs font-semibold hover:border-primary hover:text-primary"
+                              onClick={() => navigate(`/host/calendar?propertyId=${property.id}`)}
+                              title="Manage calendar & rates"
+                            >
+                              <Calendar className="h-3.5 w-3.5" />
+                              Calendar
+                            </Button>
+
+                            <Button
+                              size="sm"
+                              variant="outline"
                               className="h-9 px-3 rounded-xl gap-1.5 text-xs font-semibold hover:border-primary hover:text-primary"
-                              onClick={() => navigate(`/host/edit-listing/${property.id}`)}
+                              onClick={() => {
+                                if (property.isPrelaunch && property.raw) {
+                                  openEditPropertyModal(property.raw);
+                                } else {
+                                  navigate(`/host/edit-listing/${property.id}`);
+                                }
+                              }}
                             >
                               <Edit className="h-3.5 w-3.5" />
                               Edit
@@ -323,7 +355,7 @@ const HostDashboard = () => {
                               size="sm"
                               variant="ghost"
                               className="h-9 px-2.5 rounded-xl text-xs font-semibold text-destructive hover:bg-destructive/10"
-                              onClick={() => handleDeleteProperty(property.id)}
+                              onClick={() => handleDeleteProperty(property.id, property.isPrelaunch)}
                             >
                               <Trash2 className="h-3.5 w-3.5" />
                             </Button>
@@ -458,11 +490,14 @@ const HostDashboard = () => {
                       <div className="font-semibold">
                         {formatPrice(property.price_per_night)} <span className="text-sm font-normal text-muted-foreground">/ night</span>
                       </div>
-                      <div className="flex gap-2">
-                        <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full hover:bg-accent" onClick={() => navigate(`/host/edit-listing/${property.id}`)}>
+                      <div className="flex items-center gap-1.5">
+                        <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full hover:bg-accent" onClick={() => navigate(`/host/calendar?propertyId=${property.id}`)} title="Manage calendar & rates">
+                          <Calendar className="h-4 w-4" />
+                        </Button>
+                        <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full hover:bg-accent" onClick={() => navigate(`/host/edit-listing/${property.id}`)} title="Edit property details">
                           <Edit className="h-4 w-4" />
                         </Button>
-                        <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full hover:bg-destructive/10 hover:text-destructive" onClick={() => handleDeleteProperty(property.id)}>
+                        <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full hover:bg-destructive/10 hover:text-destructive" onClick={() => handleDeleteProperty(property.id)} title="Delete property">
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>

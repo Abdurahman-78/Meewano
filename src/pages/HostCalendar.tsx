@@ -28,7 +28,7 @@ import {
   X,
   Brush,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import HostLayout from "@/components/HostLayout";
 import { Button } from "@/components/ui/button";
 import {
@@ -45,11 +45,16 @@ import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { usePreLaunch } from "@/contexts/PreLaunchContext";
 import { toast } from "sonner";
 
 export default function HostCalendar() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const queryPropertyId = searchParams.get("propertyId");
+  const { properties: preLaunchProps, updateProperty: updatePreLaunchProp, mode } = usePreLaunch();
+  const isPreLaunch = mode === "pre-launch";
   const { formatPrice } = useCurrency();
   const [currentMonth, setCurrentMonth] = useState(startOfMonth(new Date()));
   const [properties, setProperties] = useState<any[]>([]);
@@ -73,49 +78,79 @@ export default function HostCalendar() {
   const [saving, setSaving] = useState(false);
 
   const fetchData = useCallback(async () => {
-    if (!user) return;
     try {
-      const { data: propsData, error: propsError } = await supabase
-        .from("properties")
-        .select("*")
-        .eq("host_id", user.id);
+      let combined: any[] = [];
 
-      if (propsError) throw propsError;
+      // If user is logged in, fetch from Supabase
+      if (user) {
+        const { data: propsData, error: propsError } = await supabase
+          .from("properties")
+          .select("*")
+          .eq("host_id", user.id);
 
-      setProperties(propsData || []);
-      if (propsData && propsData.length > 0) {
-        setSelectedPropertyId(propsData[0].id);
+        if (propsError) throw propsError;
+        combined = [...(propsData || [])];
+
+        const { data: booksData, error: booksError } = await supabase
+          .from("bookings")
+          .select(`
+            *,
+            property:properties(title)
+          `)
+          .eq("host_id", user.id)
+          .in("status", ["confirmed", "pending"]);
+
+        if (booksError) throw booksError;
+        setBookings(booksData || []);
       }
 
-      const { data: booksData, error: booksError } = await supabase
-        .from("bookings")
-        .select(`
-          *,
-          property:properties(title)
-        `)
-        .eq("host_id", user.id)
-        .in("status", ["confirmed", "pending"]);
+      // If pre-launch properties exist, merge them
+      if (preLaunchProps && preLaunchProps.length > 0) {
+        const mappedPreLaunch = preLaunchProps.map((p) => ({
+          id: p.id,
+          title: p.title,
+          location: p.location,
+          city: p.city,
+          price_per_night: p.price_per_night || 0,
+          weekend_price: p.weekend_price || null,
+          images: p.image ? [p.image] : [],
+          blocked_dates: p.blocked_dates || [],
+          isPrelaunch: true,
+        }));
+        
+        // Add pre-launch props if not already in combined
+        const existingIds = new Set(combined.map((c) => c.id));
+        mappedPreLaunch.forEach((mp) => {
+          if (!existingIds.has(mp.id)) {
+            combined.push(mp);
+          }
+        });
+      }
 
-      if (booksError) throw booksError;
+      setProperties(combined);
 
-      setBookings(booksData || []);
+      if (combined.length > 0) {
+        if (queryPropertyId && combined.some((p) => p.id === queryPropertyId)) {
+          setSelectedPropertyId(queryPropertyId);
+        } else {
+          setSelectedPropertyId((prev) => (prev && combined.some((p) => p.id === prev) ? prev : combined[0].id));
+        }
+      }
     } catch (error: any) {
       toast.error("Failed to load calendar data");
       console.error(error);
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, preLaunchProps, queryPropertyId]);
 
   useEffect(() => {
-    if (!authLoading && !user) {
+    if (!authLoading && !user && !isPreLaunch) {
       navigate("/auth");
       return;
     }
-    if (user) {
-      fetchData();
-    }
-  }, [user, authLoading, navigate, fetchData]);
+    fetchData();
+  }, [user, authLoading, isPreLaunch, navigate, fetchData]);
 
   const selectedProperty = useMemo(
     () => properties.find((p) => p.id === selectedPropertyId),
@@ -210,6 +245,37 @@ export default function HostCalendar() {
         min_price: minPrice ? parseFloat(minPrice) : null,
         max_price: maxPrice ? parseFloat(maxPrice) : null,
       };
+
+      if (selectedProperty.isPrelaunch) {
+        updatePreLaunchProp(selectedProperty.id, {
+          price_per_night: price,
+          weekend_price: parsedWeekendPrice,
+          blocked_dates: newBlocked,
+        });
+
+        toast.success("Pricing & availability updated successfully");
+
+        setProperties((prev) =>
+          prev.map((p) =>
+            p.id === selectedProperty.id
+              ? {
+                  ...p,
+                  price_per_night: price,
+                  weekend_price: parsedWeekendPrice,
+                  cleaning_fee: parsedCleaningFee,
+                  cleaning_policy: cleaningPolicy.trim() || null,
+                  blocked_dates: newBlocked,
+                  pending_changes: pendingChanges,
+                }
+              : p
+          )
+        );
+
+        setSelectedDates(new Set());
+        setSelectionStart(null);
+        setSaving(false);
+        return;
+      }
 
       const { error } = await supabase
         .from("properties")
