@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { TrendingUp, TrendingDown, DollarSign, Home, Calendar, Loader2 } from "lucide-react";
-import AppLayout from "@/components/AppLayout";
+import HostLayout from "@/components/HostLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCurrency } from "@/contexts/CurrencyContext";
@@ -163,16 +163,16 @@ const HostAnalytics = () => {
 
   if (bookingsLoading || propertiesLoading) {
     return (
-      <AppLayout>
+      <HostLayout>
         <div className="container mx-auto px-4 py-16 flex items-center justify-center">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
-      </AppLayout>
+      </HostLayout>
     );
   }
 
   return (
-    <AppLayout>
+    <HostLayout>
       <main className="container mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-8">
           <div>
@@ -320,7 +320,7 @@ const HostAnalytics = () => {
         </Card>
       </main>
       
-    </AppLayout>
+    </HostLayout>
   );
 };
 

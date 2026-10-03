@@ -137,6 +137,10 @@ const Header = () => {
                 className="hover:text-primary transition-colors"
               >{t("howItWorks")}</a>
               <a
+                href="#about-us"
+                className="hover:text-primary transition-colors"
+              >{t("aboutUs")}</a>
+              <a
                 href="#host-faq"
                 className="hover:text-primary transition-colors"
               >{t("faqs")}</a>

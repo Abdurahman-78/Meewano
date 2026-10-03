@@ -113,6 +113,14 @@ const MobileMenu = () => {
                 {t("howItWorks")}
               </a>
               <a
+                href="#about-us"
+                onClick={close}
+                className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-foreground hover:bg-accent transition-colors"
+              >
+                <Info className="h-5 w-5 text-muted-foreground" />
+                {t("aboutUs")}
+              </a>
+              <a
                 href="#host-faq"
                 onClick={close}
                 className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-foreground hover:bg-accent transition-colors"

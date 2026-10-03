@@ -38,6 +38,7 @@ import HostVerification from "./pages/HostVerification";
 import HostWelcome from "./pages/HostWelcome";
 import GuestBookings from "./pages/GuestBookings";
 import HostBookings from "./pages/HostBookings";
+import HostReservations from "./pages/HostReservations";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import PaymentFailure from "./pages/PaymentFailure";
 import HostAnalytics from "./pages/HostAnalytics";
@@ -93,10 +94,12 @@ const AnimatedRoutes = () => {
         <Route path="/host/edit-listing/:id" element={<PageTransition><EditListing /></PageTransition>} />
         <Route path="/host/verification" element={<PageTransition><HostVerification /></PageTransition>} />
         <Route path="/host/welcome" element={<PageTransition><HostWelcome /></PageTransition>} />
-        <Route path="/host/bookings" element={<PageTransition><HostBookings /></PageTransition>} />
+        <Route path="/host/reservations" element={<PageTransition><HostReservations /></PageTransition>} />
+        <Route path="/host/bookings" element={<PageTransition><HostReservations /></PageTransition>} />
         <Route path="/host/analytics" element={<PageTransition><HostAnalytics /></PageTransition>} />
         <Route path="/host/pricing" element={<PageTransition><PricingTools /></PageTransition>} />
         <Route path="/host/refund-requests" element={<PageTransition><HostRefundRequests /></PageTransition>} />
+        <Route path="/host/account" element={<PageTransition><AccountSettings /></PageTransition>} />
         <Route path="/host/:id" element={<PageTransition><HostProfile /></PageTransition>} />
         
         {/* Admin Routes */}

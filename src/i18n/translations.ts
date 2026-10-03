@@ -48,7 +48,8 @@ export const translations = {
     faq5q: "How are guests verified?",
     faq5a: "All guests on Meewano must provide verified phone numbers and identity checks before booking, giving hosts total peace of mind.",
 
-    preLaunchTitle: "Our First Properties are now Joining Meewano",
+    preLaunchBadge: "Our First Properties are now Joining Meewano",
+    preLaunchTitle: "Registered Properties",
     preLaunchTitleCount: "{{count}}/100 Properties Registered",
     preLaunchTitleFull: "{{count}} Properties Registered",
     preLaunchSubtitle: "All registered properties will be advertised during the main website launch.\nBe from the first 100 hosts to register your property and receive one time only special offer.",
@@ -479,7 +480,8 @@ export const translations = {
     faq5q: "كيف يتم التحقق من الضيوف؟",
     faq5a: "يجب على جميع الضيوف على ميوانو تقديم أرقام هواتف موثقة وفحوصات هوية قبل الحجز، مما يمنح المضيفين راحة بال تامة.",
 
-    preLaunchTitle: "أولى عقاراتنا تنضم الآن إلى ميوانو",
+    preLaunchBadge: "أولى عقاراتنا تنضم الآن إلى ميوانو",
+    preLaunchTitle: "العقارات المسجلة",
     preLaunchTitleCount: "{{count}}/100 عقار مسجل",
     preLaunchTitleFull: "{{count}} عقار مسجل",
     preLaunchSubtitle: "سيتم الإعلان عن جميع العقارات المسجلة خلال الإطلاق الرئيسي للموقع.\nكن من أول 100 مضيف يسجل عقاره واحصل على عرض خاص لمرة واحدة.",
@@ -910,7 +912,8 @@ export const translations = {
     faq5q: "میوانەکان چۆن پشتڕاست دەکرێنەوە؟",
     faq5a: "پێویستە هەموو میوانەکان لەسەر میوانۆ ژمارە تەلەفۆنی پشتڕاستکراوە و پشکنینی ناسنامە دابین بکەن پێش حجزکردن، ئەمەش ئارامی دەروونی تەواو دەدات بە خانەخوێیەکان.",
 
-    preLaunchTitle: "یەکەمین موڵکەکانمان ئێستا پەیوەندی بە میوانۆوە دەکەن",
+    preLaunchBadge: "یەکەمین موڵکەکانمان ئێستا پەیوەندی بە میوانۆوە دەکەن",
+    preLaunchTitle: "موڵکە تۆمارکراوەکان",
     preLaunchTitleCount: "{{count}}/100 موڵک تۆمارکراون",
     preLaunchTitleFull: "{{count}} موڵک تۆمارکراون",
     preLaunchSubtitle: "گشت موڵکە تۆمارکراوەکان لە کاتی کردنەوەی سەرەکی ماڵپەڕەکەدا ڕیکلامیان بۆ دەکرێت.\nلە ١٠٠ خانەخوێی یەکەم بە کە موڵکەکەی تۆمار دەکات و ئۆفەرێکی تایبەتی یەکجارەکی وەربگرە.",

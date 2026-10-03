@@ -83,15 +83,7 @@ export const PreLaunchView: React.FC = () => {
 
   const { t } = useTranslation();
   const registeredCount = realProperties.length;
-
-  let sectionTitle = "";
-  if (registeredCount <= 30) {
-    sectionTitle = t("preLaunchTitle");
-  } else if (registeredCount <= 100) {
-    sectionTitle = t("preLaunchTitleCount").replace("{{count}}", registeredCount.toString());
-  } else {
-    sectionTitle = t("preLaunchTitleFull").replace("{{count}}", registeredCount.toString());
-  }
+  const sectionTitle = t("preLaunchTitle");
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -108,16 +100,21 @@ export const PreLaunchView: React.FC = () => {
       >
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
           <div>
-            
+            <div className="inline-flex items-center px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold mb-3 border border-primary/20">
+              <span>{t("preLaunchBadge")}</span>
+            </div>
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight text-foreground">
               {sectionTitle}
             </h2>
             <p className="text-sm sm:text-base text-muted-foreground mt-2 max-w-xl">
-    {t("preLaunchSubtitle").split("\n").map((line, i) => <React.Fragment key={i}>{line}<br/></React.Fragment>)}
-  </p>
+              {t("preLaunchSubtitle").split("\n").map((line, i) => (
+                <React.Fragment key={i}>
+                  {line}
+                  {i === 0 && <br />}
+                </React.Fragment>
+              ))}
+            </p>
           </div>
-
-          
         </div>
 
                 {/* City Filter Pills & Quick Search */}

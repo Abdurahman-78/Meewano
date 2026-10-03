@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { Mail, Phone, Lock, Loader2, Upload, Image as ImageIcon, Smile, Trash2, AlertTriangle } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Mail, Phone, Lock, Loader2, Upload, Image as ImageIcon, Smile, Trash2, AlertTriangle, CreditCard, Clock } from "lucide-react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import AvatarIconPicker, { renderAvatarIcon, buildIconAvatarValue, isIconAvatar } from "@/components/AvatarIconPicker";
 import PhoneVerification from "@/components/PhoneVerification";
+import HostPayoutCard from "@/components/HostPayoutCard";
+import HostBookingRequestsCard from "@/components/HostBookingRequestsCard";
 
 interface Profile {
   full_name: string | null;
@@ -28,6 +30,8 @@ interface Profile {
 const AccountSettings = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const currentTab = searchParams.get("tab") || "profile";
   const [profile, setProfile] = useState<Profile>({
     full_name: null,
     email: null,
@@ -226,10 +230,18 @@ const AccountSettings = () => {
       <main className="flex-1 container mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold text-foreground mb-8">Account Settings</h1>
 
-        <Tabs defaultValue="profile" className="w-full max-w-3xl">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="profile">Profile</TabsTrigger>
-            <TabsTrigger value="security">Security</TabsTrigger>
+        <Tabs value={currentTab} onValueChange={(val) => setSearchParams({ tab: val })} className="w-full max-w-4xl">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 h-auto p-1 mb-6">
+            <TabsTrigger value="profile" className="py-2.5">Profile</TabsTrigger>
+            <TabsTrigger value="payment" className="py-2.5 flex items-center gap-1.5">
+              <CreditCard className="h-4 w-4" />
+              Payment Details
+            </TabsTrigger>
+            <TabsTrigger value="booking-requests" className="py-2.5 flex items-center gap-1.5">
+              <Clock className="h-4 w-4" />
+              Booking Requests
+            </TabsTrigger>
+            <TabsTrigger value="security" className="py-2.5">Security</TabsTrigger>
           </TabsList>
 
           <TabsContent value="profile">
@@ -354,6 +366,18 @@ const AccountSettings = () => {
 
             <div className="mt-6">
               <PhoneVerification />
+            </div>
+          </TabsContent>
+
+          <TabsContent value="payment">
+            <div className="space-y-6">
+              <HostPayoutCard />
+            </div>
+          </TabsContent>
+
+          <TabsContent value="booking-requests">
+            <div className="space-y-6">
+              <HostBookingRequestsCard />
             </div>
           </TabsContent>
 

@@ -47,7 +47,7 @@ const MobileBottomNav = () => {
           </button>
 
           <a
-            href="#what-is-meewano"
+            href="#about-us"
             className="flex flex-col items-center justify-center gap-1 flex-1 h-full text-muted-foreground hover:text-foreground transition-colors"
           >
             <Info className="h-5 w-5" />

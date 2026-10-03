@@ -1,10 +1,10 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePreLaunch } from "@/contexts/PreLaunchContext";
 import NotificationBell from "@/components/NotificationBell";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { User, LogOut, Home, Building2, Calendar as CalendarIcon } from "lucide-react";
+import { User, LogOut, Home, Building2, Calendar as CalendarIcon, ClipboardList, BarChart3, Settings, MessageSquare } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
 interface HostLayoutProps {
@@ -13,9 +13,10 @@ interface HostLayoutProps {
 
 const HostLayout = ({ children }: HostLayoutProps) => {
   const { user, signOut } = useAuth();
-  const { mode, openAddPropertyModal } = usePreLaunch();
+  const { mode } = usePreLaunch();
   const isPreLaunch = mode === "pre-launch";
   const location = useLocation();
+  const navigate = useNavigate();
 
   const isActive = (path: string) => location.pathname === path || (path === "/host" && location.pathname === "/host/");
 
@@ -27,47 +28,47 @@ const HostLayout = ({ children }: HostLayoutProps) => {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950/20 flex flex-col">
       <header className="sticky top-0 z-50 w-full border-b border-border bg-slate-900 text-slate-50 dark:bg-slate-950">
-        <div className="flex h-16 items-center justify-between px-4 md:px-8">
+        <div className="flex h-16 items-center justify-between px-3 md:px-6">
           <div className="flex items-center gap-3">
             <Link to="/" className="flex items-center gap-2">
               <img src="/favicon.png" alt="Meewano" className="h-8 w-auto" />
-              <span className="font-bold text-lg hidden sm:inline">Meewano</span>
             </Link>
-            {isPreLaunch && (
-              <span className="text-xs px-2.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/25 font-semibold">
-                Pre-Launch Host
-              </span>
-            )}
           </div>
 
           {!isPreLaunch ? (
             <nav className="hidden md:flex items-center gap-6 absolute left-1/2 -translate-x-1/2">
-              <Link to="/host/calendar" className={`text-sm font-medium transition-colors hover:text-primary ${isActive("/host/calendar") ? "text-primary border-b-2 border-primary py-5" : "text-slate-400"}`}>
-                Calendar
-              </Link>
               <Link to="/host" className={`text-sm font-medium transition-colors hover:text-primary ${isActive("/host") ? "text-primary border-b-2 border-primary py-5" : "text-slate-400"}`}>
                 Listings
               </Link>
-              <Link to="/host/refund-requests" className={`text-sm font-medium transition-colors hover:text-primary ${isActive("/host/refund-requests") ? "text-primary border-b-2 border-primary py-5" : "text-slate-400"}`}>
-                Refund requests
+              <Link to="/host/reservations" className={`text-sm font-medium transition-colors hover:text-primary ${isActive("/host/reservations") || isActive("/host/bookings") ? "text-primary border-b-2 border-primary py-5" : "text-slate-400"}`}>
+                Reservations
+              </Link>
+              <Link to="/host/calendar" className={`text-sm font-medium transition-colors hover:text-primary ${isActive("/host/calendar") ? "text-primary border-b-2 border-primary py-5" : "text-slate-400"}`}>
+                Calendar
               </Link>
               <Link to="/host/messages" className={`text-sm font-medium transition-colors hover:text-primary ${isActive("/host/messages") ? "text-primary border-b-2 border-primary py-5" : "text-slate-400"}`}>
                 Inbox
               </Link>
+              <Link to="/host/analytics" className={`text-sm font-medium transition-colors hover:text-primary ${isActive("/host/analytics") ? "text-primary border-b-2 border-primary py-5" : "text-slate-400"}`}>
+                Insights
+              </Link>
             </nav>
           ) : (
             <nav className="hidden md:flex items-center gap-6 absolute left-1/2 -translate-x-1/2">
-              <Link to="/host" className={`text-sm font-semibold transition-colors hover:text-primary flex items-center gap-1.5 ${isActive("/host") ? "text-primary border-b-2 border-primary py-5" : "text-slate-400"}`}>
-                <Home className="h-4 w-4" />
-                My Properties
+              <Link to="/host" className={`text-sm font-semibold transition-colors hover:text-primary ${isActive("/host") ? "text-primary border-b-2 border-primary py-5" : "text-slate-400"}`}>
+                Listings
               </Link>
-              <Link to="/host/calendar" className={`text-sm font-medium transition-colors hover:text-primary flex items-center gap-1.5 ${isActive("/host/calendar") ? "text-primary border-b-2 border-primary py-5" : "text-slate-400"}`}>
-                <CalendarIcon className="h-4 w-4" />
+              <Link to="/host/reservations" className={`text-sm font-medium transition-colors hover:text-primary ${isActive("/host/reservations") || isActive("/host/bookings") ? "text-primary border-b-2 border-primary py-5" : "text-slate-400"}`}>
+                Reservations
+              </Link>
+              <Link to="/host/calendar" className={`text-sm font-medium transition-colors hover:text-primary ${isActive("/host/calendar") ? "text-primary border-b-2 border-primary py-5" : "text-slate-400"}`}>
                 Calendar
               </Link>
-              <Link to="/" className="text-sm font-medium text-slate-400 transition-colors hover:text-primary flex items-center gap-1.5">
-                <Building2 className="h-4 w-4 text-primary" />
-                Pre-Launch Feed
+              <Link to="/host/messages" className={`text-sm font-medium transition-colors hover:text-primary ${isActive("/host/messages") ? "text-primary border-b-2 border-primary py-5" : "text-slate-400"}`}>
+                Inbox
+              </Link>
+              <Link to="/host/analytics" className={`text-sm font-medium transition-colors hover:text-primary ${isActive("/host/analytics") ? "text-primary border-b-2 border-primary py-5" : "text-slate-400"}`}>
+                Insights
               </Link>
             </nav>
           )}
@@ -111,9 +112,27 @@ const HostLayout = ({ children }: HostLayoutProps) => {
                   </>
                 )}
                 <DropdownMenuItem asChild>
-                  <Link to={isPreLaunch ? "/host" : "/host"}>
+                  <Link to="/host">
                     <Home className="h-4 w-4 mr-2" />
-                    My Properties
+                    Listings
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/host/reservations">
+                    <ClipboardList className="h-4 w-4 mr-2" />
+                    Reservations
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/host/analytics">
+                    <BarChart3 className="h-4 w-4 mr-2" />
+                    Insights
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/account-settings">
+                    <User className="h-4 w-4 mr-2" />
+                    Account details
                   </Link>
                 </DropdownMenuItem>
 

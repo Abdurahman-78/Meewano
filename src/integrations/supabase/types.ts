@@ -790,8 +790,20 @@ export type Database = {
           pending_changes: Json | null
           price_per_night: number
           weekend_price: number | null
+          weekend_pct: number | null
           weekly_discount_pct: number | null
           monthly_discount_pct: number | null
+          first_bookings_discount_pct: number | null
+          last_minute_discount_pct: number | null
+          three_nights_discount_pct: number | null
+          discounts: Json | null
+          custom_discounts: Json | null
+          maximum_nights: number | null
+          booking_notice: string | null
+          preparation_time: string | null
+          restrict_checkin: string | null
+          restrict_checkout: string | null
+          calendar_availability: string | null
           rating: number | null
           rejection_reason: string | null
           review_count: number | null
@@ -841,9 +853,21 @@ export type Database = {
           ownership_document_url?: string | null
           pending_changes?: Json | null
           price_per_night: number
-          weekend_price: number | null
-          weekly_discount_pct: number | null
-          monthly_discount_pct: number | null
+          weekend_price?: number | null
+          weekend_pct?: number | null
+          weekly_discount_pct?: number | null
+          monthly_discount_pct?: number | null
+          first_bookings_discount_pct?: number | null
+          last_minute_discount_pct?: number | null
+          three_nights_discount_pct?: number | null
+          discounts?: Json | null
+          custom_discounts?: Json | null
+          maximum_nights?: number | null
+          booking_notice?: string | null
+          preparation_time?: string | null
+          restrict_checkin?: string | null
+          restrict_checkout?: string | null
+          calendar_availability?: string | null
           rating?: number | null
           rejection_reason?: string | null
           review_count?: number | null
@@ -894,8 +918,20 @@ export type Database = {
           pending_changes?: Json | null
           price_per_night?: number
           weekend_price?: number | null
+          weekend_pct?: number | null
           weekly_discount_pct?: number | null
           monthly_discount_pct?: number | null
+          first_bookings_discount_pct?: number | null
+          last_minute_discount_pct?: number | null
+          three_nights_discount_pct?: number | null
+          discounts?: Json | null
+          custom_discounts?: Json | null
+          maximum_nights?: number | null
+          booking_notice?: string | null
+          preparation_time?: string | null
+          restrict_checkin?: string | null
+          restrict_checkout?: string | null
+          calendar_availability?: string | null
           rating?: number | null
           rejection_reason?: string | null
           review_count?: number | null

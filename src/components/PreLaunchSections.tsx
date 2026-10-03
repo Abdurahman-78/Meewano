@@ -145,7 +145,42 @@ export const PreLaunchSections: React.FC = () => {
         </div>
       </section>
 
-      {/* 3. Frequently Asked Questions (FAQ) Section */}
+      {/* 3. About Us Section */}
+      <section id="about-us" className="container mx-auto px-4 max-w-4xl scroll-mt-20">
+        <div className="text-center max-w-3xl mx-auto mb-10 md:mb-12">
+          <div className="inline-flex items-center px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold mb-3 border border-primary/20">
+            <span>{t("aboutUs")}</span>
+          </div>
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight text-foreground">
+            {t("aboutUsSubtitle")}
+          </h2>
+        </div>
+
+        <div className="rounded-3xl border border-border bg-card p-6 sm:p-10 md:p-12 shadow-sm space-y-6 text-base sm:text-lg leading-relaxed text-muted-foreground">
+          <p className="text-foreground/90 font-medium">
+            {t("aboutUsP1")}
+          </p>
+          <p>
+            {t("aboutUsP2")}
+          </p>
+          <p>
+            {t("aboutUsP3")}
+          </p>
+          <p>
+            {t("aboutUsP4")}
+          </p>
+
+          <div className="pt-6 border-t border-border/70">
+            <div className="rounded-2xl bg-primary/5 border border-primary/20 p-5 sm:p-6 text-center">
+              <p className="text-base sm:text-lg font-bold text-foreground">
+                <span className="text-primary font-extrabold">{t("aboutUsP5")}</span>
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 4. Frequently Asked Questions (FAQ) Section */}
       <section id="host-faq" className="container mx-auto px-4 max-w-4xl scroll-mt-20">
         <div className="text-center max-w-2xl mx-auto mb-10 md:mb-12">
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight text-foreground mb-4">
